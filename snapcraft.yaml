@@ -44,6 +44,8 @@ apps:
       - docker-cli
       - network
       - home
+  help:
+    command: help
 
 parts:
   snappy-bins:
@@ -147,5 +149,10 @@ parts:
     plugin: python2
     source: https://github.com/docker/compose/archive/1.10.0.tar.gz
     source-type: tar
+
+  help:
+    plugin: copy
+    files:
+      src/help: bin/
 
 # vim:set et ts=2 sw=2:

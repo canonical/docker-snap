@@ -1,11 +1,20 @@
 #!/bin/sh
 set -e
 
+default_socket_group=docker
+
 workaround_lp1626019() {
     t=`egrep '/snap\.\w+_snap\.docker.dockerd_\w+/tmp ' /proc/self/mountinfo | cut -d ' ' -f 5`
     if [ -n "$t" ] && [ ! -e "$t" ]; then
         mkdir -p "$t"
         ln -s /sys "$t"/sys
+    fi
+}
+
+workaround_lp1606510() {
+    name=`grep "DISTRIB_DESCRIPTION" /etc/lsb-release | cut -d '=' -f2 | sed 's/"*"//g'`
+    if [ "$name" = "Ubuntu Core 16" ]; then
+        default_socket_group=docker-snap
     fi
 }
 
@@ -48,4 +57,6 @@ set -- \
 
 workaround_lp1626019
 
-exec docker daemon "$@"
+workaround_lp1606510
+
+exec docker daemon -G $default_socket_group "$@"
