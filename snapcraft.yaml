@@ -1,5 +1,5 @@
 name: docker
-version: 1.13.0-0
+version: 1.13.1-0
 summary: Docker Linux container runtime
 description: Docker complements kernel namespacing with a high-level API which operates at the process level. It runs unix processes with strong guarantees of isolation and repeatability across servers.
 
@@ -65,6 +65,10 @@ parts:
     shell-flags: ['-eux', '-o', 'pipefail']
     shell-command: |
       apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F1831DDAFC42E99D
+      add-apt-repository ppa:jonathonf/golang-1.7
+      apt update
+      apt remove -y golang-go
+      apt install -y golang-1.7
       export GOROOT=/usr/lib/go-1.7
       export PATH="$GOROOT/bin:$PATH"
       go version
@@ -94,8 +98,6 @@ parts:
       - libltdl-dev
       - patch
       - git
-      - pkg-config
-      - golang-1.7
     stage-packages:
       - aufs-tools
 
@@ -117,7 +119,7 @@ parts:
       install -T bin/containerd-shim "$DESTDIR/bin/docker-containerd-shim"
       install -T bin/ctr "$DESTDIR/bin/docker-containerd-ctr"
     build-packages:
-      - golang-1.7
+      - golang-go
       - make
 
   runc:
@@ -136,7 +138,7 @@ parts:
       install -d "$DESTDIR/bin"
       install -T runc "$DESTDIR/bin/docker-runc"
     build-packages:
-      - golang-1.7
+      - golang-go
       - libapparmor-dev
       - libseccomp-dev
       - make
