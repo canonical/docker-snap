@@ -61,7 +61,7 @@ parts:
 
   docker:
     plugin: shell
-    source: https://github.com/docker/docker/archive/v1.13.0.tar.gz
+    source: https://github.com/docker/docker/archive/v1.13.1.tar.gz
     source-type: tar
     shell: bash
     shell-flags: ['-eux', '-o', 'pipefail']
