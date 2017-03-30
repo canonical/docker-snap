@@ -85,8 +85,8 @@ parts:
       daemonBin='bundles/latest/dynbinary-daemon/dockerd'
       "$clientBin" -v
       "$daemonBin" -v
-      "$clientBin" -v | grep -q "$DOCKER_GITCOMMIT"
-      "$daemonBin" -v | grep -q "$DOCKER_GITCOMMIT"
+      "$clientBin" -v | grep -q -- "$DOCKER_GITCOMMIT"
+      "$daemonBin" -v | grep -q -- "$DOCKER_GITCOMMIT"
       
       install -d "$DESTDIR/bin"
       install -T "$(readlink -f "$clientBin")" "$DESTDIR/bin/docker"
