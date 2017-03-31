@@ -100,6 +100,7 @@ parts:
       - libltdl-dev
       - patch
       - git
+      - pkg-config
     stage-packages:
       - aufs-tools
 
@@ -151,8 +152,8 @@ parts:
     source-type: tar
 
   help:
-    plugin: copy
-    files:
-      src/help: bin/
+    plugin: dump
+    organize:
+      'src/help': bin/
 
 # vim:set et ts=2 sw=2:
