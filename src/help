@@ -12,7 +12,7 @@ echo -e "\tsudo adduser $"USER" docker"
 echo -e "\tnewgrp docker"
 
 echo -e "\nOn Ubuntu Core 16, after installing the docker snap from store,"
-echo -e "\nFirstly, you need to connect the home interfaces as it's not auto-connected by default."
+echo -e "Firstly, you need to connect the home interfaces as it's not auto-connected by default."
 echo -e "\tsudo snap connect docker:home :home"
 
 echo -e "\nSecondly, add a user and group \"docker-snap\" for the first installation"
