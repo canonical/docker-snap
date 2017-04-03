@@ -53,11 +53,23 @@ parts:
     shell: bash
     shell-flags: ['-ex']
     shell-command: |
-      install -d "$DESTDIR/bin"
-      install -t "$DESTDIR/bin" "$SNAPDIR"/bin/*
+      install -d "$SNAPCRAFT_PART_INSTALL/bin"
+      install -t "$SNAPCRAFT_PART_INSTALL/bin" "$SNAPDIR"/bin/*
     stage-packages:
       #- adduser
       - mount
+
+  ppa:
+    plugin: shell
+    shell: bash
+    shell-flags: ['-ex']
+    shell-command: |
+      apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F1831DDAFC42E99D
+      add-apt-repository ppa:jonathonf/golang-1.7
+      apt update
+      apt install -y golang-1.7
+    build-packages:
+      - software-properties-common
 
   docker:
     plugin: shell
@@ -66,11 +78,6 @@ parts:
     shell: bash
     shell-flags: ['-eux', '-o', 'pipefail']
     shell-command: |
-      apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F1831DDAFC42E99D
-      add-apt-repository ppa:jonathonf/golang-1.7
-      apt update
-      apt remove -y golang-go
-      apt install -y golang-1.7
       export GOROOT=/usr/lib/go-1.7
       export PATH="$GOROOT/bin:$PATH"
       go version
@@ -88,11 +95,12 @@ parts:
       "$clientBin" -v | grep -q -- "$DOCKER_GITCOMMIT"
       "$daemonBin" -v | grep -q -- "$DOCKER_GITCOMMIT"
       
-      install -d "$DESTDIR/bin"
-      install -T "$(readlink -f "$clientBin")" "$DESTDIR/bin/docker"
-      install -T "$(readlink -f "$daemonBin")" "$DESTDIR/bin/dockerd"
+      install -d "$SNAPCRAFT_PART_INSTALL/bin"
+      install -T "$(readlink -f "$clientBin")" "$SNAPCRAFT_PART_INSTALL/bin/docker"
+      install -T "$(readlink -f "$daemonBin")" "$SNAPCRAFT_PART_INSTALL/bin/dockerd"
+    after:
+      - ppa
     build-packages:
-      - software-properties-common
       - btrfs-tools
       - gcc
       - libc6-dev
@@ -111,18 +119,23 @@ parts:
     shell: bash
     shell-flags: ['-ex']
     shell-command: |
+      export GOROOT=/usr/lib/go-1.7
+      export PATH="$GOROOT/bin:$PATH"
+      go version
+
       mkdir -p .gopath/src/github.com/docker
       ln -sfT "$PWD" .gopath/src/github.com/docker/containerd
       export GOPATH="$PWD/.gopath"
       
       make GIT_COMMIT= GIT_BRANCH= LDFLAGS=
       
-      install -d "$DESTDIR/bin"
-      install -T bin/containerd "$DESTDIR/bin/docker-containerd"
-      install -T bin/containerd-shim "$DESTDIR/bin/docker-containerd-shim"
-      install -T bin/ctr "$DESTDIR/bin/docker-containerd-ctr"
+      install -d "$SNAPCRAFT_PART_INSTALL/bin"
+      install -T bin/containerd "$SNAPCRAFT_PART_INSTALL/bin/docker-containerd"
+      install -T bin/containerd-shim "$SNAPCRAFT_PART_INSTALL/bin/docker-containerd-shim"
+      install -T bin/ctr "$SNAPCRAFT_PART_INSTALL/bin/docker-containerd-ctr"
+    after:
+      - ppa
     build-packages:
-      - golang-go
       - make
 
   runc:
@@ -132,16 +145,21 @@ parts:
     shell: bash
     shell-flags: ['-ex']
     shell-command: |
+      export GOROOT=/usr/lib/go-1.7
+      export PATH="$GOROOT/bin:$PATH"
+      go version
+
       mkdir -p .gopath/src/github.com/opencontainers
       ln -sfT "$PWD" .gopath/src/github.com/opencontainers/runc
       export GOPATH="$PWD/.gopath"
       
       make BUILDTAGS='seccomp apparmor selinux' COMMIT=
       
-      install -d "$DESTDIR/bin"
-      install -T runc "$DESTDIR/bin/docker-runc"
+      install -d "$SNAPCRAFT_PART_INSTALL/bin"
+      install -T runc "$SNAPCRAFT_PART_INSTALL/bin/docker-runc"
+    after:
+      - ppa
     build-packages:
-      - golang-go
       - libapparmor-dev
       - libseccomp-dev
       - make
@@ -150,10 +168,5 @@ parts:
     plugin: python2
     source: https://github.com/docker/compose/archive/1.10.0.tar.gz
     source-type: tar
-
-  help:
-    plugin: dump
-    organize:
-      'src/help': bin/
 
 # vim:set et ts=2 sw=2:
