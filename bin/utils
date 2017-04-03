@@ -1,0 +1,17 @@
+#!/bin/sh
+
+launchpad_proxy_server=snap-proxy.launchpad.net
+
+unset_launchpad_proxy() {
+    case "$http_proxy" in  
+        *$launchpad_proxy_server*)
+        unset http_proxy
+        ;;  
+    esac
+
+    case "$https_proxy" in  
+        *$launchpad_proxy_server*)
+        unset https_proxy
+        ;;  
+    esac
+}
