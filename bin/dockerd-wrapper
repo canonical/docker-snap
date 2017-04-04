@@ -1,8 +1,6 @@
 #!/bin/sh
 set -e
 
-. $SNAP/bin/utils
-
 default_socket_group=docker
 
 workaround_lp1626019() {
@@ -60,7 +58,5 @@ set -- \
 workaround_lp1626019
 
 workaround_lp1606510
-
-unset_launchpad_proxy
 
 exec docker daemon -G $default_socket_group "$@"
