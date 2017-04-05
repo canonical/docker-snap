@@ -164,6 +164,36 @@ parts:
       - libseccomp-dev
       - make
 
+  libnetwork:
+    plugin: shell
+    source: https://github.com/docker/libnetwork/archive/0f534354b813003a754606689722fe253101bc4e.tar.gz
+    source-type: tar
+    shell: bash
+    shell-flags: ['-ex']
+    shell-command: |
+      export GOROOT=/usr/lib/go-1.7
+      export PATH="$GOROOT/bin:$PATH"
+      go version
+
+      mkdir -p .gopath/src/github.com/docker
+      ln -sfT "$PWD" .gopath/src/github.com/docker/libnetwork
+      export GOPATH="$PWD/.gopath"
+
+      go get github.com/tools/godep
+      export PATH="$GOPATH/bin/:$PATH"
+      godep version
+
+      make build-local
+
+      install -d "$SNAPCRAFT_PART_INSTALL/bin"
+      install -T bin/docker-proxy "$SNAPCRAFT_PART_INSTALL/bin/docker-proxy"
+      install -T bin/dnet "$SNAPCRAFT_PART_INSTALL/bin/dnet"
+    after:
+      - ppa
+    build-packages:
+      - iptables
+      - make
+
   compose:
     plugin: python2
     source: https://github.com/docker/compose/archive/1.10.0.tar.gz
