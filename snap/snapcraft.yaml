@@ -195,7 +195,8 @@ parts:
       - make
 
   compose:
-    plugin: python2
+    plugin: python
+    python-version: python2
     source: https://github.com/docker/compose/archive/1.10.0.tar.gz
     source-type: tar
 
