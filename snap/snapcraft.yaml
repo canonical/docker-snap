@@ -34,6 +34,7 @@ apps:
       - firewall-control
       - support
       - privileged
+      - account-control
     slots:
       - docker-daemon
 
@@ -56,7 +57,6 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -t "$SNAPCRAFT_PART_INSTALL/bin" "$SNAPDIR"/bin/*
     stage-packages:
-      #- adduser
       - mount
 
   ppa:
