@@ -72,4 +72,4 @@ workaround_lp1626019
 
 workaround_lp1606510
 
-exec docker daemon -G $default_socket_group "$@"
+exec dockerd -G $default_socket_group "$@"

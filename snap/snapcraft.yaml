@@ -59,17 +59,18 @@ parts:
     stage-packages:
       - mount
 
-  ppa:
-    plugin: shell
-    shell: bash
-    shell-flags: ['-ex']
-    shell-command: |
-      apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F1831DDAFC42E99D
-      add-apt-repository ppa:jonathonf/golang-1.7
-      apt update
-      apt install -y golang-1.7
+  go:
+    plugin: gobuild
+    source: https://storage.googleapis.com/golang/go1.7.5.src.tar.gz
+    source-type: tar
+    snap:
+      - -*
     build-packages:
-      - software-properties-common
+      - golang-go
+      - rsync
+      - build-essential
+      - netbase
+      - python3-pyelftools
 
   docker:
     plugin: shell
@@ -78,7 +79,7 @@ parts:
     shell: bash
     shell-flags: ['-eux', '-o', 'pipefail']
     shell-command: |
-      export GOROOT=/usr/lib/go-1.7
+      export GOROOT="$SNAPDIR/parts/go/install"
       export PATH="$GOROOT/bin:$PATH"
       go version
 
@@ -99,7 +100,7 @@ parts:
       install -T "$(readlink -f "$clientBin")" "$SNAPCRAFT_PART_INSTALL/bin/docker"
       install -T "$(readlink -f "$daemonBin")" "$SNAPCRAFT_PART_INSTALL/bin/dockerd"
     after:
-      - ppa
+      - go
     build-packages:
       - btrfs-tools
       - gcc
@@ -119,7 +120,7 @@ parts:
     shell: bash
     shell-flags: ['-ex']
     shell-command: |
-      export GOROOT=/usr/lib/go-1.7
+      export GOROOT="$SNAPDIR/parts/go/install"
       export PATH="$GOROOT/bin:$PATH"
       go version
 
@@ -134,7 +135,7 @@ parts:
       install -T bin/containerd-shim "$SNAPCRAFT_PART_INSTALL/bin/docker-containerd-shim"
       install -T bin/ctr "$SNAPCRAFT_PART_INSTALL/bin/docker-containerd-ctr"
     after:
-      - ppa
+      - go
     build-packages:
       - make
 
@@ -145,7 +146,7 @@ parts:
     shell: bash
     shell-flags: ['-ex']
     shell-command: |
-      export GOROOT=/usr/lib/go-1.7
+      export GOROOT="$SNAPDIR/parts/go/install"
       export PATH="$GOROOT/bin:$PATH"
       go version
 
@@ -158,7 +159,7 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T runc "$SNAPCRAFT_PART_INSTALL/bin/docker-runc"
     after:
-      - ppa
+      - go
     build-packages:
       - libapparmor-dev
       - libseccomp-dev
@@ -172,7 +173,7 @@ parts:
     shell: bash
     shell-flags: ['-ex']
     shell-command: |
-      export GOROOT=/usr/lib/go-1.7
+      export GOROOT="$SNAPDIR/parts/go/install"
       export PATH="$GOROOT/bin:$PATH"
       go version
 
@@ -190,7 +191,7 @@ parts:
       install -T bin/docker-proxy "$SNAPCRAFT_PART_INSTALL/bin/docker-proxy"
       install -T bin/dnet "$SNAPCRAFT_PART_INSTALL/bin/dnet"
     after:
-      - ppa
+      - go
     build-packages:
       - iptables
       - make
