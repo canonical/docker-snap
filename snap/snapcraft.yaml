@@ -61,15 +61,13 @@ apps:
     command: help
 
 parts:
-  snappy-bins:
-    plugin: shell
-    shell: bash
-    shell-flags: ['-ex']
-    shell-command: |
-      install -d "$SNAPCRAFT_PART_INSTALL/bin"
-      install -t "$SNAPCRAFT_PART_INSTALL/bin" "$SNAPDIR"/bin/*
+  wrapper-scripts:
+    plugin: dump
+    source: .
     stage-packages:
       - mount
+    stage:
+      - bin/*
 
   go:
     source-tag: go1.10.2
