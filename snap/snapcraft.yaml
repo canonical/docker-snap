@@ -72,17 +72,8 @@ parts:
       - mount
 
   go:
-    plugin: gobuild
-    source: https://storage.googleapis.com/golang/go1.8.3.src.tar.gz
-    source-type: tar
-    snap:
-      - -*
-    build-packages:
-      - golang-go
-      - rsync
-      - netbase
-      - python3-pyelftools
-
+    source-tag: go1.10.2
+    source-depth: 1
   docker:
     plugin: shell
     source: https://github.com/docker/docker-ce/archive/v17.06.2-ce.tar.gz
