@@ -4,3 +4,5 @@
 /stage
 /snap/plugins/__pycache__/
 /snap/.snapcraft/
+
+*.bz2
