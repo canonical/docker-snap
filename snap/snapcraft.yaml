@@ -25,7 +25,7 @@ slots:
 
 apps:
   docker:
-    command: docker-wrapper docker
+    command: docker
     plugs:
       - docker-cli
       - network
@@ -45,13 +45,13 @@ apps:
 
   # TODO determine if we can "provide" a "docker-compose" in PATH directly (since this'll show up as "docker.compose" in the user PATH)
   compose:
-    command: docker-wrapper docker-compose
+    command: docker-compose
     plugs:
       - docker-cli
       - network
       - home
   machine:
-    command: docker-wrapper docker-machine
+    command: docker-machine
     plugs:
       - docker-cli
       - network
