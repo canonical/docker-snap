@@ -31,7 +31,7 @@ apps:
     command: docker
     completer: bin/docker-completion.sh
     plugs:
-      - docker-support
+      - docker-cli
       - network
       - home
 
