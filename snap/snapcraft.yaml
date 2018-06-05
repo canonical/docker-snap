@@ -74,8 +74,9 @@ parts:
     source-depth: 1
   docker:
     plugin: shell
-    source: https://github.com/docker/docker-ce/archive/v17.06.2-ce.tar.gz
-    source-type: tar
+    source: https://github.com/docker/docker-ce.git
+    source-tag: v18.05.0-ce
+    source-depth: 1
     shell: bash
     shell-flags: ['-eux', '-o', 'pipefail']
     shell-command: |
@@ -120,19 +121,18 @@ parts:
       - aufs-tools
 
   containerd:
-    plugin: shell
-    # from  https://github.com/docker/docker-ce/blob/v17.06.2-ce/components/engine/hack/dockerfile/binaries-commits
-    source: https://github.com/containerd/containerd/archive/6e23458c129b551d5c9871e5174f6b1b7f6d1170.tar.gz
-    source-type: tar
-    shell: bash
-    shell-flags: ['-ex']
-    shell-command: |
-      export GOROOT="$SNAPDIR/parts/go/install"
-      export PATH="$GOROOT/bin:$PATH"
-
-      mkdir -p .gopath/src/github.com/containerd
-      ln -sfT "$PWD" .gopath/src/github.com/containerd/containerd
-      export GOPATH="$PWD/.gopath"
+    plugin: go
+    source: https://github.com/containerd/containerd.git
+    # from : https://github.com/docker/docker-ce/blob/v18.05.0-ce/components/engine/hack/dockerfile/install/containerd.installer
+    source-commit: 773c489c9c1b21a6d78b5c538cd395416ec50f88
+    go-importpath: github.com/containerd/containerd
+    override-build: |
+      export GOPATH=$(readlink -f $(pwd)/../go)
+      export GOIMPORTPATH=$GOPATH/src/github.com/containerd/containerd/
+      export PATH="$GOPATH/bin:$PATH"
+      mkdir -p $GOIMPORTPATH
+      cp -r ./* $GOIMPORTPATH
+      cd $GOIMPORTPATH
 
       make GIT_COMMIT= GIT_BRANCH= LDFLAGS=
 
@@ -147,9 +147,9 @@ parts:
 
   runc:
     plugin: shell
-    # from  https://github.com/docker/docker-ce/blob/v17.06.2-ce/components/engine/hack/dockerfile/binaries-commits
-    source: https://github.com/opencontainers/runc/archive/810190ceaa507aa2727d7ae6f4790c76ec150bd2.tar.gz
-    source-type: tar
+    source: https://github.com/opencontainers/runc.git
+    # from https://github.com/docker/docker-ce/blob/v18.05.0-ce/components/engine/hack/dockerfile/install/runc.installer
+    source-commit: 4fc53a81fb7c994640722ac585fa9ca548971871
     shell: bash
     shell-flags: ['-ex']
     shell-command: |
@@ -175,9 +175,9 @@ parts:
 
   libnetwork:
     plugin: shell
-    # from  https://github.com/docker/docker-ce/blob/v17.06.2-ce/components/engine/hack/dockerfile/binaries-commits
-    source: https://github.com/docker/libnetwork/archive/7b2b1feb1de4817d522cc372af149ff48d25028e.tar.gz
-    source-type: tar
+    source: https://github.com/docker/libnetwork.git
+    # from https://github.com/docker/docker-ce/blob/v18.05.0-ce/components/engine/hack/dockerfile/install/proxy.installer
+    source-commit: c15b372ef22125880d378167dde44f4b134e1a77
     shell: bash
     shell-flags: ['-ex']
     shell-command: |
@@ -205,7 +205,7 @@ parts:
     plugin: cmake
     source: https://github.com/krallin/tini.git
     source-type: git
-    # from  https://github.com/docker/docker-ce/blob/v17.06.2-ce/components/engine/hack/dockerfile/binaries-commits
+    # from https://github.com/docker/docker-ce/blob/v18.05.0-ce/components/engine/hack/dockerfile/install/tini.installer
     source-commit: 949e6facb77383876aeff8a6944dde66b3089574
     organize:
       'bin/tini-static': bin/docker-init
