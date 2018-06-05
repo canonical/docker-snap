@@ -27,7 +27,7 @@ apps:
   docker:
     command: docker
     plugs:
-      - docker-cli
+      - docker-support
       - network
       - home
 
