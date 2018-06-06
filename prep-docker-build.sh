@@ -7,11 +7,7 @@
 
 for patch in "$SNAPDIR"/patches/*.patch; do
 	echo "Applying $(basename "$patch") ..."
-	patch \
-		--batch \
-		--forward \
-		--strip 1 \
-		--input "$patch"
+	git apply --ignore-space-change --ignore-whitespace "$patch"
 	echo
 done
 

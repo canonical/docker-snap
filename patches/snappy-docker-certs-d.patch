@@ -1,33 +1,30 @@
-diff --git a/components/engine/registry/config_unix.go b/components/engine/registry/config_unix.go
-index fdc39a1..655bdb5 100644
---- a/components/engine/registry/config_unix.go
-+++ b/components/engine/registry/config_unix.go
-@@ -3,14 +3,29 @@
- package registry
+diff --git a/components/cli/vendor/github.com/docker/docker/registry/config_unix.go b/components/cli/vendor/github.com/docker/docker/registry/config_unix.go
+index 20fb47bcae..cbf1f83312 100644
+--- a/components/cli/vendor/github.com/docker/docker/registry/config_unix.go
++++ b/components/cli/vendor/github.com/docker/docker/registry/config_unix.go
+@@ -2,11 +2,26 @@
  
- import (
-+	"os"
+ package registry // import "github.com/docker/docker/registry"
+ 
++import "os"
 +
- 	"github.com/spf13/pflag"
- )
- 
  var (
- 	// CertsDir is the directory where certificates are stored
--	CertsDir = "/etc/docker/certs.d"
-+	CertsDir = defaultCertificatesDirectory()
+        // CertsDir is the directory where certificates are stored
+-       CertsDir = "/etc/docker/certs.d"
++       CertsDir = defaultCertificatesDirectory()
  )
  
 +func defaultCertificatesDirectory() string {
-+	// Ubuntu Snappy has read-only /etc
-+	if snapCommon := os.Getenv("SNAP_COMMON"); snapCommon != "" {
-+		// Ubuntu Snappy 16.04+
-+		return snapCommon + "/etc/certs.d"
-+	} else if snapAppDataPath := os.Getenv("SNAP_APP_DATA_PATH"); snapAppDataPath != "" {
-+		// Ubuntu Snappy 15.04
-+		return snapAppDataPath + "/etc/certs.d"
-+	}
++       // Ubuntu Snappy has read-only /etc
++       if snapCommon := os.Getenv("SNAP_COMMON"); snapCommon != "" {
++               // Ubuntu Snappy 16.04+
++               return snapCommon + "/etc/certs.d"
++       } else if snapAppDataPath := os.Getenv("SNAP_APP_DATA_PATH"); snapAppDataPath != "" {
++               // Ubuntu Snappy 15.04
++               return snapAppDataPath + "/etc/certs.d"
++       }
 +
-+	return "/etc/docker/certs.d"
++       return "/etc/docker/certs.d"
 +}
 +
  // cleanPath is used to ensure that a directory name is valid on the target

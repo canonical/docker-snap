@@ -1,8 +1,8 @@
 diff --git a/components/engine/profiles/apparmor/template.go b/components/engine/profiles/apparmor/template.go
-index c5ea458..5dccda5 100644
+index c00a3f70e9..bf46d234e3 100644
 --- a/components/engine/profiles/apparmor/template.go
 +++ b/components/engine/profiles/apparmor/template.go
-@@ -42,5 +42,16 @@ profile {{.Name}} flags=(attach_disconnected,mediate_deleted) {
+@@ -40,5 +40,16 @@ profile {{.Name}} flags=(attach_disconnected,mediate_deleted) {
    # suppress ptrace denials when using 'docker ps' or using 'ps' inside a container
    ptrace (trace,read) peer={{.Name}},
  {{end}}
