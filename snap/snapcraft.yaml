@@ -7,8 +7,6 @@ confinement: strict
 grade: stable
 
 plugs:
-  support:
-    interface: docker-support
   privileged:
     interface: docker-support
     privileged-containers: true
@@ -30,14 +28,13 @@ apps:
       - docker-support
       - network
       - home
-
   dockerd:
     command: dockerd-wrapper
     daemon: simple
     plugs:
       - network-bind
       - firewall-control
-      - support
+      - docker-support
       - privileged
       - home
     slots:
