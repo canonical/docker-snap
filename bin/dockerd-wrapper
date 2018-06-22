@@ -49,18 +49,16 @@ mkdir -p \
 	"$SNAP_DATA/run" \
 	"$SNAP_DATA/run/docker" \
 	"$SNAP_COMMON/var-lib-docker"
-set -- \
-	--debug \
-	--log-level=debug \
-	\
-	--exec-root="$SNAP_DATA/run/docker" \
-	--graph="$SNAP_COMMON/var-lib-docker" \
-	--pidfile="$SNAP_DATA/run/docker.pid" \
-	\
-	"$@"
 
 workaround_lp1606510
 
 workaround_apparmor_profile_reload
 
-exec dockerd -G $default_socket_group "$@"
+exec dockerd \
+	-G $default_socket_group \
+	--exec-root="$SNAP_DATA/run/docker" \
+	--data-root="$SNAP_COMMON/var-lib-docker" \
+	--pidfile="$SNAP_DATA/run/docker.pid" \
+	--config-file="$SNAP_COMMON/config/daemon.json" \
+	--debug \
+	"$@"

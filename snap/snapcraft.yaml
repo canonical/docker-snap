@@ -65,7 +65,7 @@ parts:
       - mount
     stage:
       - bin/*
-
+      - config/*
   go:
     source-tag: go1.10.2
     source-depth: 1
