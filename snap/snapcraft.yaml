@@ -24,6 +24,7 @@ slots:
 apps:
   docker:
     command: docker
+    completer: bin/docker-completion.sh
     plugs:
       - docker-support
       - network
@@ -103,6 +104,7 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T "$(readlink -f "$clientBin")" "$SNAPCRAFT_PART_INSTALL/bin/docker"
       install -T "$(readlink -f "$daemonBin")" "$SNAPCRAFT_PART_INSTALL/bin/dockerd"
+      install -T components/cli/contrib/completion/bash/docker "$SNAPCRAFT_PART_INSTALL/bin/docker-completion.sh"
     after:
       - go
     build-packages:
