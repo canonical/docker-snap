@@ -117,6 +117,7 @@ parts:
       - git
       - pkg-config
     stage-packages:
+      - zfsutils-linux
       - aufs-tools
 
   containerd:
