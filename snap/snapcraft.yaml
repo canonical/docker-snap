@@ -70,6 +70,8 @@ parts:
   go:
     source-tag: go1.10.2
     source-depth: 1
+    after: 
+      - wrapper-scripts
   docker:
     plugin: shell
     source: https://github.com/docker/docker-ce.git
