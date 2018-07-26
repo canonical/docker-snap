@@ -212,6 +212,8 @@ parts:
     source-commit: 949e6facb77383876aeff8a6944dde66b3089574
     organize:
       'bin/tini-static': bin/docker-init
+    build-packages:
+      - build-essential
     prime:
       - -bin/tini
 
