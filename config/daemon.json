@@ -1,5 +1,5 @@
 {
-    "log-level":        "debug",
+    "log-level":        "error",
     "storage-driver":   "aufs"
 }
   
