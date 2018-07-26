@@ -1,11 +1,10 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # should be sourced from snapcraft.yaml while building Docker
+# the necessary patches should be staged into $SNAPCRAFT_STAGE/patches
 # current working directory should be the Docker source directory
-# SNAPDIR should be set to the root of this Git repo
-#   (the directory of snapcraft.yml)
 
-for patch in "$SNAPDIR"/patches/*.patch; do
+for patch in "$SNAPCRAFT_STAGE"/patches/*.patch; do
 	echo "Applying $(basename "$patch") ..."
 	git apply --ignore-space-change --ignore-whitespace "$patch"
 	echo

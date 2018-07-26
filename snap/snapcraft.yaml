@@ -66,7 +66,13 @@ parts:
       - mount
     stage:
       - bin/*
-      - config/*
+      - patches/*
+      - config/daemon.json
+    prime:
+      - -bin/prep-docker-build.sh
+      - -bin/go-build-helper.sh
+      - -patches/*
+      - bin/*
       - config/daemon.json
   go:
     source-tag: go1.10.2
@@ -74,40 +80,38 @@ parts:
     after: 
       - wrapper-scripts
   docker:
-    plugin: shell
+    plugin: make
     source: https://github.com/docker/docker-ce.git
     source-tag: v18.05.0-ce
     source-depth: 1
-    shell: bash
-    shell-flags: ['-eux', '-o', 'pipefail']
-    shell-command: |
-      export GOROOT="$SNAPDIR/parts/go/install"
-      export PATH="$GOROOT/bin:$PATH"
+    override-build: |
+      # set -x
+      # docker build specific environment variables
       export VERSION=$(cat VERSION)
       export DOCKER_GITCOMMIT=$(git rev-parse --short HEAD)
       export GITCOMMIT=$DOCKER_GITCOMMIT
-      go version
+      export DISABLE_WARN_OUTSIDE_CONTAINER=1
 
-      source "$SNAPDIR/prep-docker-build.sh"
-      pushd ./components/engine
+      # this patches the docker sources
+      . "$SNAPCRAFT_STAGE/bin/prep-docker-build.sh"
+
+      # setup the go build environment for docker-ce
+      . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
+      gopartbootstrap github.com/docker/docker-ce
+
+      # build the dockerd binary
+      cd components/engine
       ./hack/make.sh dynbinary
-      popd
-      ls -l ./components/engine/bundles/latest/*/
+      cd $GOIMPORTPATH
 
-      mkdir -p .gopath/src/github.com/docker
-      export GOPATH="$PWD/.gopath"
       unset LDFLAGS
-      ln -s "$PWD/components/cli" .gopath/src/github.com/docker/cli
-      make -C .gopath/src/github.com/docker/cli dynbinary
+      ln -s "$(pwd)/components/cli" $GOPATH/src/github.com/docker/cli
+      make -C $GOPATH/src/github.com/docker/cli dynbinary
 
-      clientBin='.gopath/src/github.com/docker/cli/build/docker'
-      daemonBin='components/engine/bundles/latest/dynbinary-daemon/dockerd'
-      "$clientBin" -v
-      "$daemonBin" -v
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
-      install -T "$(readlink -f "$clientBin")" "$SNAPCRAFT_PART_INSTALL/bin/docker"
-      install -T "$(readlink -f "$daemonBin")" "$SNAPCRAFT_PART_INSTALL/bin/dockerd"
-      install -T components/cli/contrib/completion/bash/docker "$SNAPCRAFT_PART_INSTALL/bin/docker-completion.sh"
+      install -T "$GOPATH/src/github.com/docker/cli/build/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker"
+      install -T "$GOPATH/src/github.com/docker/docker-ce/components/engine/bundles/latest/dynbinary-daemon/dockerd" "$SNAPCRAFT_PART_INSTALL/bin/dockerd"
+      install -T "$GOPATH/src/github.com/docker/docker-ce/components/cli/contrib/completion/bash/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker-completion.sh"
     after:
       - go
     build-packages:
@@ -124,18 +128,14 @@ parts:
       - aufs-tools
 
   containerd:
-    plugin: go
+    plugin: make
     source: https://github.com/containerd/containerd.git
     # from : https://github.com/docker/docker-ce/blob/v18.05.0-ce/components/engine/hack/dockerfile/install/containerd.installer
     source-commit: 773c489c9c1b21a6d78b5c538cd395416ec50f88
-    go-importpath: github.com/containerd/containerd
     override-build: |
-      export GOPATH=$(readlink -f $(pwd)/../go)
-      export GOIMPORTPATH=$GOPATH/src/github.com/containerd/containerd/
-      export PATH="$GOPATH/bin:$PATH"
-      mkdir -p $GOIMPORTPATH
-      cp -r ./* $GOIMPORTPATH
-      cd $GOIMPORTPATH
+      # setup the go build environment for containerd
+      . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
+      gopartbootstrap github.com/containerd/containerd
 
       make GIT_COMMIT= GIT_BRANCH= LDFLAGS=
 
@@ -149,23 +149,16 @@ parts:
       - make
 
   runc:
-    plugin: shell
+    plugin: make
     source: https://github.com/opencontainers/runc.git
     # from https://github.com/docker/docker-ce/blob/v18.05.0-ce/components/engine/hack/dockerfile/install/runc.installer
     source-commit: 4fc53a81fb7c994640722ac585fa9ca548971871
-    shell: bash
-    shell-flags: ['-ex']
-    shell-command: |
-      export GOROOT="$SNAPDIR/parts/go/install"
-      export PATH="$GOROOT/bin:$PATH"
-      go version
+    override-build: |
+      # setup the go build environment for runc
+      . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
+      gopartbootstrap github.com/opencontainers/runc
 
-      mkdir -p .gopath/src/github.com/opencontainers
-      ln -sfT "$PWD" .gopath/src/github.com/opencontainers/runc
-      export GOPATH="$PWD/.gopath"
-      pushd .gopath/src/github.com/opencontainers/runc
       make BUILDTAGS='seccomp apparmor selinux' COMMIT=
-      popd
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T runc "$SNAPCRAFT_PART_INSTALL/bin/docker-runc"
@@ -177,23 +170,16 @@ parts:
       - make
 
   libnetwork:
-    plugin: shell
+    plugin: make
     source: https://github.com/docker/libnetwork.git
     # from https://github.com/docker/docker-ce/blob/v18.05.0-ce/components/engine/hack/dockerfile/install/proxy.installer
     source-commit: c15b372ef22125880d378167dde44f4b134e1a77
-    shell: bash
-    shell-flags: ['-ex']
-    shell-command: |
-      export GOROOT="$SNAPDIR/parts/go/install"
-      export PATH="$GOROOT/bin:$PATH"
+    override-build: |
+      # setup the go build environment for libnetwork
+      . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
+      gopartbootstrap github.com/docker/libnetwork
 
-      mkdir -p .gopath/src/github.com/docker
-      ln -sfT "$PWD" .gopath/src/github.com/docker/libnetwork
-      export GOPATH="$PWD/.gopath"
-
-      pushd .gopath/src/github.com/docker/libnetwork
       make build-local
-      popd
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T bin/docker-proxy "$SNAPCRAFT_PART_INSTALL/bin/docker-proxy"
@@ -225,23 +211,15 @@ parts:
     source-depth: 1
 
   machine:
-    plugin: shell
+    plugin: make
     source: https://github.com/docker/machine/archive/v0.12.2.tar.gz
     source-type: tar
-    shell: bash
-    shell-flags: ['-eux', '-o', 'pipefail']
-    shell-command: |
-      export GOROOT="$SNAPDIR/parts/go/install"
-      export PATH="$GOROOT/bin:$PATH"
-      go version
+    override-build: |
+      # setup the go build environment for docker machine
+      . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
+      gopartbootstrap github.com/docker/machine
 
-      mkdir -p .gopath/src/github.com/docker
-      ln -sfT "$PWD" .gopath/src/github.com/docker/machine
-      export GOPATH="$PWD/.gopath"
-
-      pushd .gopath/src/github.com/docker/machine
       make build
-      popd
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T bin/docker-machine "$SNAPCRAFT_PART_INSTALL/bin/docker-machine"
