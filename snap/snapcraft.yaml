@@ -67,6 +67,7 @@ parts:
     stage:
       - bin/*
       - config/*
+      - config/daemon.json
   go:
     source-tag: go1.10.2
     source-depth: 1
