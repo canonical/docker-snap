@@ -85,7 +85,6 @@ parts:
     source-tag: v18.05.0-ce
     source-depth: 1
     override-build: |
-      # set -x
       # docker build specific environment variables
       export VERSION=$(cat VERSION)
       export DOCKER_GITCOMMIT=$(git rev-parse --short HEAD)
