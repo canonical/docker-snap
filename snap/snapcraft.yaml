@@ -6,7 +6,10 @@ description: Docker complements kernel namespacing with a high-level API which o
 confinement: strict
 grade: stable
 
+
 plugs:
+  home:
+    read: all
   privileged:
     interface: docker-support
     privileged-containers: true
