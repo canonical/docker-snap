@@ -2,4 +2,3 @@
     "log-level":        "error",
     "storage-driver":   "aufs"
 }
-  
