@@ -8,27 +8,34 @@ This repository contains the source for the `docker` snap package.  The package 
 
 To install the latest stable release of Docker CE using `snap`:
 
-    $ sudo snap install docker
-
+```
+$ sudo snap install docker
+```
 
 If you are using Ubuntu Core 16,
 
 * Connect the `docker:home` plug as it's not auto-connected by default:
 
-    $ sudo snap connect docker:home
+```
+$ sudo snap connect docker:home
+```
 
 If you are using an alternative snap-compatible Linux distribution ("classic" in snap lingo), and would like to run `docker` as a normal user:
 
 * Create and join the `docker` group.
 
-    $ sudo addgroup --system docker
-    $ sudo adduser $USER docker
-    $ newgrp docker
+```
+$ sudo addgroup --system docker
+$ sudo adduser $USER docker
+$ newgrp docker
+```
 
 * You will also need to disable and re-enable the `docker` snap if you added the group while it was running.
 
-    $ sudo snap disable docker
-    $ sudo snap enable docker
+```
+$ sudo snap disable docker
+$ sudo snap enable docker
+```
 
 ## Usage
 
@@ -51,38 +58,48 @@ Developing the `docker` snap package is typically performed on a "classic" Ubunt
 
 * Install the snap tooling (requires `snapd>2.21` and `snapcraft>=2.26`):
 
-    $ sudo apt-get install snapd snapcraft
-    $ sudo snap install core
+```
+$ sudo apt-get install snapd snapcraft
+$ sudo snap install core
+```
 
 * Checkout this repository and build the `docker` snap package:
 
-    $ git clone https://github.com/docker/docker-snap
-    $ cd docker-snap
-    $ sudo snapcraft
+```
+$ git clone https://github.com/docker/docker-snap
+$ cd docker-snap
+$ sudo snapcraft
+```
 
 * Install the newly-created snap package:
 
-    $ sudo snap install --dangerous docker_[VER]_[ARCH].snap
+```
+$ sudo snap install --dangerous docker_[VER]_[ARCH].snap
+```
 
 * Manually connect the relevant plugs and slots which are not auto-connected:
 
-    $ sudo snap connect docker:privileged :docker-support
-    $ sudo snap connect docker:support :docker-support
-    $ sudo snap connect docker:firewall-control :firewall-control
-    $ sudo snap connect docker:docker-cli docker:docker-daemon
-    $ sudo snap disable docker
-    $ sudo snap enable docker
+```
+$ sudo snap connect docker:privileged :docker-support
+$ sudo snap connect docker:support :docker-support
+$ sudo snap connect docker:firewall-control :firewall-control
+$ sudo snap connect docker:docker-cli docker:docker-daemon
+$ sudo snap disable docker
+$ sudo snap enable docker
+```
 
   You should end up with output similar to:
 
-    $ sudo snap interfaces docker
-      Slot                  Plug
-      :docker-support       docker:privileged,docker:support
-      :firewall-control     docker
-      :home                 docker
-      :network              docker
-      :network-bind         docker
-      docker:docker-daemon  docker:docker-cli
+```
+$ sudo snap interfaces docker
+    Slot                  Plug
+    :docker-support       docker:privileged,docker:support
+    :firewall-control     docker
+    :home                 docker
+    :network              docker
+    :network-bind         docker
+    docker:docker-daemon  docker:docker-cli
+```
 
 ## Testing
 We rely on spread (https://github.com/snapcore/spread) to run full-system test on Ubuntu Core 16. We also provide a utility script (run-spread-test.sh) to launch the spread test. It will
