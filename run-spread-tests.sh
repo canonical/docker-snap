@@ -73,7 +73,7 @@ if [ ! -e $SPREAD_QEMU_PATH/$image_name ] || [ $force_new_image -eq 1 ] ; then
 	echo "INFO: Creating new qemu test image ..."
 	(cd spread/image ; sudo ./create-image.sh $channel)
 	mkdir -p $SPREAD_QEMU_PATH
-	mv -f spread/image/ubuntu-core-16.img $SPREAD_QEMU_PATH/$image_name
+	mv -f spread/image/$image_name $SPREAD_QEMU_PATH/$image_name
 fi
 
 # We currently only run spread tests but we could do other things
