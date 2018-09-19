@@ -1,5 +1,7 @@
 #!/bin/bash
 
+apt update && apt install jq -y
+
 # We don't have to build a snap when we should use one from a
 # channel
 if [ -n "$SNAP_CHANNEL" ] ; then

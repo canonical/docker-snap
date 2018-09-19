@@ -41,6 +41,17 @@ else
     snap connect docker:network-bind :network-bind
     snap connect docker:docker-cli docker:docker-daemon
     snap connect docker:home :home
+
+	# finally we also need to adjust docker's storage driver to be overlay
+	# and also set the log level to debug
+	CONFIG_FILE=/var/snap/docker/current/config/daemon.json
+	echo "updating daemon config file options"
+	echo "before:"
+	cat $CONFIG_FILE
+	jq '."storage-driver" = "overlay" | ."log-level" = "debug"' $CONFIG_FILE > $CONFIG_FILE
+	echo "after:"
+	cat $CONFIG_FILE
+	snap restart docker
 fi
 
 # Remove any existing state archive from other test suites
