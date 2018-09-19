@@ -1,6 +1,12 @@
 #!/bin/bash
 
+# install jq
 apt update && apt install jq -y
+
+# make the docker group
+sudo addgroup --system docker
+sudo adduser $USER docker
+newgrp docker
 
 # We don't have to build a snap when we should use one from a
 # channel
