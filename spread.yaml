@@ -23,11 +23,35 @@ environment:
     SNAP_CHANNEL: $(HOST:echo $SNAP_CHANNEL)
 
 backends:
-    qemu:
+    adhoc:
+        allocate: |
+            VM_NAME=docker-snap-spread-kvm-$SPREAD_SYSTEM
+            # configure the script to contain the password in it - the environment variables here
+            # won't be available inside the VM when the script runs
+            sed "s/SPREAD_PASSWORD/$SPREAD_PASSWORD/" spread/lib/setup-root-ssh-uvt.sh.in > spread/lib/setup-root-ssh-uvt.sh
+            case $SPREAD_SYSTEM in
+                ubuntu-18.04)
+                    RELEASE=bionic;;
+                ubuntu-16.04)
+                    RELEASE=xenial;;
+                *)
+                    FATAL "unsupported uvt-kvm release: $SPREAD_SYSTEM";;
+            esac
+            # TODO: fix this for non-amd64 systems
+            uvt-simplestreams-libvirt sync arch=amd64 release=$RELEASE
+            uvt-kvm create $VM_NAME release=$RELEASE --run-script-once spread/lib/setup-root-ssh-uvt.sh
+            # remove the script so we don't leave it lying around with the password in it
+            rm spread/lib/setup-root-ssh-uvt.sh
+            # wait for the machine to come alive
+            uvt-kvm wait $VM_NAME
+            # now get the address
+            ADDRESS $(uvt-kvm ip $VM_NAME)
+        discard: |
+            trap '' 2
+            uvt-kvm destroy docker-snap-spread-kvm-$SPREAD_SYSTEM
+            trap
         systems:
-            - ubuntu-core-16:
-                username: test
-                password: test
+            - ubuntu-18.04
 
 # Put this somewhere where we have read-write access
 path: /home/docker
@@ -46,7 +70,7 @@ suites:
     spread/main/:
         summary: Full-system tests for the docker snap
         systems:
-            - ubuntu-core-16
+            - ubuntu-18.04
         prepare: |
             . $TESTSLIB/prepare.sh
         restore-each: |

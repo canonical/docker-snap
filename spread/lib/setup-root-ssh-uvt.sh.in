@@ -1,0 +1,14 @@
+#!/bin/bash -e
+
+# first change password for root user:
+echo 'root:SPREAD_PASSWORD' | sudo chpasswd
+
+# enable logging in using password and logging in as root
+sudo sed -i "s/^\s*#\?\s*\(PermitRootLogin\|PasswordAuthentication\)\>.*/\1 yes/" /etc/ssh/sshd_config
+
+# remove forced echo command for all root ssh sessions
+sudo sed -i "s@,command=\"echo 'Please login as the user \\\\\"ubuntu\\\\\" rather than the user \\\\\"root\\\\\".';echo;sleep 10\"@@" /root/.ssh/authorized_keys
+
+# finally restart ssh service
+sudo service sshd stop
+sudo service sshd start
