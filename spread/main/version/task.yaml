@@ -3,7 +3,7 @@ summary: Test docker snap basic information is correct.
 execute: |
     # docker snap version
     snap_ver=$(snap list | grep docker | awk '{print $2}' | cut -f 1,2 -d '-')
-    docker_ver=$(sudo docker version | grep Version | uniq | awk '{print $2}')
+    docker_ver=$(sudo docker version -f '{{.Server.Version}}')
     [ "$snap_ver" = "$docker_ver" ] || exit 1
 
     # cpu architures 
