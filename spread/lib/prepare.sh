@@ -1,26 +1,5 @@
 #!/bin/bash
 
-echo "Wait for firstboot change to be ready"
-while ! snap changes | grep -q "Done"; do
-	snap changes || true
-	snap change 1 || true
-	sleep 1
-done
-
-# echo "Ensure fundamental snaps are still present"
-# . $TESTSLIB/snap-names.sh
-# for name in $gadget_name $kernel_name $core_name; do
-# 	if ! snap list | grep -q $name ; then
-# 		echo "Not all fundamental snaps are available, all-snap image not valid"
-# 		echo "Currently installed snaps:"
-# 		snap list
-# 		exit 1
-# 	fi
-# done
-
-# echo "Kernel has a store revision"
-# snap list | grep ^${kernel_name} | grep -E " [0-9]+\s+canonical"
-
 # Pre-install docker
 if [ -n "$SNAP_CHANNEL" ] ; then
 	# Don't reinstall if we have it installed already
@@ -74,7 +53,3 @@ if [ ! -f $SPREAD_PATH/docker-state.tar.gz ] ; then
     tar czfP $SPREAD_PATH/docker-state.tar.gz /var/snap/docker
     sudo systemctl start snap.docker.dockerd
 fi
-
-# For debugging dump all snaps and connected slots/plugs
-snap list
-snap interfaces
