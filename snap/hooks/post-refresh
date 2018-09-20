@@ -1,0 +1,7 @@
+#!/bin/bash -e
+
+# copy the config file from $SNAP into $SNAP_DATA if it doesn't exist
+if [ ! -f "$SNAP_DATA/config/daemon.json" ]; then
+    mkdir -p "$SNAP_DATA/config"
+    cp "$SNAP/config/daemon.json" "$SNAP_DATA/config/daemon.json"
+fi
