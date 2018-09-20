@@ -13,8 +13,8 @@ else
 	# As we have a snap which we build locally its unasserted and therefore
 	# we don't have any snap-declarations in place and need to manually
 	# connect all plugs.
-	snap connect docker:privileged :docker-support
-    snap connect docker:docker-support
+    snap connect docker:privileged :docker-support
+    snap connect docker:support :docker-support
     snap connect docker:firewall-control :firewall-control
     snap connect docker:network :network
     snap connect docker:network-bind :network-bind
