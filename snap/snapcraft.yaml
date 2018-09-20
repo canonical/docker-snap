@@ -10,6 +10,8 @@ grade: stable
 plugs:
   home:
     read: all
+  support:
+    interface: docker-support
   privileged:
     interface: docker-support
     privileged-containers: true
@@ -32,13 +34,14 @@ apps:
       - docker-support
       - network
       - home
+
   dockerd:
     command: dockerd-wrapper
     daemon: simple
     plugs:
       - network-bind
       - firewall-control
-      - docker-support
+      - support
       - privileged
       - home
     slots:
