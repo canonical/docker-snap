@@ -29,6 +29,11 @@ slots:
 apps:
   docker:
     command: docker
+    environment:
+      GIT_TEMPLATE_DIR: $SNAP/share/git-core/templates
+      GIT_CONFIG_NOSYSTEM: "true"
+      GIT_EXEC_PATH: $SNAP/libexec/git-core
+      GIT_TEXTDOMAINDIR: $SNAP/usr/share/locale
     completer: bin/docker-completion.sh
     plugs:
       - docker-cli
@@ -131,6 +136,24 @@ parts:
     stage-packages:
       - zfsutils-linux
       - aufs-tools
+  # this part is so that things like `docker build -t foobar github.com/foo/bar` work
+  git:
+    source: https://github.com/git/git
+    source-type: git
+    source-tag: v2.19.0
+    source-depth: 1
+    plugin: autotools
+    configflags:
+      - --with-curl
+      - --with-expat
+    build-packages:
+        - gettext
+        - libssl-dev
+        - libexpat1-dev
+    stage-packages:
+        - gettext
+        - libcurl3
+        - libcurl4-openssl-dev
 
   containerd:
     plugin: make
