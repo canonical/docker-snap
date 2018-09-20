@@ -236,13 +236,14 @@ parts:
     plugin: python
     python-version: python2
     source: https://github.com/docker/compose.git
-    source-tag: 1.21.2
+    source-tag: 1.22.0
     source-depth: 1
 
   machine:
     plugin: make
-    source: https://github.com/docker/machine/archive/v0.12.2.tar.gz
-    source-type: tar
+    source: https://github.com/docker/machine.git
+    source-tag: v0.15.0
+    source-depth: 1
     override-build: |
       # setup the go build environment for docker machine
       . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
