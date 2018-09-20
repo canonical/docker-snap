@@ -32,8 +32,15 @@ else
 	# echo "after:"
 	# cat $CONFIG_FILE
 	snap restart docker	
+	MAX_DOCKER_TRIES=60
 	# wait for the docker daemon to finish coming online
-	sleep 10
+	until docker info; do
+		sleep 1
+		num_tries=$((num_tries+1))
+		if (( num_tries > MAX_DOCKER_TRIES )); then
+			ERROR "max tries waiting for docker daemon to come online"
+		fi
+	done 
 fi
 
 # Remove any existing state archive from other test suites
