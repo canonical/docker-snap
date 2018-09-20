@@ -23,12 +23,20 @@ environment:
     SNAP_CHANNEL: $(HOST:echo $SNAP_CHANNEL)
 
 backends:
-    adhoc:
+    uvt-kvm:
+        type: adhoc
         allocate: |
             VM_NAME=docker-snap-spread-kvm-$SPREAD_SYSTEM
+            if [ ! -z $(uvt-kvm list | grep $VM_NAME) ]; then
+                FATAL "uvt-kvm machine with domain $VM_NAME already exists, please destroy before continuing"
+            fi
             # configure the script to contain the password in it - the environment variables here
             # won't be available inside the VM when the script runs
-            sed "s/SPREAD_PASSWORD/$SPREAD_PASSWORD/" spread/lib/setup-root-ssh-uvt.sh.in > spread/lib/setup-root-ssh-uvt.sh
+            SCRIPT_DIR=$(mktemp -d)
+            sed "s/SPREAD_PASSWORD/$SPREAD_PASSWORD/" spread/lib/setup-root-ssh-uvt.sh.in > $SCRIPT_DIR/setup-root-ssh-uvt.sh
+            if [ ! -f $SCRIPT_DIR/setup-root-ssh-uvt.sh ]; then
+                 FATAL "failed to generate setup script"
+            fi
             case $SPREAD_SYSTEM in
                 ubuntu-18.04)
                     RELEASE=bionic;;
@@ -39,9 +47,9 @@ backends:
             esac
             # TODO: fix this for non-amd64 systems
             uvt-simplestreams-libvirt sync arch=amd64 release=$RELEASE
-            uvt-kvm create $VM_NAME release=$RELEASE --run-script-once spread/lib/setup-root-ssh-uvt.sh
+            uvt-kvm create $VM_NAME release=$RELEASE --run-script-once $SCRIPT_DIR/setup-root-ssh-uvt.sh
             # remove the script so we don't leave it lying around with the password in it
-            rm spread/lib/setup-root-ssh-uvt.sh
+            rm $SCRIPT_DIR/setup-root-ssh-uvt.sh
             # wait for the machine to come alive
             uvt-kvm wait $VM_NAME
             # now get the address
