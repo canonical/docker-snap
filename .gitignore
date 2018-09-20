@@ -7,3 +7,4 @@ snap/.snapcraft/*
 *.bz2
 *.img
 *.snap
+.spread-reuse.*.yaml
