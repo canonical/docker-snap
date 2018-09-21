@@ -6,6 +6,11 @@ description: Docker complements kernel namespacing with a high-level API which o
 confinement: strict
 grade: stable
 
+passthrough:
+  layout:
+    /etc/docker:
+      bind: $SNAP_DATA/etc/docker
+
 
 plugs:
   home:
