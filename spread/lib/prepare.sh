@@ -15,11 +15,11 @@ else
 	# connect all plugs.
     snap connect docker:privileged :docker-support
     snap connect docker:support :docker-support
-    snap connect docker:firewall-control :firewall-control
-    snap connect docker:network :network
-    snap connect docker:network-bind :network-bind
+    snap connect docker:firewall-control
+    snap connect docker:network
+    snap connect docker:network-bind
     snap connect docker:docker-cli docker:docker-daemon
-    snap connect docker:home :home
+    snap connect docker:home
 
 	# finally we also need to adjust docker's storage driver to be overlay
 	# and also set the log level to debug
