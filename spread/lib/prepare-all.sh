@@ -1,12 +1,15 @@
 #!/bin/bash
 
 # install jq
-apt update && apt install jq -y
+apt update && apt install jq snapd -y
 
 # make the docker group
 sudo addgroup --system docker
 sudo adduser $USER docker
 newgrp docker
+
+# make sure that snapd is installed and available
+snap install hello-world
 
 # We don't have to build a snap when we should use one from a
 # channel
