@@ -4,8 +4,8 @@
 apt update && apt install jq snapd -y
 
 # make the docker group
-sudo addgroup --system docker
-sudo adduser $USER docker
+addgroup --system docker
+adduser $USER docker
 newgrp docker
 
 # make sure that snapd is installed and available
