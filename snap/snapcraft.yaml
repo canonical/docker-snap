@@ -52,7 +52,6 @@ apps:
     slots:
       - docker-daemon
 
-  # TODO determine if we can "provide" a "docker-compose" in PATH directly (since this'll show up as "docker.compose" in the user PATH)
   compose:
     command: docker-compose
     plugs:
