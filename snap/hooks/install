@@ -5,3 +5,6 @@ if [ ! -f "$SNAP_DATA/config/daemon.json" ]; then
     mkdir -p "$SNAP_DATA/config"
     cp "$SNAP/config/daemon.json" "$SNAP_DATA/config/daemon.json"
 fi
+
+# ensure the layouts dir for /etc/docker exists
+mkdir -p "$SNAP_DATA/etc/docker"
