@@ -44,11 +44,16 @@ done
 rm -rf "$dir"
 trap - EXIT
 
+# modify XDG_RUNTIME_DIR to be a snap writable dir underneath $SNAP_COMMON 
+# until LP #1656340 is fixed
+export XDG_RUNTIME_DIR=$SNAP_COMMON/run
+
 # use SNAP_DATA for most "data" bits
 mkdir -p \
 	"$SNAP_DATA/run" \
 	"$SNAP_DATA/run/docker" \
-	"$SNAP_COMMON/var-lib-docker"
+	"$SNAP_COMMON/var-lib-docker" \
+	"$XDG_RUNTIME_DIR"
 
 workaround_lp1606510
 

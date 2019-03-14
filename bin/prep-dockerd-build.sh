@@ -4,7 +4,7 @@
 # the necessary patches should be staged into $SNAPCRAFT_STAGE/patches
 # current working directory should be the Docker source directory
 
-for patch in "$SNAPCRAFT_STAGE"/patches/*.patch; do
+for patch in "$SNAPCRAFT_STAGE"/dockerd-patches/*.patch; do
 	echo "Applying $(basename "$patch") ..."
 	git apply --ignore-space-change --ignore-whitespace "$patch"
 	echo

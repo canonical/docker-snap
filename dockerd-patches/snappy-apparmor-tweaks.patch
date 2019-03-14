@@ -1,0 +1,62 @@
+diff --git a/profiles/apparmor/apparmor.go b/profiles/apparmor/apparmor.go
+index 2f58ee852c..9107f82f40 100644
+--- a/profiles/apparmor/apparmor.go
++++ b/profiles/apparmor/apparmor.go
+@@ -7,7 +7,9 @@ import (
+ 	"io"
+ 	"io/ioutil"
+ 	"os"
++	"os/exec"
+ 	"path"
++	"strconv"
+ 	"strings"
+ 	"text/template"
+ 
+@@ -31,6 +33,8 @@ type profileData struct {
+ 	InnerImports []string
+ 	// Version is the {major, minor, patch} version of apparmor_parser as a single number.
+ 	Version int
++	// SnapSecurityLabel is the name of the peer group to use in the snap
++	SnapSecurityLabel string
+ }
+ 
+ // generateDefault creates an apparmor profile from ProfileData.
+@@ -56,6 +60,20 @@ func (p *profileData) generateDefault(out io.Writer) error {
+ 	}
+ 	p.Version = ver
+ 
++	// on snap distributions, we need to determine the name of the peer group
++	// to use for communication between the container and dockerd
++	if _, isSnap := os.LookupEnv("SNAP"); isSnap {
++		// this uses ps to get the systemd unit for the current process
++		cmd := exec.Command("ps", "-o", "unit=", strconv.Itoa(os.Getpid()))
++		out, err := cmd.CombinedOutput()
++		if err != nil {
++			return err
++		}
++		// the snapd security label, which is the peer group we want, doesn't
++		// include the suffix ".service"
++		p.SnapSecurityLabel = strings.TrimSuffix(strings.TrimSpace(string(out)), ".service")
++	}
++
+ 	return compiled.Execute(out, p)
+ }
+ 
+diff --git a/profiles/apparmor/template.go b/profiles/apparmor/template.go
+index 400b3bd50a..03670bf054 100644
+--- a/profiles/apparmor/template.go
++++ b/profiles/apparmor/template.go
+@@ -46,5 +46,13 @@ profile {{.Name}} flags=(attach_disconnected,mediate_deleted) {
+   # suppress ptrace denials when using 'docker ps' or using 'ps' inside a container
+   ptrace (trace,read) peer={{.Name}},
+ {{end}}
++{{if .SnapSecurityLabel}}
++  # Snap based docker distribution accesses
++  #   Allow the daemon to trace/signal containers
++  ptrace (readby, tracedby) peer="{{.SnapSecurityLabel}}",
++  signal (receive) peer="{{.SnapSecurityLabel}}",
++  #   Allow container processes to signal other container processes
++  signal (send, receive) peer=docker-default,
++{{end}}
+ }
+ `
