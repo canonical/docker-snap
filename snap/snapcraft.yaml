@@ -170,6 +170,7 @@ parts:
       - gettext
       - libssl-dev
       - libexpat1-dev
+      - zlib1g-dev
     stage-packages:
       - gettext
       - libcurl3
