@@ -7,6 +7,7 @@ confinement: strict
 grade: stable
 
 passthrough:
+  license: (MIT AND Apache-2.0 AND GPL-2.0)
   layout:
     /etc/docker:
       bind: $SNAP_DATA/etc/docker
