@@ -65,5 +65,4 @@ exec dockerd \
 	--data-root="$SNAP_COMMON/var-lib-docker" \
 	--pidfile="$SNAP_DATA/run/docker.pid" \
 	--config-file="$SNAP_DATA/config/daemon.json" \
-	--debug \
 	"$@"
