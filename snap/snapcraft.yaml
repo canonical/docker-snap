@@ -163,7 +163,7 @@ parts:
   git:
     source: https://github.com/git/git
     source-type: git
-    source-tag: v2.19.0
+    source-tag: v2.19.1
     source-depth: 1
     plugin: autotools
     configflags:
