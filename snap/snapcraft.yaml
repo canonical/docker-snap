@@ -259,7 +259,7 @@ parts:
     plugin: python
     python-version: python2
     source: https://github.com/docker/compose.git
-    source-tag: 1.24.1
+    source-tag: 1.23.2
     source-depth: 1
 
   machine:
