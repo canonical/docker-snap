@@ -8,7 +8,7 @@ aa_profile_reloaded="$SNAP_COMMON/profile_reloaded"
 workaround_apparmor_profile_reload() {
     #https://github.com/docker/docker-snap/issues/4
     if [ ! -f "$aa_profile_refreshed" ]; then
-        if [ "$(grep -c 'docker-default (enforce)' /sys/kernel/security/apparmor/profiles)" -ge 1 ]; then
+        if aa_count="$(grep -c 'docker-default (enforce)' /sys/kernel/security/apparmor/profiles)" && [ -n "$aa_count" ] && [ "$aa_count" -ge 1 ]; then
             export DOCKER_AA_RELOAD=1
             touch $aa_profile_reloaded
         fi
