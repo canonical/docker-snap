@@ -1,4 +1,4 @@
 {
     "log-level":        "error",
-    "storage-driver":   "aufs"
+    "storage-driver":   "overlay2"
 }
