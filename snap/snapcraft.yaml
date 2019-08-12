@@ -6,7 +6,7 @@ description: Docker complements kernel namespacing with a high-level API which o
 confinement: strict
 grade: stable
 
-assumes: [snapd2.39]
+assumes: [snapd2.40]
 
 passthrough:
   license: (MIT AND Apache-2.0 AND GPL-2.0)
