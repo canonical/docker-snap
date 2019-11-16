@@ -1,0 +1,13 @@
+diff --git a/vendor/github.com/containerd/containerd/defaults/defaults_unix.go b/vendor/github.com/containerd/containerd/defaults/defaults_unix.go
+index 30ed42235e..e3f46720f4 100644
+--- a/vendor/github.com/containerd/containerd/defaults/defaults_unix.go
++++ b/vendor/github.com/containerd/containerd/defaults/defaults_unix.go
+@@ -26,7 +26,7 @@ const (
+ 	// transient data
+ 	DefaultStateDir = "/run/containerd"
+ 	// DefaultAddress is the default unix socket address
+-	DefaultAddress = "/run/containerd/containerd.sock"
++	DefaultAddress = "/run/containerd/bogus-containerd.sock" // this includes "-bogus" to prevent "dockerd-in-snappy" from ever trying to connect to "containerd-outside-snappy" (https://forum.snapcraft.io/t/docker-snap-18-09-9-error/14171/5)
+ 	// DefaultDebugAddress is the default unix socket address for pprof data
+ 	DefaultDebugAddress = "/run/containerd/debug.sock"
+ 	// DefaultFIFODir is the default location used by client-side cio library
