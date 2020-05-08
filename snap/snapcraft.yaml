@@ -163,9 +163,9 @@ parts:
 
   # this part is so that things like `docker build -t foobar github.com/foo/bar` work
   git:
-    source: https://github.com/git/git
+    source: https://github.com/git/git.git
     source-type: git
-    source-tag: v2.19.1
+    source-tag: v2.26.2
     source-depth: 1
     plugin: autotools
     configflags:
