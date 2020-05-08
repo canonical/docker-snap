@@ -1,5 +1,5 @@
 name: docker
-version: "19.03.8"
+version: '19.03.8'
 summary: Docker Linux container runtime
 description: Docker complements kernel namespacing with a high-level API which operates at the process level. It runs unix processes with strong guarantees of isolation and repeatability across servers.
 
@@ -38,7 +38,7 @@ apps:
     command: docker
     environment:
       GIT_TEMPLATE_DIR: $SNAP/share/git-core/templates
-      GIT_CONFIG_NOSYSTEM: "true"
+      GIT_CONFIG_NOSYSTEM: 'true'
       GIT_EXEC_PATH: $SNAP/libexec/git-core
       GIT_TEXTDOMAINDIR: $SNAP/usr/share/locale
     completer: bin/docker-completion.sh
@@ -94,7 +94,8 @@ parts:
 
   docker-cli:
     plugin: make
-    build-snaps: ["go"]
+    # https://github.com/docker/cli/tree/v19.03.8/dockerfiles (Docker-supported Go version for CLI)
+    build-snaps: ['go/1.12/stable']
     source: https://github.com/docker/cli.git
     source-tag: v19.03.8
     override-build: |
@@ -135,7 +136,7 @@ parts:
       . "$SNAPCRAFT_STAGE/bin/prep-dockerd-build.sh"
 
       # setup the go build environment for docker/engine
-      . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
+      . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
       gopartbootstrap github.com/docker/engine
 
       # build the dockerd binary
@@ -143,7 +144,8 @@ parts:
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T "$GOPATH/src/github.com/docker/engine/bundles/dynbinary-daemon/dockerd" "$SNAPCRAFT_PART_INSTALL/bin/dockerd"
-    build-snaps: ["go"]
+    # https://github.com/docker/engine/blob/v19.03.8/Dockerfile.simple (Docker-supported Go version for Engine)
+    build-snaps: ['go/1.12/stable']
     after: [wrapper-scripts]
     build-packages:
       - btrfs-tools
@@ -186,7 +188,7 @@ parts:
     source-commit: 7ad184331fa3e55e52b890ea95e65ba581ae3429
     override-build: |
       # setup the go build environment for containerd
-      . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
+      . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
       gopartbootstrap github.com/containerd/containerd
 
       make GIT_COMMIT= GIT_BRANCH= LDFLAGS=
@@ -195,7 +197,7 @@ parts:
       install -T bin/containerd "$SNAPCRAFT_PART_INSTALL/bin/containerd"
       install -T bin/containerd-shim "$SNAPCRAFT_PART_INSTALL/bin/containerd-shim"
       install -T bin/ctr "$SNAPCRAFT_PART_INSTALL/bin/ctr"
-    build-snaps: ["go"]
+    build-snaps: ['go/1.12/stable']
     after: [wrapper-scripts]
     build-packages:
       - make
@@ -207,14 +209,14 @@ parts:
     source-commit: dc9208a3303feef5b3839f4323d9beb36df0a9dd
     override-build: |
       # setup the go build environment for runc
-      . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
+      . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
       gopartbootstrap github.com/opencontainers/runc
 
       make BUILDTAGS='seccomp apparmor selinux' COMMIT=
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T runc "$SNAPCRAFT_PART_INSTALL/bin/runc"
-    build-snaps: ["go"]
+    build-snaps: ['go/1.12/stable']
     after: [wrapper-scripts]
     build-packages:
       - libapparmor-dev
@@ -228,7 +230,7 @@ parts:
     source-commit: 9fd385be8302dbe1071a3ce124891893ff27f90f
     override-build: |
       # setup the go build environment for libnetwork
-      . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
+      . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
       gopartbootstrap github.com/docker/libnetwork
 
       make build-local
@@ -236,7 +238,7 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T bin/docker-proxy "$SNAPCRAFT_PART_INSTALL/bin/docker-proxy"
       install -T bin/dnet "$SNAPCRAFT_PART_INSTALL/bin/dnet"
-    build-snaps: ["go"]
+    build-snaps: ['go/1.12/stable']
     after: [wrapper-scripts]
     build-packages:
       - iptables
@@ -249,7 +251,7 @@ parts:
     # from https://github.com/docker/docker-ce/blob/v19.03.8/components/engine/hack/dockerfile/install/tini.installer
     source-commit: fec3683b971d9c3ef73f284f176672c44b448662
     organize:
-      "bin/tini-static": bin/docker-init
+      'bin/tini-static': bin/docker-init
     build-packages:
       - build-essential
     prime:
@@ -269,13 +271,15 @@ parts:
     source-depth: 1
     override-build: |
       # setup the go build environment for docker machine
-      . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
+      . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
       gopartbootstrap github.com/docker/machine
 
       make build
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T bin/docker-machine "$SNAPCRAFT_PART_INSTALL/bin/docker-machine"
-    build-snaps: ["go"]
+    # https://github.com/docker/machine/blob/v0.16.2/Dockerfile (Docker-supported Go version for Machine)
+    build-snaps: ['go/1.12/stable']
     after: [wrapper-scripts]
+
 # vim:set et ts=2 sw=2:
