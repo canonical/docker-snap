@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
 # should be sourced from snapcraft.yaml while building Docker
 # the necessary patches should be staged into $SNAPCRAFT_STAGE/patches
