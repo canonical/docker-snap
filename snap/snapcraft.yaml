@@ -259,9 +259,10 @@ parts:
 
   compose:
     plugin: python
-    python-version: python2
+    # https://github.com/docker/compose/blob/1.25.5/setup.py (Docker-supported Python versions)
+    python-version: python3
     source: https://github.com/docker/compose.git
-    source-tag: 1.23.2
+    source-tag: 1.25.5
     source-depth: 1
 
   machine:
