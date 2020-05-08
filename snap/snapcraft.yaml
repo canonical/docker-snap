@@ -268,7 +268,7 @@ parts:
   machine:
     plugin: make
     source: https://github.com/docker/machine.git
-    source-tag: v0.16.1
+    source-tag: v0.16.2
     source-depth: 1
     override-build: |
       # setup the go build environment for docker machine
