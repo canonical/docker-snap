@@ -264,6 +264,8 @@ parts:
     source: https://github.com/docker/compose.git
     source-tag: 1.25.5
     source-depth: 1
+    build-packages:
+      - libffi-dev
 
   machine:
     plugin: make
