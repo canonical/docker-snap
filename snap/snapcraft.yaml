@@ -120,11 +120,9 @@ parts:
       install -T "$GOPATH/src/github.com/docker/cli/build/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker"
       install -T "$GOPATH/src/github.com/docker/cli/contrib/completion/bash/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker-completion.sh"
 
-  moby:
+  engine:
     plugin: make
-    # docker's engine repo is a fork of github.com/moby/moby that helpfully
-    # has tags that correspond to docker-ce
-    source: https://github.com/docker/engine.git
+    source: https://github.com/moby/moby.git
     source-tag: v19.03.11
     source-depth: 1
     override-build: |
