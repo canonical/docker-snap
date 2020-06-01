@@ -1,5 +1,5 @@
 name: docker
-version: '19.03.8'
+version: '19.03.11'
 summary: Docker Linux container runtime
 description: Docker complements kernel namespacing with a high-level API which operates at the process level. It runs unix processes with strong guarantees of isolation and repeatability across servers.
 
@@ -96,10 +96,10 @@ parts:
 
   docker-cli:
     plugin: make
-    # https://github.com/docker/cli/tree/v19.03.8/dockerfiles (Docker-supported Go version for CLI)
-    build-snaps: ['go/1.12/stable']
+    # https://github.com/docker/cli/tree/v19.03.11/dockerfiles (Docker-supported Go version for CLI)
+    build-snaps: ['go/1.13/stable']
     source: https://github.com/docker/cli.git
-    source-tag: v19.03.8
+    source-tag: v19.03.11
     override-build: |
       # docker build specific environment variables
       export VERSION=$SNAPCRAFT_PROJECT_VERSION
@@ -125,7 +125,7 @@ parts:
     # docker's engine repo is a fork of github.com/moby/moby that helpfully
     # has tags that correspond to docker-ce
     source: https://github.com/docker/engine.git
-    source-tag: v19.03.8
+    source-tag: v19.03.11
     source-depth: 1
     override-build: |
       # docker build specific environment variables
@@ -137,17 +137,17 @@ parts:
       # this patches the dockerd sources
       . "$SNAPCRAFT_STAGE/bin/prep-dockerd-build.sh"
 
-      # setup the go build environment for docker/engine
+      # setup the go build environment for docker/docker
       . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
-      gopartbootstrap github.com/docker/engine
+      gopartbootstrap github.com/docker/docker
 
       # build the dockerd binary
       ./hack/make.sh dynbinary
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
-      install -T "$GOPATH/src/github.com/docker/engine/bundles/dynbinary-daemon/dockerd" "$SNAPCRAFT_PART_INSTALL/bin/dockerd"
-    # https://github.com/docker/engine/blob/v19.03.8/Dockerfile.simple (Docker-supported Go version for Engine)
-    build-snaps: ['go/1.12/stable']
+      install -T "$GOPATH/src/github.com/docker/docker/bundles/dynbinary-daemon/dockerd" "$SNAPCRAFT_PART_INSTALL/bin/dockerd"
+    # https://github.com/docker/engine/blob/v19.03.11/Dockerfile.simple (Docker-supported Go version for Engine)
+    build-snaps: ['go/1.13/stable']
     after: [wrapper-scripts]
     build-packages:
       - btrfs-tools
@@ -186,7 +186,7 @@ parts:
   containerd:
     plugin: make
     source: https://github.com/containerd/containerd.git
-    # from : https://github.com/docker/docker-ce/blob/v19.03.8/components/engine/hack/dockerfile/install/containerd.installer
+    # from : https://github.com/docker/docker-ce/blob/v19.03.11/components/engine/hack/dockerfile/install/containerd.installer
     source-commit: 7ad184331fa3e55e52b890ea95e65ba581ae3429
     override-build: |
       # setup the go build environment for containerd
@@ -207,7 +207,7 @@ parts:
   runc:
     plugin: make
     source: https://github.com/opencontainers/runc.git
-    # from https://github.com/docker/docker-ce/blob/v19.03.8/components/engine/hack/dockerfile/install/runc.installer
+    # from https://github.com/docker/docker-ce/blob/v19.03.11/components/engine/hack/dockerfile/install/runc.installer
     source-commit: dc9208a3303feef5b3839f4323d9beb36df0a9dd
     override-build: |
       # setup the go build environment for runc
@@ -228,8 +228,8 @@ parts:
   libnetwork:
     plugin: make
     source: https://github.com/docker/libnetwork.git
-    # from https://github.com/docker/docker-ce/blob/v19.03.8/components/engine/hack/dockerfile/install/proxy.installer
-    source-commit: 9fd385be8302dbe1071a3ce124891893ff27f90f
+    # from https://github.com/docker/docker-ce/blob/v19.03.11/components/engine/hack/dockerfile/install/proxy.installer
+    source-commit: 153d0769a1181bf591a9637fd487a541ec7db1e6
     override-build: |
       # setup the go build environment for libnetwork
       . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
@@ -250,7 +250,7 @@ parts:
     plugin: cmake
     source: https://github.com/krallin/tini.git
     source-type: git
-    # from https://github.com/docker/docker-ce/blob/v19.03.8/components/engine/hack/dockerfile/install/tini.installer
+    # from https://github.com/docker/docker-ce/blob/v19.03.11/components/engine/hack/dockerfile/install/tini.installer
     source-commit: fec3683b971d9c3ef73f284f176672c44b448662
     organize:
       'bin/tini-static': bin/docker-init
