@@ -56,6 +56,7 @@ apps:
       - firewall-control
       - home
       - network-bind
+      - network-control
       - privileged
       - support
     slots:
