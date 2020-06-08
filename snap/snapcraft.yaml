@@ -198,7 +198,7 @@ parts:
       install -T bin/containerd "$SNAPCRAFT_PART_INSTALL/bin/containerd"
       install -T bin/containerd-shim "$SNAPCRAFT_PART_INSTALL/bin/containerd-shim"
       install -T bin/ctr "$SNAPCRAFT_PART_INSTALL/bin/ctr"
-    build-snaps: ['go/1.12/stable']
+    build-snaps: ['go/1.13/stable']
     after: [wrapper-scripts]
     build-packages:
       - make
@@ -217,7 +217,7 @@ parts:
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T runc "$SNAPCRAFT_PART_INSTALL/bin/runc"
-    build-snaps: ['go/1.12/stable']
+    build-snaps: ['go/1.13/stable']
     after: [wrapper-scripts]
     build-packages:
       - libapparmor-dev
@@ -239,7 +239,7 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T bin/docker-proxy "$SNAPCRAFT_PART_INSTALL/bin/docker-proxy"
       install -T bin/dnet "$SNAPCRAFT_PART_INSTALL/bin/dnet"
-    build-snaps: ['go/1.12/stable']
+    build-snaps: ['go/1.13/stable']
     after: [wrapper-scripts]
     build-packages:
       - iptables
@@ -283,7 +283,7 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T bin/docker-machine "$SNAPCRAFT_PART_INSTALL/bin/docker-machine"
     # https://github.com/docker/machine/blob/v0.16.2/Dockerfile (Docker-supported Go version for Machine)
-    build-snaps: ['go/1.12/stable']
+    build-snaps: ['go/1.13/stable']
     after: [wrapper-scripts]
 
 # vim:set et ts=2 sw=2:
