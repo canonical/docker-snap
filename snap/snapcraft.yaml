@@ -1,7 +1,16 @@
 name: docker
+title: Docker
 version: '19.03.11'
-summary: Docker Linux container runtime
-description: Docker complements kernel namespacing with a high-level API which operates at the process level. It runs unix processes with strong guarantees of isolation and repeatability across servers.
+summary: Docker container runtime
+description: |
+  Build and run container images with Docker.
+
+  * This build can only access files in the home directory. So Dockerfiles and all other files used in commands like `docker build`, `docker save` and `docker load` need to be in $HOME.
+  * You can change the configuration of this build by modifying the files in `/var/snap/docker/current/`.
+
+  This snap is built by Canonical based on source code published by Docker, Inc. It is not endorsed or published by Docker, Inc.
+
+  Docker and the Docker logo are trademarks or registered trademarks of Docker, Inc. in the United States and/or other countries. Docker, Inc. and other parties may also have trademark rights in other terms used herein.
 
 confinement: strict
 grade: stable
