@@ -1,6 +1,6 @@
 name: docker
 #title: Docker
-version: '19.03.11'
+version: '19.03.13'
 summary: Docker container runtime
 description: |
   Build and run container images with Docker.
@@ -106,10 +106,10 @@ parts:
 
   docker-cli:
     plugin: make
-    # https://github.com/docker/cli/tree/v19.03.11/dockerfiles (Docker-supported Go version for CLI)
+    # https://github.com/docker/cli/tree/v19.03.13/dockerfiles (Docker-supported Go version for CLI)
     build-snaps: ['go/1.13/stable']
     source: https://github.com/docker/cli.git
-    source-tag: v19.03.11
+    source-tag: v19.03.13
     override-build: |
       # docker build specific environment variables
       export VERSION=$SNAPCRAFT_PROJECT_VERSION
@@ -133,7 +133,7 @@ parts:
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
-    source-tag: v19.03.11
+    source-tag: v19.03.13
     source-depth: 1
     override-build: |
       # docker build specific environment variables
@@ -154,7 +154,7 @@ parts:
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T "$GOPATH/src/github.com/docker/docker/bundles/dynbinary-daemon/dockerd" "$SNAPCRAFT_PART_INSTALL/bin/dockerd"
-    # https://github.com/docker/engine/blob/v19.03.11/Dockerfile.simple (Docker-supported Go version for Engine)
+    # https://github.com/moby/moby/blob/v19.03.13/Dockerfile.simple (Docker-supported Go version for Engine)
     build-snaps: ['go/1.13/stable']
     after: [wrapper-scripts]
     build-packages:
@@ -194,8 +194,8 @@ parts:
   containerd:
     plugin: make
     source: https://github.com/containerd/containerd.git
-    # from : https://github.com/docker/docker-ce/blob/v19.03.11/components/engine/hack/dockerfile/install/containerd.installer
-    source-commit: 7ad184331fa3e55e52b890ea95e65ba581ae3429
+    # from : https://github.com/docker/docker-ce/blob/v19.03.13/components/engine/hack/dockerfile/install/containerd.installer
+    source-commit: 8fba4e9a7d01810a393d5d25a3621dc101981175
     override-build: |
       # setup the go build environment for containerd
       . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
@@ -215,7 +215,7 @@ parts:
   runc:
     plugin: make
     source: https://github.com/opencontainers/runc.git
-    # from https://github.com/docker/docker-ce/blob/v19.03.11/components/engine/hack/dockerfile/install/runc.installer
+    # from https://github.com/docker/docker-ce/blob/v19.03.13/components/engine/hack/dockerfile/install/runc.installer
     source-commit: dc9208a3303feef5b3839f4323d9beb36df0a9dd
     override-build: |
       # setup the go build environment for runc
@@ -236,8 +236,8 @@ parts:
   libnetwork:
     plugin: make
     source: https://github.com/docker/libnetwork.git
-    # from https://github.com/docker/docker-ce/blob/v19.03.11/components/engine/hack/dockerfile/install/proxy.installer
-    source-commit: 153d0769a1181bf591a9637fd487a541ec7db1e6
+    # from https://github.com/docker/docker-ce/blob/v19.03.13/components/engine/hack/dockerfile/install/proxy.installer
+    source-commit: 026aabaa659832804b01754aaadd2c0f420c68b6
     override-build: |
       # setup the go build environment for libnetwork
       . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
@@ -258,7 +258,7 @@ parts:
     plugin: cmake
     source: https://github.com/krallin/tini.git
     source-type: git
-    # from https://github.com/docker/docker-ce/blob/v19.03.11/components/engine/hack/dockerfile/install/tini.installer
+    # from https://github.com/docker/docker-ce/blob/v19.03.13/components/engine/hack/dockerfile/install/tini.installer
     source-commit: fec3683b971d9c3ef73f284f176672c44b448662
     organize:
       'bin/tini-static': bin/docker-init
