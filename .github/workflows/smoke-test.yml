@@ -73,3 +73,20 @@ jobs:
 
       - name: Hello World
         run: sudo docker run --rm hello-world
+
+      - name: Docker Build
+        run: |
+          sudo docker build --pull -t debian-hello - <<'EOF'
+            FROM debian:buster-slim
+            RUN set -eux; \
+                apt-get update; \
+                apt-get install -y hello; \
+                rm -rf /var/lib/apt/lists/*
+            CMD ["hello"]
+          EOF
+          sudo docker run --rm debian-hello
+
+      - name: Docker Build (git)
+        run: |
+          sudo docker build --pull -t tianon/gosleep https://github.com/tianon/gosleep.git
+          sudo docker run --rm tianon/gosleep gosleep --help
