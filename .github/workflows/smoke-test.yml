@@ -1,0 +1,75 @@
+name: Smoke Test
+
+on:
+  pull_request:
+  push:
+
+defaults:
+  run:
+    shell: 'bash -Eeuo pipefail -x {0}'
+
+jobs:
+  smoke-test:
+    name: Snapcraft
+    runs-on: ubuntu-16.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Prep
+        run: |
+          # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu1604-README.md
+
+          # TODO figure out a better way to get Go and friends out of our path than dropping a nuke
+          sudo rm -rf /opt/hostedtoolcache/*
+
+          sudo apt-get purge --auto-remove -y 'docker.*' 'moby.*'
+          sudo rm -rf /var/lib/docker /etc/docker /run/docker*
+          sudo ip link delete docker0 || :
+
+          sudo apt-get update
+          sudo apt-get install -y snapcraft snapd
+          sudo snap refresh
+
+      - name: Build
+        run: |
+          env -i \
+            PATH='/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
+            HOME='/tmp/home' \
+            GOCACHE='/tmp/gocache' \
+            snapcraft snap --output docker.snap
+
+      - name: Install
+        run: |
+          sudo snap install --dangerous ./docker.snap
+          # it will immediately be failing to start, so let's head that off as quickly as we can
+          sudo snap stop --disable docker.dockerd
+          sudo killall dockerd || :
+
+      - name: Connect
+        run: |
+          # TODO figure out why the daemon doesn't work at all in Actions without setting "debug" to true (possibly AppArmor related?)
+          echo '{ "debug": true, "log-level": "debug" }' | sudo tee /var/snap/docker/current/config/daemon.json
+
+          # normally, snap does this automatically during install, but not when we install from a local file (for security)
+          sudo snap connect docker:docker-cli docker:docker-daemon
+          sudo snap connect docker:firewall-control :firewall-control
+          sudo snap connect docker:home :home
+          sudo snap connect docker:support :docker-support
+
+          sudo snap stop --disable docker.dockerd # for good measure
+          sleep 1
+          sudo snap start --enable docker.dockerd
+          sleep 1
+          sudo snap logs docker.dockerd
+
+      - name: Verify
+        run: |
+          sudo dmesg | tail -n20
+          sleep 1
+          sudo snap logs -n=20 docker.dockerd
+          sleep 1
+          sudo docker version
+          sudo docker info
+
+      - name: Hello World
+        run: sudo docker run --rm hello-world
