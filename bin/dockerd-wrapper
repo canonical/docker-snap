@@ -63,6 +63,6 @@ exec dockerd \
 	--group "$default_socket_group" \
 	--exec-root="$SNAP_DATA/run/docker" \
 	--data-root="$SNAP_COMMON/var-lib-docker" \
-	--pidfile="$SNAP_DATA/run/docker.pid" \
+	--pidfile="/tmp/docker.pid" \
 	--config-file="$SNAP_DATA/config/daemon.json" \
 	"$@"
