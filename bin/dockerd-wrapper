@@ -51,7 +51,7 @@ export XDG_RUNTIME_DIR=$SNAP_COMMON/run
 # use SNAP_DATA for most "data" bits
 mkdir -p \
 	"$SNAP_DATA/run" \
-	"$SNAP_DATA/run/docker" \
+	"/run/snap.$SNAP_INSTANCE_NAME" \
 	"$SNAP_COMMON/var-lib-docker" \
 	"$XDG_RUNTIME_DIR"
 
@@ -61,8 +61,8 @@ workaround_apparmor_profile_reload
 
 exec dockerd \
 	--group "$default_socket_group" \
-	--exec-root="$SNAP_DATA/run/docker" \
+	--exec-root="/run/snap.$SNAP_INSTANCE_NAME" \
 	--data-root="$SNAP_COMMON/var-lib-docker" \
-	--pidfile="/tmp/docker.pid" \
+	--pidfile="/run/snap.$SNAP_INSTANCE_NAME/docker.pid" \
 	--config-file="$SNAP_DATA/config/daemon.json" \
 	"$@"
