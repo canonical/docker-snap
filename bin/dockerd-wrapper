@@ -45,11 +45,12 @@ rm -rf "$dir"
 trap - EXIT
 
 # modify XDG_RUNTIME_DIR to be a snap writable dir underneath $SNAP_COMMON 
-# until LP #1656340 is fixed
+# (until https://bugs.launchpad.net/snappy/+bug/1656340 is fixed)
 export XDG_RUNTIME_DIR=$SNAP_COMMON/run
 mkdir -p "$XDG_RUNTIME_DIR"
 
-# use SNAP_DATA for most "data" bits
+# use SNAP_COMMON for "/var/lib/docker" since it's common across snap revisions
+# (and typically gets large, so we don't want it backed up and restored like SNAP_DATA)
 mkdir -p "$SNAP_COMMON/var-lib-docker"
 
 # use "/run/snap.$SNAP_INSTANCE_NAME" for ephemeral storage
