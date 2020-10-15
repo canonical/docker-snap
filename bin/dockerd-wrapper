@@ -45,15 +45,19 @@ rm -rf "$dir"
 trap - EXIT
 
 # modify XDG_RUNTIME_DIR to be a snap writable dir underneath $SNAP_COMMON 
-# until LP #1656340 is fixed
+# (until https://bugs.launchpad.net/snappy/+bug/1656340 is fixed)
 export XDG_RUNTIME_DIR=$SNAP_COMMON/run
+mkdir -p "$XDG_RUNTIME_DIR"
 
-# use SNAP_DATA for most "data" bits
-mkdir -p \
-	"$SNAP_DATA/run" \
-	"$SNAP_DATA/run/docker" \
-	"$SNAP_COMMON/var-lib-docker" \
-	"$XDG_RUNTIME_DIR"
+# use SNAP_COMMON for "/var/lib/docker" since it's common across snap revisions
+# (and typically gets large, so we don't want it backed up and restored like SNAP_DATA)
+mkdir -p "$SNAP_COMMON/var-lib-docker"
+
+# use "/run/snap.$SNAP_INSTANCE_NAME" for ephemeral storage
+# - https://github.com/snapcore/snapd/pull/6109
+# - https://github.com/docker-snap/docker-snap/pull/9
+run_dir="/run/snap.$SNAP_INSTANCE_NAME"
+mkdir -p "$run_dir"
 
 workaround_lp1606510
 
@@ -61,8 +65,8 @@ workaround_apparmor_profile_reload
 
 exec dockerd \
 	--group "$default_socket_group" \
-	--exec-root="$SNAP_DATA/run/docker" \
+	--exec-root="$run_dir" \
 	--data-root="$SNAP_COMMON/var-lib-docker" \
-	--pidfile="$SNAP_DATA/run/docker.pid" \
+	--pidfile="$run_dir/docker.pid" \
 	--config-file="$SNAP_DATA/config/daemon.json" \
 	"$@"
