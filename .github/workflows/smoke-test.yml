@@ -72,6 +72,7 @@ jobs:
 
       - name: Verify
         run: |
+          trap 'ps faux | grep -i docker; sudo systemctl status snap.docker.dockerd.service' ERR
           sudo dmesg | tail -n20
           sleep 1
           sudo snap logs -n=20 docker.dockerd
@@ -92,7 +93,7 @@ jobs:
 
       - name: Hello World (journald)
         run: |
-          trap 'sudo dmesg | tail -n20; sudo snap logs -n=20 docker.dockerd' ERR
+          trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
           expectedOutput="testing-journald-log-driver-$RANDOM-$RANDOM"
           sudo docker run --name test-journald --log-driver journald bash -c 'echo "$@"' -- "$expectedOutput"
           actualOutput="$(sudo docker logs test-journald)"
