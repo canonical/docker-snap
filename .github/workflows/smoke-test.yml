@@ -26,6 +26,11 @@ jobs:
           sudo rm -rf /var/lib/docker /etc/docker /run/docker* /var/lib/containerd /run/containerd*
           sudo ip link delete docker0 || :
 
+          sudo apt update
+          sudo apt install -y snapd
+          sudo snap refresh
+          sudo snap list
+
       - name: Build
         # https://github.com/snapcore/action-build/releases
         uses: snapcore/action-build@v1.0.7
