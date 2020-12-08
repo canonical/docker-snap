@@ -38,6 +38,13 @@ jobs:
             GOCACHE='/tmp/gocache' \
             snapcraft snap --output docker.snap
 
+      - name: Upload
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v2
+        with:
+          name: docker.snap
+          path: docker.snap
+
       - name: Install
         run: |
           sudo snap install --dangerous ./docker.snap
