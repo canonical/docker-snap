@@ -81,6 +81,18 @@ jobs:
       - name: Hello World
         run: sudo docker run --rm hello-world
 
+      - name: Hello World (journald)
+        run: |
+          trap 'sudo dmesg | tail -n20; sudo snap logs -n=20 docker.dockerd' ERR
+          expectedOutput="testing-journald-log-driver-$RANDOM-$RANDOM"
+          sudo docker run --name test-journald --log-driver journald bash -c 'echo "$@"' -- "$expectedOutput"
+          actualOutput="$(sudo docker logs test-journald)"
+          [ -z "$actualOutput" ] # verify that "log-observe" is still necessary
+          sudo snap connect docker:log-observe
+          actualOutput="$(sudo docker logs test-journald)"
+          [ "$actualOutput" = "$expectedOutput" ]
+          docker rm test-journald
+
       - name: Docker Build
         run: |
           sudo docker build --pull -t debian-hello - <<'EOF'

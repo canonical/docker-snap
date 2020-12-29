@@ -64,6 +64,7 @@ apps:
     plugs:
       - firewall-control
       - home
+      - log-observe
       - network-bind
       - network-control
       - privileged
@@ -160,11 +161,12 @@ parts:
     build-packages:
       - btrfs-tools
       - gcc
+      - git
       - libc6-dev
       - libdevmapper-dev
       - libltdl-dev
+      - libsystemd-dev
       - patch
-      - git
       - pkg-config
     stage-packages:
       - zfsutils-linux
