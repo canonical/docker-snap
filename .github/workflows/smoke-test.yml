@@ -23,7 +23,7 @@ jobs:
           sudo rm -rf /opt/hostedtoolcache/*
 
           sudo apt-get purge --auto-remove -y 'docker.*' 'moby.*'
-          sudo rm -rf /var/lib/docker /etc/docker /run/docker*
+          sudo rm -rf /var/lib/docker /etc/docker /run/docker* /var/lib/containerd /run/containerd*
           sudo ip link delete docker0 || :
 
           sudo apt-get update
@@ -65,6 +65,7 @@ jobs:
           sudo snap connect docker:docker-cli docker:docker-daemon
           sudo snap connect docker:firewall-control :firewall-control
           sudo snap connect docker:home :home
+          sudo snap connect docker:network-control :network-control
           sudo snap connect docker:support :docker-support
 
           sudo snap stop --disable docker.dockerd # for good measure
@@ -96,8 +97,30 @@ jobs:
             CMD ["hello"]
           EOF
           sudo docker run --rm debian-hello
+          sudo docker image rm debian-hello
 
       - name: Docker Build (git)
         run: |
           sudo docker build --pull -t tianon/gosleep https://github.com/tianon/gosleep.git
           sudo docker run --rm tianon/gosleep gosleep --help
+          sudo docker image rm tianon/gosleep
+
+      - name: Docker BuildKit
+        run: |
+          trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
+          sudo DOCKER_BUILDKIT=1 docker build --pull -t debian-hello - <<'EOF'
+            FROM debian:buster-slim
+            RUN set -eux; \
+                apt-get update; \
+                apt-get install -y hello; \
+                rm -rf /var/lib/apt/lists/*
+            CMD ["hello"]
+          EOF
+          sudo docker run --rm debian-hello
+          sudo docker image rm debian-hello
+
+      - name: Docker BuildKit (git)
+        run: |
+          sudo DOCKER_BUILDKIT=1 docker build --pull -t tianon/gosleep https://github.com/tianon/gosleep.git
+          sudo docker run --rm tianon/gosleep gosleep --help
+          sudo docker image rm tianon/gosleep
