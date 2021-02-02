@@ -1,0 +1,291 @@
+From 5472f39022e99c14b2f055eac4d9619e3663ae20 Mon Sep 17 00:00:00 2001
+From: Brian Goff <cpuguy83@gmail.com>
+Date: Fri, 9 Oct 2020 17:20:48 +0000
+Subject: [PATCH] buildkit: Apply apparmor profile
+
+Signed-off-by: Brian Goff <cpuguy83@gmail.com>
+(cherry picked from commit 611eb6ffb32aa37876b4b47cec12e4fd47610838)
+
+Renamed constant defaultAppArmorProfile to defaultApparmorProfile.
+
+Signed-off-by: Tibor Vass <tibor@docker.com>
+---
+ builder/builder-next/builder.go          | 1 +
+ builder/builder-next/controller.go       | 2 +-
+ builder/builder-next/executor_unix.go    | 3 ++-
+ builder/builder-next/executor_windows.go | 2 +-
+ cmd/dockerd/daemon.go                    | 1 +
+ daemon/apparmor_default.go               | 8 ++++++++
+ daemon/apparmor_default_unsupported.go   | 5 +++++
+ 7 files changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/builder/builder-next/builder.go b/builder/builder-next/builder.go
+index 10c0083a31c2..f334a39267bc 100644
+--- a/builder/builder-next/builder.go
++++ b/builder/builder-next/builder.go
+@@ -76,6 +76,7 @@ type Opt struct {
+ 	Rootless            bool
+ 	IdentityMapping     *idtools.IdentityMapping
+ 	DNSConfig           config.DNSConfig
++	ApparmorProfile     string
+ }
+ 
+ // Builder can build using BuildKit backend
+diff --git a/builder/builder-next/controller.go b/builder/builder-next/controller.go
+index 33d3f549642e..d5fa7f6c290b 100644
+--- a/builder/builder-next/controller.go
++++ b/builder/builder-next/controller.go
+@@ -116,7 +116,7 @@ func newController(rt http.RoundTripper, opt Opt) (*control.Controller, error) {
+ 
+ 	dns := getDNSConfig(opt.DNSConfig)
+ 
+-	exec, err := newExecutor(root, opt.DefaultCgroupParent, opt.NetworkController, dns, opt.Rootless, opt.IdentityMapping)
++	exec, err := newExecutor(root, opt.DefaultCgroupParent, opt.NetworkController, dns, opt.Rootless, opt.IdentityMapping, opt.ApparmorProfile)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+diff --git a/builder/builder-next/executor_unix.go b/builder/builder-next/executor_unix.go
+index d684b9f6e2e6..d04334a0046e 100644
+--- a/builder/builder-next/executor_unix.go
++++ b/builder/builder-next/executor_unix.go
+@@ -24,7 +24,7 @@ import (
+ 
+ const networkName = "bridge"
+ 
+-func newExecutor(root, cgroupParent string, net libnetwork.NetworkController, dnsConfig *oci.DNSConfig, rootless bool, idmap *idtools.IdentityMapping) (executor.Executor, error) {
++func newExecutor(root, cgroupParent string, net libnetwork.NetworkController, dnsConfig *oci.DNSConfig, rootless bool, idmap *idtools.IdentityMapping, apparmorProfile string) (executor.Executor, error) {
+ 	networkProviders := map[pb.NetMode]network.Provider{
+ 		pb.NetMode_UNSET: &bridgeProvider{NetworkController: net, Root: filepath.Join(root, "net")},
+ 		pb.NetMode_HOST:  network.NewHostProvider(),
+@@ -38,6 +38,7 @@ func newExecutor(root, cgroupParent string, net libnetwork.NetworkController, dn
+ 		NoPivot:             os.Getenv("DOCKER_RAMDISK") != "",
+ 		IdentityMapping:     idmap,
+ 		DNS:                 dnsConfig,
++		ApparmorProfile:     apparmorProfile,
+ 	}, networkProviders)
+ }
+ 
+diff --git a/builder/builder-next/executor_windows.go b/builder/builder-next/executor_windows.go
+index 6de6d529f32a..4d80baf7ee6d 100644
+--- a/builder/builder-next/executor_windows.go
++++ b/builder/builder-next/executor_windows.go
+@@ -13,7 +13,7 @@ import (
+ 	"github.com/moby/buildkit/executor/oci"
+ )
+ 
+-func newExecutor(_, _ string, _ libnetwork.NetworkController, _ *oci.DNSConfig, _ bool, _ *idtools.IdentityMapping) (executor.Executor, error) {
++func newExecutor(_, _ string, _ libnetwork.NetworkController, _ *oci.DNSConfig, _ bool, _ *idtools.IdentityMapping, _ string) (executor.Executor, error) {
+ 	return &winExecutor{}, nil
+ }
+ 
+diff --git a/cmd/dockerd/daemon.go b/cmd/dockerd/daemon.go
+index b26e07186cec..c3942f238bf3 100644
+--- a/cmd/dockerd/daemon.go
++++ b/cmd/dockerd/daemon.go
+@@ -314,6 +314,7 @@ func newRouterOptions(config *config.Config, d *daemon.Daemon) (routerOptions, e
+ 		Rootless:            d.Rootless(),
+ 		IdentityMapping:     d.IdentityMapping(),
+ 		DNSConfig:           config.DNSConfig,
++		ApparmorProfile:     daemon.DefaultApparmorProfile(),
+ 	})
+ 	if err != nil {
+ 		return opts, err
+diff --git a/daemon/apparmor_default.go b/daemon/apparmor_default.go
+index 461f5c7f96b2..78511ea68c47 100644
+--- a/daemon/apparmor_default.go
++++ b/daemon/apparmor_default.go
+@@ -14,6 +14,14 @@ const (
+ 	defaultApparmorProfile = "docker-default"
+ )
+ 
++// DefaultApparmorProfile returns the name of the default apparmor profile
++func DefaultApparmorProfile() string {
++	if apparmor.IsEnabled() {
++		return defaultApparmorProfile
++	}
++	return ""
++}
++
+ func ensureDefaultAppArmorProfile() error {
+ 	if apparmor.IsEnabled() {
+ 		loaded, err := aaprofile.IsLoaded(defaultApparmorProfile)
+diff --git a/daemon/apparmor_default_unsupported.go b/daemon/apparmor_default_unsupported.go
+index 51f9c526b350..dd581dc7dadb 100644
+--- a/daemon/apparmor_default_unsupported.go
++++ b/daemon/apparmor_default_unsupported.go
+@@ -5,3 +5,8 @@ package daemon // import "github.com/docker/docker/daemon"
+ func ensureDefaultAppArmorProfile() error {
+ 	return nil
+ }
++
++// DefaultApparmorProfile returns an empty string.
++func DefaultApparmorProfile() string {
++	return ""
++}
+From b96fb8837b8c74adae53311e77cef34144a5a20d Mon Sep 17 00:00:00 2001
+From: Tibor Vass <tibor@docker.com>
+Date: Wed, 27 Jan 2021 18:19:29 +0000
+Subject: [PATCH] vendor buildkit 396bfe20b590914cd77945ef0d70d976a0ed093c
+
+Signed-off-by: Tibor Vass <tibor@docker.com>
+---
+ vendor.conf                                   |  2 +-
+ .../moby/buildkit/executor/oci/spec_unix.go   | 47 +++++++++++++++++--
+ .../executor/runcexecutor/executor.go         | 11 +++--
+ vendor/github.com/moby/buildkit/go.mod        |  1 +
+ 4 files changed, 51 insertions(+), 10 deletions(-)
+
+diff --git a/vendor.conf b/vendor.conf
+index bfdcc17054c7..fc5885a6b60f 100644
+--- a/vendor.conf
++++ b/vendor.conf
+@@ -26,7 +26,7 @@ github.com/imdario/mergo                            7c29201646fa3de8506f70121347
+ golang.org/x/sync                                   e225da77a7e68af35c70ccbf71af2b83e6acac3c
+ 
+ # buildkit
+-github.com/moby/buildkit                            df89d4dcf73ce414cd76837bfb0e9a0cc0ef3386 # v0.6.4-32-gdf89d4dc
++github.com/moby/buildkit                            396bfe20b590914cd77945ef0d70d976a0ed093c # docker-19.03 branch
+ github.com/tonistiigi/fsutil                        6c909ab392c173a4264ae1bfcbc0450b9aac0c7d
+ github.com/grpc-ecosystem/grpc-opentracing          8e809c8a86450a29b90dcc9efbf062d0fe6d9746
+ github.com/opentracing/opentracing-go               1361b9cd60be79c4c3a7fa9841b3c132e40066a7
+diff --git a/vendor/github.com/moby/buildkit/executor/oci/spec_unix.go b/vendor/github.com/moby/buildkit/executor/oci/spec_unix.go
+index 5fe8d09e3734..95abc4713547 100644
+--- a/vendor/github.com/moby/buildkit/executor/oci/spec_unix.go
++++ b/vendor/github.com/moby/buildkit/executor/oci/spec_unix.go
+@@ -22,6 +22,8 @@ import (
+ 	"github.com/moby/buildkit/util/network"
+ 	"github.com/moby/buildkit/util/system"
+ 	specs "github.com/opencontainers/runtime-spec/specs-go"
++	"github.com/opencontainers/selinux/go-selinux"
++	"github.com/opencontainers/selinux/go-selinux/label"
+ 	"github.com/pkg/errors"
+ )
+ 
+@@ -29,7 +31,7 @@ import (
+ 
+ // GenerateSpec generates spec using containerd functionality.
+ // opts are ignored for s.Process, s.Hostname, and s.Mounts .
+-func GenerateSpec(ctx context.Context, meta executor.Meta, mounts []executor.Mount, id, resolvConf, hostsFile string, namespace network.Namespace, processMode ProcessMode, idmap *idtools.IdentityMapping, opts ...oci.SpecOpts) (*specs.Spec, func(), error) {
++func GenerateSpec(ctx context.Context, meta executor.Meta, mounts []executor.Mount, id, resolvConf, hostsFile string, namespace network.Namespace, processMode ProcessMode, idmap *idtools.IdentityMapping, apparmorProfile string, opts ...oci.SpecOpts) (*specs.Spec, func(), error) {
+ 	c := &containers.Container{
+ 		ID: id,
+ 	}
+@@ -37,10 +39,11 @@ func GenerateSpec(ctx context.Context, meta executor.Meta, mounts []executor.Mou
+ 	if !ok {
+ 		ctx = namespaces.WithNamespace(ctx, "buildkit")
+ 	}
+-	if meta.SecurityMode == pb.SecurityMode_INSECURE {
+-		opts = append(opts, entitlements.WithInsecureSpec())
+-	} else if system.SeccompSupported() && meta.SecurityMode == pb.SecurityMode_SANDBOX {
+-		opts = append(opts, seccomp.WithDefaultProfile())
++
++	if securityOpts, err := generateSecurityOpts(meta.SecurityMode, apparmorProfile); err == nil {
++		opts = append(opts, securityOpts...)
++	} else {
++		return nil, nil, err
+ 	}
+ 
+ 	switch processMode {
+@@ -125,6 +128,9 @@ func GenerateSpec(ctx context.Context, meta executor.Meta, mounts []executor.Mou
+ 		for _, f := range releasers {
+ 			f()
+ 		}
++		if s.Process.SelinuxLabel != "" {
++			selinux.ReleaseLabel(s.Process.SelinuxLabel)
++		}
+ 	}
+ 
+ 	for _, m := range mounts {
+@@ -165,6 +171,37 @@ type mountRef struct {
+ 	unmount func() error
+ }
+ 
++// generateSecurityOpts may affect mounts, so must be called after generateMountOpts
++func generateSecurityOpts(mode pb.SecurityMode, apparmorProfile string) (opts []oci.SpecOpts, _ error) {
++	switch mode {
++	case pb.SecurityMode_INSECURE:
++		return []oci.SpecOpts{
++			entitlements.WithInsecureSpec(),
++			oci.WithWriteableCgroupfs,
++			oci.WithWriteableSysfs,
++			func(_ context.Context, _ oci.Client, _ *containers.Container, s *oci.Spec) error {
++				var err error
++				s.Process.SelinuxLabel, s.Linux.MountLabel, err = label.InitLabels([]string{"disable"})
++				return err
++			},
++		}, nil
++	case pb.SecurityMode_SANDBOX:
++		if system.SeccompSupported() {
++			opts = append(opts, seccomp.WithDefaultProfile())
++		}
++		if apparmorProfile != "" {
++			opts = append(opts, oci.WithApparmorProfile(apparmorProfile))
++		}
++		opts = append(opts, func(_ context.Context, _ oci.Client, _ *containers.Container, s *oci.Spec) error {
++			var err error
++			s.Process.SelinuxLabel, s.Linux.MountLabel, err = label.InitLabels(nil)
++			return err
++		})
++		return opts, nil
++	}
++	return nil, nil
++}
++
+ type submounts struct {
+ 	m map[uint64]mountRef
+ }
+diff --git a/vendor/github.com/moby/buildkit/executor/runcexecutor/executor.go b/vendor/github.com/moby/buildkit/executor/runcexecutor/executor.go
+index 26e432e61f6b..885c10c8e169 100644
+--- a/vendor/github.com/moby/buildkit/executor/runcexecutor/executor.go
++++ b/vendor/github.com/moby/buildkit/executor/runcexecutor/executor.go
+@@ -39,9 +39,10 @@ type Opt struct {
+ 	ProcessMode     oci.ProcessMode
+ 	IdentityMapping *idtools.IdentityMapping
+ 	// runc run --no-pivot (unrecommended)
+-	NoPivot     bool
+-	DNS         *oci.DNSConfig
+-	OOMScoreAdj *int
++	NoPivot         bool
++	DNS             *oci.DNSConfig
++	OOMScoreAdj     *int
++	ApparmorProfile string
+ }
+ 
+ var defaultCommandCandidates = []string{"buildkit-runc", "runc"}
+@@ -58,6 +59,7 @@ type runcExecutor struct {
+ 	noPivot          bool
+ 	dns              *oci.DNSConfig
+ 	oomScoreAdj      *int
++	apparmorProfile  string
+ }
+ 
+ func New(opt Opt, networkProviders map[pb.NetMode]network.Provider) (executor.Executor, error) {
+@@ -118,6 +120,7 @@ func New(opt Opt, networkProviders map[pb.NetMode]network.Provider) (executor.Ex
+ 		noPivot:          opt.NoPivot,
+ 		dns:              opt.DNS,
+ 		oomScoreAdj:      opt.OOMScoreAdj,
++		apparmorProfile:  opt.ApparmorProfile,
+ 	}
+ 	return w, nil
+ }
+@@ -223,7 +226,7 @@ func (w *runcExecutor) Exec(ctx context.Context, meta executor.Meta, root cache.
+ 		}
+ 		opts = append(opts, containerdoci.WithCgroup(cgroupsPath))
+ 	}
+-	spec, cleanup, err := oci.GenerateSpec(ctx, meta, mounts, id, resolvConf, hostsFile, namespace, w.processMode, w.idmap, opts...)
++	spec, cleanup, err := oci.GenerateSpec(ctx, meta, mounts, id, resolvConf, hostsFile, namespace, w.processMode, w.idmap, w.apparmorProfile, opts...)
+ 	if err != nil {
+ 		return err
+ 	}
+diff --git a/vendor/github.com/moby/buildkit/go.mod b/vendor/github.com/moby/buildkit/go.mod
+index cf1c7d6711d8..389e75265fd5 100644
+--- a/vendor/github.com/moby/buildkit/go.mod
++++ b/vendor/github.com/moby/buildkit/go.mod
+@@ -46,6 +46,7 @@ require (
+ 	github.com/opencontainers/image-spec v1.0.1
+ 	github.com/opencontainers/runc v1.0.0-rc8
+ 	github.com/opencontainers/runtime-spec v0.0.0-20180909173843-eba862dc2470
++	github.com/opencontainers/selinux v1.0.0-rc1.0.20180628160156-b6fa367ed7f5
+ 	github.com/opentracing-contrib/go-stdlib v0.0.0-20171029140428-b1a47cfbdd75
+ 	github.com/opentracing/opentracing-go v0.0.0-20171003133519-1361b9cd60be
+ 	github.com/pkg/errors v0.8.1
