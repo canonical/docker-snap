@@ -43,7 +43,8 @@ jobs:
             snapcraft snap --output docker.snap
 
       - name: Upload
-        if: github.event_name == 'pull_request'
+        # TODO the goal of this "if:" condition is to avoid creating artifacts on private forks (and using up all their storage quota), but Tianon couldn't find a clean way to do that so this was the next best thing
+        if: github.repository == 'docker-snap/docker-snap'
         uses: actions/upload-artifact@v2
         with:
           name: docker.snap
