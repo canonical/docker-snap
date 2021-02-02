@@ -30,6 +30,10 @@ jobs:
           sudo apt-get install -y snapcraft snapd
           sudo snap refresh
 
+          # TODO remove this hack once https://github.com/snapcore/snapcraft/pull/3429 is in a released snapcraft update in 16.04
+          wget -O "$HOME/snapcraft-pip-fix.patch" 'https://github.com/snapcore/snapcraft/pull/3429.patch'
+          sudo patch --directory=/usr/lib/python3/dist-packages --input="$HOME/snapcraft-pip-fix.patch" --strip=1
+
       - name: Build
         run: |
           env -i \
