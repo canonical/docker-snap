@@ -46,7 +46,7 @@ slots:
 apps:
   docker:
     command: docker
-    environment:
+    environment: &ugh-buildkit-git
       GIT_TEMPLATE_DIR: $SNAP/share/git-core/templates
       GIT_CONFIG_NOSYSTEM: 'true'
       GIT_EXEC_PATH: $SNAP/libexec/git-core
@@ -60,6 +60,7 @@ apps:
 
   dockerd:
     command: dockerd-wrapper
+    environment: *ugh-buildkit-git # buildkit runs "git" in the dockerd context instead of the CLI context like it was previously switched to, so we unfortunately need our GIT_* environment variables in both places
     daemon: simple
     plugs:
       - firewall-control
