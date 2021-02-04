@@ -28,17 +28,16 @@ description: |
   This snap is built by Canonical based on source code published by Docker, Inc. It is not endorsed or published by Docker, Inc.
 
   Docker and the Docker logo are trademarks or registered trademarks of Docker, Inc. in the United States and/or other countries. Docker, Inc. and other parties may also have trademark rights in other terms used herein.
-
-confinement: strict
+license: (Apache-2.0 AND MIT AND GPL-2.0)
 grade: stable
 
+base: core18
+confinement: strict
 assumes: [snapd2.40]
 
-passthrough:
-  license: (MIT AND Apache-2.0 AND GPL-2.0)
-  layout:
-    /etc/docker:
-      bind: $SNAP_DATA/etc/docker
+layout:
+  /etc/docker:
+    bind: $SNAP_DATA/etc/docker
 
 plugs:
   home:

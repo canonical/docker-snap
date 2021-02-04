@@ -11,36 +11,26 @@ defaults:
 jobs:
   smoke-test:
     name: Snapcraft
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
 
       - name: Prep
         run: |
-          # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu1604-README.md
+          # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md
 
           # TODO figure out a better way to get Go and friends out of our path than dropping a nuke
           sudo rm -rf /opt/hostedtoolcache/*
 
-          sudo apt-get purge --auto-remove -y 'docker.*' 'moby.*'
+          sudo apt-get purge --auto-remove -y 'docker.*' 'containerd.*' 'moby.*' 'runc.*'
           sudo rm -rf /var/lib/docker /etc/docker /run/docker* /var/lib/containerd /run/containerd*
           sudo ip link delete docker0 || :
 
-          sudo apt-get update
-          sudo apt-get install -y snapcraft snapd
-          sudo snap refresh
-
-          # TODO remove this hack once https://github.com/snapcore/snapcraft/pull/3429 is in a released snapcraft update in 16.04
-          wget -O "$HOME/snapcraft-pip-fix.patch" 'https://github.com/snapcore/snapcraft/pull/3429.patch'
-          sudo patch --directory=/usr/lib/python3/dist-packages --input="$HOME/snapcraft-pip-fix.patch" --strip=1
-
       - name: Build
-        run: |
-          env -i \
-            PATH='/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
-            HOME='/tmp/home' \
-            GOCACHE='/tmp/gocache' \
-            snapcraft snap --output docker.snap
+        # https://github.com/snapcore/action-build/releases
+        uses: snapcore/action-build@v1.0.7
+        with:
+          snapcraft-args: snap --output docker.snap
 
       - name: Upload
         # TODO the goal of this "if:" condition is to avoid creating artifacts on private forks (and using up all their storage quota), but Tianon couldn't find a clean way to do that so this was the next best thing
