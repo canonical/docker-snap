@@ -33,7 +33,7 @@ grade: stable
 
 base: core18
 confinement: strict
-assumes: [snapd2.40]
+assumes: [snapd2.48.3]
 
 layout:
   /etc/docker:
