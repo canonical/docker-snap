@@ -11,7 +11,7 @@ defaults:
 jobs:
   smoke-test:
     name: Snapcraft
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
 
@@ -26,10 +26,20 @@ jobs:
           sudo rm -rf /var/lib/docker /etc/docker /run/docker* /var/lib/containerd /run/containerd*
           sudo ip link delete docker0 || :
 
-          sudo apt update
-          sudo apt install -y snapd
+          # TODO WIP i386 testing
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get purge -y --auto-remove '.*snap.*'
+          for service in snapd.service snap.lxd.daemon.service snap.docker.dockerd.service; do
+            sudo mkdir -p "/etc/systemd/system/$service.d"
+            { echo '[Service]'; echo 'Personality=x86'; } | sudo tee "/etc/systemd/system/$service.d/i386.conf"
+          done
+          sudo apt-get install -y snapd:i386
           sudo snap refresh
+          sudo snap version
+          sudo snap install hello-world
           sudo snap list
+          [ "$(hello-world)" = 'Hello World!' ]
 
       - name: Build
         # https://github.com/snapcore/action-build/releases
