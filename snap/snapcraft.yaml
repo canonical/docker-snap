@@ -186,9 +186,11 @@ parts:
       - patch
       - pkg-config
     stage-packages:
-      - zfsutils-linux
       - aufs-tools
       - libltdl7
+      - pigz
+      - xz-utils
+      - zfsutils-linux
 
   # this part is so that things like `docker build -t foobar github.com/foo/bar` work
   git:
