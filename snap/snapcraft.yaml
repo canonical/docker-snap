@@ -188,6 +188,7 @@ parts:
     stage-packages:
       - aufs-tools
       - libltdl7
+      - pigz
       - xz-utils
       - zfsutils-linux
 
