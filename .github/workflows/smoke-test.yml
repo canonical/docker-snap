@@ -79,6 +79,14 @@ jobs:
           sudo docker version
           sudo docker info
 
+      - name: Save & Load
+        run: |
+          docker pull hello-world
+          docker save hello-world > hello-world.tar
+          xz -T0 < hello-world.tar > hello-world.txz
+          docker rmi hello-world
+          docker load --input hello-world.txz
+
       - name: Hello World
         run: sudo docker run --rm hello-world
 
