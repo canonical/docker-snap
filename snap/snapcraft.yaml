@@ -196,7 +196,7 @@ parts:
   git:
     source: https://github.com/git/git.git
     source-type: git
-    source-tag: v2.26.2
+    source-tag: v2.26.3
     source-depth: 1
     plugin: autotools
     configflags:
