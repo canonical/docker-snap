@@ -37,7 +37,13 @@ assumes: [snapd2.48.2] # TODO bump this to 2.49 once that's stable (https://gith
 
 layout:
   /etc/docker:
-    bind: $SNAP_DATA/etc/docker
+    symlink: $SNAP_DATA/etc/docker
+  /etc/gitconfig:
+    bind-file: $SNAP_DATA/etc/gitconfig
+  /usr/lib/git-core:
+    symlink: $SNAP/usr/lib/git-core
+  /usr/share/git-core/templates:
+    symlink: $SNAP/usr/share/git-core/templates
 
 plugs:
   home:
@@ -62,11 +68,6 @@ slots:
 apps:
   docker:
     command: docker
-    environment: &ugh-buildkit-git
-      GIT_TEMPLATE_DIR: $SNAP/share/git-core/templates
-      GIT_CONFIG_NOSYSTEM: 'true'
-      GIT_EXEC_PATH: $SNAP/libexec/git-core
-      GIT_TEXTDOMAINDIR: $SNAP/usr/share/locale
     completer: bin/docker-completion.sh
     plugs:
       - docker-cli
@@ -76,7 +77,6 @@ apps:
 
   dockerd:
     command: dockerd-wrapper
-    environment: *ugh-buildkit-git # buildkit runs "git" in the dockerd context instead of the CLI context like it was previously switched to, so we unfortunately need our GIT_* environment variables in both places
     daemon: simple
     plugs:
       - firewall-control
@@ -147,6 +147,8 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T "$GOPATH/src/github.com/docker/cli/build/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker"
       install -T "$GOPATH/src/github.com/docker/cli/contrib/completion/bash/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker-completion.sh"
+    stage-packages:
+      - git
 
   engine:
     plugin: make
@@ -187,30 +189,11 @@ parts:
       - pkg-config
     stage-packages:
       - aufs-tools
+      - git
       - libltdl7
       - pigz
       - xz-utils
       - zfsutils-linux
-
-  # this part is so that things like `docker build -t foobar github.com/foo/bar` work
-  git:
-    source: https://github.com/git/git.git
-    source-type: git
-    source-tag: v2.26.3
-    source-depth: 1
-    plugin: autotools
-    configflags:
-      - --with-curl
-      - --with-expat
-    build-packages:
-      - gettext
-      - libssl-dev
-      - libexpat1-dev
-      - zlib1g-dev
-    stage-packages:
-      - gettext
-      - libcurl3
-      - libcurl4-openssl-dev
 
   containerd:
     plugin: make
