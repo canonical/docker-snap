@@ -1,0 +1,22 @@
+https://github.com/docker-snap/docker-snap/pull/25#issuecomment-827849995
+https://github.com/moby/buildkit/pull/1533/files#diff-9a3248027714dcbcf2647fa27b75ec4dd3d9639ae80c40bfd6a68abd7805bd4eR494-R498
+
+diff --git a/vendor/github.com/moby/buildkit/source/git/gitsource.go b/vendor/github.com/moby/buildkit/source/git/gitsource.go
+index 3d1bfe21f4..197c339c78 100644
+--- a/vendor/github.com/moby/buildkit/source/git/gitsource.go
++++ b/vendor/github.com/moby/buildkit/source/git/gitsource.go
+@@ -598,12 +598,11 @@ func git(ctx context.Context, dir, sshAuthSock, knownHosts string, args ...strin
+ 		cmd.Stdin = nil
+ 		cmd.Stdout = io.MultiWriter(stdout, buf)
+ 		cmd.Stderr = io.MultiWriter(stderr, errbuf)
+-		cmd.Env = []string{
+-			"PATH=" + os.Getenv("PATH"),
++		cmd.Env = append(append([]string{}, os.Environ()...), []string{
+ 			"GIT_TERMINAL_PROMPT=0",
+ 			"GIT_SSH_COMMAND=" + getGitSSHCommand(knownHosts),
+ 			//	"GIT_TRACE=1",
+-		}
++		}...)
+ 		if sshAuthSock != "" {
+ 			cmd.Env = append(cmd.Env, "SSH_AUTH_SOCK="+sshAuthSock)
+ 		}

@@ -43,12 +43,12 @@ index 2f58ee852c..9107f82f40 100644
  }
  
 diff --git a/profiles/apparmor/template.go b/profiles/apparmor/template.go
-index 400b3bd50a..03670bf054 100644
+index b12e3ff3b2..053a73f978 100644
 --- a/profiles/apparmor/template.go
 +++ b/profiles/apparmor/template.go
-@@ -46,5 +46,13 @@ profile {{.Name}} flags=(attach_disconnected,mediate_deleted) {
+@@ -54,5 +54,13 @@ profile {{.Name}} flags=(attach_disconnected,mediate_deleted) {
    # suppress ptrace denials when using 'docker ps' or using 'ps' inside a container
-   ptrace (trace,read) peer={{.Name}},
+   ptrace (trace,read,tracedby,readby) peer={{.Name}},
  {{end}}
 +{{if .SnapSecurityLabel}}
 +  # Snap based docker distribution accesses
