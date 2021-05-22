@@ -280,6 +280,10 @@ parts:
     source-depth: 1
     build-packages:
       - libffi-dev
+      # for "cryptography" on non-wheel arches
+      - rustc
+      - cargo
+      - libssl-dev
 
   machine:
     plugin: make
