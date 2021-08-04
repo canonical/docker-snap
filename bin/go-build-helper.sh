@@ -24,4 +24,7 @@ gopartbootstrap()
 
 	# finally go into the go import path to prepare for building
 	cd "$GOIMPORTPATH"
+
+	# TODO hopefully temporary hack :(
+	export GO111MODULE=off
 }
