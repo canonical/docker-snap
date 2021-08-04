@@ -39,10 +39,10 @@ These instructions are intended to get you started quickly using the open source
   * Copy the the certificate from the registry server to your client machine.
 
         $ scp user@registry_server_ip:/home/user/certs/domain.crt ./
-        $ sudo mkdir -p /var/snap/docker/common/etc/certs.d/mydockerhub.com:5000
-        $ sudo cp ./domain.crt /var/snap/docker/common/etc/certs.d/mydockerhub.com:5000/ca.crt
+        $ sudo mkdir -p /var/snap/docker/current/etc/docker/certs.d/mydockerhub.com:5000
+        $ sudo cp ./domain.crt /var/snap/docker/current/etc/docker/certs.d/mydockerhub.com:5000/ca.crt
 
-    > Note the special location `/var/snap/docker/common/etc/certs.d` instead of `/etc/docker/certs.d` mentioned in the [upstream documentation](https://docs.docker.com/engine/security/certificates/#understanding-the-configuration).
+    > Note the special location `/var/snap/docker/current/etc/docker/certs.d` instead of `/etc/docker/certs.d` mentioned in the [upstream documentation](https://docs.docker.com/engine/security/certificates/#understanding-the-configuration).
 
   * Login to the registry server:
 
