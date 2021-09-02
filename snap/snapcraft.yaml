@@ -37,7 +37,7 @@ assumes: [snapd2.50]
 
 layout:
   /etc/docker:
-    symlink: $SNAP_DATA/etc/docker
+    bind: $SNAP_DATA/etc/docker
   /etc/gitconfig:
     bind-file: $SNAP_DATA/etc/gitconfig
   /usr/lib/git-core:
