@@ -33,7 +33,7 @@ jobs:
 
       - name: Build
         # https://github.com/snapcore/action-build/releases
-        uses: snapcore/action-build@v1.0.7
+        uses: snapcore/action-build@v1.0.9
         with:
           snapcraft-args: snap --output docker.snap
 
