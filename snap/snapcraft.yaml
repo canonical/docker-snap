@@ -9,7 +9,7 @@ description: |
 
   * This build can only access files in the home directory. So Dockerfiles and all other files used in commands like `docker build`, `docker save` and `docker load` need to be in $HOME.
   * You can change the configuration of this build by modifying the files in `/var/snap/docker/current/`.
-  * Additional certificates used by the Docker daemon to authenticate with registries need to be added in `/var/snap/docker/current/etc/docker/certs.d` (instead of `/etc/docker/certs.d`).
+  * Additional certificates used by the Docker daemon to authenticate with registries need to be added in `/var/snap/docker/current/etc/docker/certs.d` (instead of `/etc/docker/certs.d`). This directory can be accessed by other snaps using the `docker-registry-certificates` content interface.
 
   **Running Docker as normal user**
 
@@ -64,6 +64,11 @@ slots:
     interface: content
     read:
       - .
+  docker-registry-certificates:
+    content: docker-registry-certificates
+    interface: content
+    write:
+      - $SNAP_DATA/etc/docker/certs.d
 
 apps:
   docker:
