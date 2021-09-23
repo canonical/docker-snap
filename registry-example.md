@@ -16,7 +16,7 @@ These instructions are intended to get you started quickly using the open source
   * Create an `htpasswd` file, replacing "reguser" and "regpass" below with your desired credentials:
 
         $ cd $HOME && mkdir auth
-        $ sudo docker run --entrypoint htpasswd registry:2 -Bbn reguser regpass > auth/htpasswd
+        $ sudo docker run --entrypoint htpasswd httpd:2.4-alpine -Bbn reguser regpass > auth/htpasswd
 
   * Launch a basic authentication enabled registry server:
 
