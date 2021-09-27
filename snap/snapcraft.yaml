@@ -273,10 +273,10 @@ parts:
 
   compose:
     plugin: python
-    # https://github.com/docker/compose/blob/1.25.5/setup.py (Docker-supported Python versions)
+    # https://github.com/docker/compose/blob/1.29.2/setup.py (Docker-supported Python versions)
     python-version: python3
     source: https://github.com/docker/compose.git
-    source-tag: 1.25.5
+    source-tag: 1.29.2
     source-depth: 1
     build-packages:
       - libffi-dev
