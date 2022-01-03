@@ -49,6 +49,7 @@ plugs:
   home:
     read: all
   removable-media:
+  raw-usb:
   support:
     interface: docker-support
   privileged:
