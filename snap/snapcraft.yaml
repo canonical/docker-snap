@@ -307,6 +307,23 @@ parts:
     build-packages:
       - make
 
+  buildx:
+    plugin: go
+    source: https://github.com/docker/buildx.git
+    # https://github.com/docker/buildx/releases
+    source-commit: v0.8.2
+    override-build: |
+      # https://github.com/docker/buildx/blob/v0.8.2/Dockerfile
+      PKG='github.com/docker/buildx'
+      VERSION=$(git describe --match 'v[0-9]*' --always --tags)
+      REVISION=$(git rev-parse HEAD)
+      export CGO_ENABLED=0
+      go build -ldflags "-w -s -X ${PKG}/version.Version=${VERSION} -X ${PKG}/version.Revision=${REVISION} -X ${PKG}/version.Package=${PKG}" -o ./buildx ./cmd/buildx
+
+      install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
+      install -T buildx "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-buildx"
+    build-snaps: ['go/1.16/stable']
+
   machine:
     plugin: make
     source: https://github.com/docker/machine.git

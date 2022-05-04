@@ -79,6 +79,7 @@ jobs:
           sleep 1
           sudo docker version
           sudo docker info
+          sudo docker buildx version
           sudo docker compose version
 
       - name: Save & Load
