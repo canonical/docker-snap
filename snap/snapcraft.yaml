@@ -44,6 +44,8 @@ layout:
     symlink: $SNAP/usr/lib/git-core
   /usr/share/git-core/templates:
     symlink: $SNAP/usr/share/git-core/templates
+  /usr/libexec/docker/cli-plugins:
+    symlink: $SNAP/usr/libexec/docker/cli-plugins
 
 plugs:
   home:
@@ -289,6 +291,21 @@ parts:
       - rustc
       - cargo
       - libssl-dev
+
+  compose-v2:
+    plugin: make
+    source: https://github.com/docker/compose.git
+    # https://github.com/docker/compose/releases
+    source-commit: v2.5.0
+    override-build: |
+      make -f builder.Makefile
+
+      install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
+      install -T bin/docker-compose "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
+      # TODO remove "compose:" above and add a symlink from "$SNAPCRAFT_PART_INSTALL/bin/docker-compose" to this plugin (once v1 is fully EOL)
+    build-snaps: ['go/1.16/stable']
+    build-packages:
+      - make
 
   machine:
     plugin: make
