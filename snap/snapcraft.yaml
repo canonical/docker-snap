@@ -129,34 +129,6 @@ parts:
       - bin/*
       - config/daemon.json
 
-  docker-cli:
-    plugin: make
-    # https://github.com/docker/cli/tree/v20.10.14/dockerfiles (Docker-supported Go version for CLI)
-    build-snaps: ['go/1.16/stable']
-    source: https://github.com/docker/cli.git
-    source-tag: v20.10.14
-    override-build: |
-      # docker build specific environment variables
-      export VERSION=$SNAPCRAFT_PROJECT_VERSION
-      export DOCKER_GITCOMMIT=$(git rev-parse --short HEAD)
-      export GITCOMMIT=$DOCKER_GITCOMMIT
-      export DISABLE_WARN_OUTSIDE_CONTAINER=1
-
-      # setup the go build environment for docker-cli
-      . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
-      gopartbootstrap github.com/docker/cli
-
-      # build the docker cli binary
-      cd $GOPATH/src/github.com/docker/cli
-      unset LDFLAGS
-      make dynbinary
-
-      install -d "$SNAPCRAFT_PART_INSTALL/bin"
-      install -T "$GOPATH/src/github.com/docker/cli/build/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker"
-      install -T "$GOPATH/src/github.com/docker/cli/contrib/completion/bash/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker-completion.sh"
-    stage-packages:
-      - git
-
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
@@ -182,7 +154,8 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T "$GOPATH/src/github.com/docker/docker/bundles/dynbinary-daemon/dockerd" "$SNAPCRAFT_PART_INSTALL/bin/dockerd"
     # https://github.com/moby/moby/blob/v20.10.14/Dockerfile.simple (Docker-supported Go version for Engine)
-    build-snaps: ['go/1.16/stable']
+    build-snaps: &go ['go/1.16/stable']
+    # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
     after: [wrapper-scripts]
     build-packages:
       - btrfs-tools
@@ -203,42 +176,32 @@ parts:
       - zfsutils-linux
 
   containerd:
-    plugin: make
+    plugin: go
     source: https://github.com/containerd/containerd.git
     # from https://github.com/docker/docker/blob/v20.10.14/hack/dockerfile/install/containerd.installer
     source-commit: v1.5.11
     override-build: |
-      # setup the go build environment for containerd
-      . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
-      gopartbootstrap github.com/containerd/containerd
-
       make GIT_COMMIT= GIT_BRANCH= LDFLAGS=
 
       rm bin/containerd-stress
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -t "$SNAPCRAFT_PART_INSTALL/bin" bin/containerd* bin/ctr
-    build-snaps: ['go/1.16/stable']
-    after: [wrapper-scripts]
+    build-snaps: *go
     build-packages:
       - make
 
   runc:
-    plugin: make
+    plugin: go
     source: https://github.com/opencontainers/runc.git
     # from https://github.com/docker/docker/blob/v20.10.14/hack/dockerfile/install/runc.installer
     source-commit: v1.0.3
     override-build: |
-      # setup the go build environment for runc
-      . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
-      gopartbootstrap github.com/opencontainers/runc
-
       make BUILDTAGS='seccomp apparmor selinux' COMMIT=
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T runc "$SNAPCRAFT_PART_INSTALL/bin/runc"
-    build-snaps: ['go/1.16/stable']
-    after: [wrapper-scripts]
+    build-snaps: *go
     build-packages:
       - libapparmor-dev
       - libseccomp-dev
@@ -259,7 +222,7 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T bin/docker-proxy "$SNAPCRAFT_PART_INSTALL/bin/docker-proxy"
       install -T bin/dnet "$SNAPCRAFT_PART_INSTALL/bin/dnet"
-    build-snaps: ['go/1.16/stable']
+    build-snaps: *go
     after: [wrapper-scripts]
     build-packages:
       - iptables
@@ -278,34 +241,33 @@ parts:
     prime:
       - -bin/tini
 
-  compose:
-    plugin: python
-    # https://github.com/docker/compose/blob/1.29.2/setup.py (Docker-supported Python versions)
-    python-version: python3
-    source: https://github.com/docker/compose.git
-    source-tag: 1.29.2
-    source-depth: 1
-    build-packages:
-      - libffi-dev
-      # for "cryptography" on non-wheel arches
-      - rustc
-      - cargo
-      - libssl-dev
-
-  compose-v2:
+  docker-cli:
     plugin: make
-    source: https://github.com/docker/compose.git
-    # https://github.com/docker/compose/releases
-    source-commit: v2.5.0
+    # https://github.com/docker/cli/tree/v20.10.14/dockerfiles (Docker-supported Go version for CLI)
+    build-snaps: *go
+    source: https://github.com/docker/cli.git
+    source-tag: v20.10.14
     override-build: |
-      make -f builder.Makefile
+      # docker build specific environment variables
+      export VERSION=$SNAPCRAFT_PROJECT_VERSION
+      export DOCKER_GITCOMMIT=$(git rev-parse --short HEAD)
+      export GITCOMMIT=$DOCKER_GITCOMMIT
+      export DISABLE_WARN_OUTSIDE_CONTAINER=1
 
-      install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
-      install -T bin/docker-compose "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
-      # TODO remove "compose:" above and add a symlink from "$SNAPCRAFT_PART_INSTALL/bin/docker-compose" to this plugin (once v1 is fully EOL)
-    build-snaps: ['go/1.16/stable']
-    build-packages:
-      - make
+      # setup the go build environment for docker-cli
+      . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
+      gopartbootstrap github.com/docker/cli
+
+      # build the docker cli binary
+      cd $GOPATH/src/github.com/docker/cli
+      unset LDFLAGS
+      make dynbinary
+
+      install -d "$SNAPCRAFT_PART_INSTALL/bin"
+      install -T "$GOPATH/src/github.com/docker/cli/build/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker"
+      install -T "$GOPATH/src/github.com/docker/cli/contrib/completion/bash/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker-completion.sh"
+    stage-packages:
+      - git
 
   buildx:
     plugin: go
@@ -322,8 +284,38 @@ parts:
 
       install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
       install -T buildx "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-buildx"
-    build-snaps: ['go/1.16/stable']
+    build-snaps: *go
 
+  compose-v2:
+    plugin: go
+    source: https://github.com/docker/compose.git
+    # https://github.com/docker/compose/releases
+    source-commit: v2.5.0
+    override-build: |
+      make -f builder.Makefile
+
+      install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
+      install -T bin/docker-compose "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
+      # TODO remove "compose:" below and add a symlink from "$SNAPCRAFT_PART_INSTALL/bin/docker-compose" to this plugin (once v1 is fully EOL)
+    build-snaps: *go
+    build-packages:
+      - make
+
+  compose:
+    plugin: python
+    # https://github.com/docker/compose/blob/1.29.2/setup.py (Docker-supported Python versions)
+    python-version: python3
+    source: https://github.com/docker/compose.git
+    source-tag: 1.29.2
+    source-depth: 1
+    build-packages:
+      - libffi-dev
+      # for "cryptography" on non-wheel arches
+      - rustc
+      - cargo
+      - libssl-dev
+
+  # TODO figure out what we need to do to axe this -- it's totally 100% dead
   machine:
     plugin: make
     source: https://github.com/docker/machine.git
@@ -339,7 +331,7 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T bin/docker-machine "$SNAPCRAFT_PART_INSTALL/bin/docker-machine"
     # https://github.com/docker/machine/blob/v0.16.2/Dockerfile (Docker-supported Go version for Machine)
-    build-snaps: ['go/1.16/stable']
+    build-snaps: *go
     after: [wrapper-scripts]
 
 # vim:set et ts=2 sw=2:
