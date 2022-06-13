@@ -1,6 +1,6 @@
 name: docker
 #title: Docker
-version: '20.10.16'
+version: '20.10.17'
 summary: Docker container runtime
 description: |
   Build and run container images with Docker.
@@ -132,7 +132,7 @@ parts:
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
-    source-tag: v20.10.16
+    source-tag: v20.10.17
     source-depth: 1
     override-build: |
       # docker build specific environment variables
@@ -153,7 +153,7 @@ parts:
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T "$GOPATH/src/github.com/docker/docker/bundles/dynbinary-daemon/dockerd" "$SNAPCRAFT_PART_INSTALL/bin/dockerd"
-    # https://github.com/moby/moby/blob/v20.10.16/Dockerfile.simple (Docker-supported Go version for Engine)
+    # https://github.com/moby/moby/blob/v20.10.17/Dockerfile.simple (Docker-supported Go version for Engine)
     build-snaps: &go ['go/1.16/stable']
     # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
     after: [wrapper-scripts]
@@ -178,8 +178,8 @@ parts:
   containerd:
     plugin: go
     source: https://github.com/containerd/containerd.git
-    # from https://github.com/docker/docker/blob/v20.10.16/hack/dockerfile/install/containerd.installer
-    source-commit: v1.6.4
+    # from https://github.com/docker/docker/blob/v20.10.17/hack/dockerfile/install/containerd.installer
+    source-commit: v1.6.6
     override-build: |
       make GIT_COMMIT= GIT_BRANCH= LDFLAGS=
 
@@ -194,8 +194,8 @@ parts:
   runc:
     plugin: go
     source: https://github.com/opencontainers/runc.git
-    # from https://github.com/docker/docker/blob/v20.10.16/hack/dockerfile/install/runc.installer
-    source-commit: v1.1.1
+    # from https://github.com/docker/docker/blob/v20.10.17/hack/dockerfile/install/runc.installer
+    source-commit: v1.1.2
     override-build: |
       make BUILDTAGS='seccomp apparmor selinux' COMMIT=
 
@@ -210,8 +210,8 @@ parts:
   libnetwork:
     plugin: make
     source: https://github.com/docker/libnetwork.git
-    # from https://github.com/docker/docker/blob/v20.10.16/hack/dockerfile/install/proxy.installer
-    source-commit: 339b972b464ee3d401b5788b2af9e31d09d6b7da
+    # from https://github.com/docker/docker/blob/v20.10.17/hack/dockerfile/install/proxy.installer
+    source-commit: f6ccccb1c082a432c2a5814aaedaca56af33d9ea
     override-build: |
       # setup the go build environment for libnetwork
       . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
@@ -232,7 +232,7 @@ parts:
     plugin: cmake
     source: https://github.com/krallin/tini.git
     source-type: git
-    # from https://github.com/docker/docker/blob/v20.10.16/hack/dockerfile/install/tini.installer
+    # from https://github.com/docker/docker/blob/v20.10.17/hack/dockerfile/install/tini.installer
     source-commit: v0.19.0
     organize:
       'bin/tini-static': bin/docker-init
@@ -243,10 +243,10 @@ parts:
 
   docker-cli:
     plugin: make
-    # https://github.com/docker/cli/tree/v20.10.16/dockerfiles (Docker-supported Go version for CLI)
+    # https://github.com/docker/cli/tree/v20.10.17/dockerfiles (Docker-supported Go version for CLI)
     build-snaps: *go
     source: https://github.com/docker/cli.git
-    source-tag: v20.10.16
+    source-tag: v20.10.17
     override-build: |
       # docker build specific environment variables
       export VERSION=$SNAPCRAFT_PROJECT_VERSION
