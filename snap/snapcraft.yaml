@@ -154,7 +154,7 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T "$GOPATH/src/github.com/docker/docker/bundles/dynbinary-daemon/dockerd" "$SNAPCRAFT_PART_INSTALL/bin/dockerd"
     # https://github.com/moby/moby/blob/v20.10.20/Dockerfile.simple (Docker-supported Go version for Engine)
-    build-snaps: &go ['go/1.18/stable']
+    build-snaps: &go ['go/1.19/stable']
     # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
     after: [wrapper-scripts]
     build-packages:
@@ -294,12 +294,12 @@ parts:
     plugin: go
     source: https://github.com/docker/compose.git
     # https://github.com/docker/compose/releases
-    source-commit: v2.5.0
+    source-commit: v2.12.0
     override-build: |
-      make -f builder.Makefile
+      make build
 
       install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
-      install -T bin/docker-compose "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
+      install -T bin/build/docker-compose "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
       # TODO remove "compose:" below and add a symlink from "$SNAPCRAFT_PART_INSTALL/bin/docker-compose" to this plugin (once v1 is fully EOL)
     build-snaps: *go
     build-packages:
