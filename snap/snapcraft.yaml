@@ -170,6 +170,7 @@ parts:
     stage-packages:
       - aufs-tools
       - git
+      - libcurl3-gnutls
       - libltdl7
       - pigz
       - xz-utils
