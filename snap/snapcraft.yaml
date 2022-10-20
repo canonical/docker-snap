@@ -273,18 +273,22 @@ parts:
     plugin: go
     source: https://github.com/docker/buildx.git
     # https://github.com/docker/buildx/releases
-    source-commit: v0.8.2
+    source-commit: v0.9.1
     override-build: |
-      # https://github.com/docker/buildx/blob/v0.8.2/Dockerfile
+      # https://github.com/docker/buildx/blob/v0.9.1/Dockerfile
       PKG='github.com/docker/buildx'
       VERSION=$(git describe --match 'v[0-9]*' --always --tags)
       REVISION=$(git rev-parse HEAD)
       export CGO_ENABLED=0
-      go build -ldflags "-w -s -X ${PKG}/version.Version=${VERSION} -X ${PKG}/version.Revision=${REVISION} -X ${PKG}/version.Package=${PKG}" -o ./buildx ./cmd/buildx
+      go build -mod=vendor -ldflags "-w -s -X ${PKG}/version.Version=${VERSION} -X ${PKG}/version.Revision=${REVISION} -X ${PKG}/version.Package=${PKG}" -o ./buildx ./cmd/buildx
 
       install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
       install -T buildx "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-buildx"
     build-snaps: *go
+    override-pull: |
+      snapcraftctl pull
+      # the "go" plugin does "go mod download" which modifies "go.mod" and invalidates "vendor/modules.txt" (which fails the build)
+      git checkout -- go.mod go.sum
 
   compose-v2:
     plugin: go
