@@ -269,6 +269,7 @@ parts:
       install -T "$GOPATH/src/github.com/docker/cli/contrib/completion/bash/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker-completion.sh"
     stage-packages:
       - git
+      - libcurl3-gnutls
 
   buildx:
     plugin: go
