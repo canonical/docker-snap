@@ -292,6 +292,8 @@ parts:
     # https://github.com/docker/compose/releases
     source-commit: v2.5.0
     override-build: |
+      go get golang.org/x/net@v0.7.0
+      go mod tidy -go=1.16 && go mod tidy -go=1.17
       make -f builder.Makefile
 
       install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
