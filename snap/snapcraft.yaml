@@ -187,7 +187,7 @@ parts:
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -t "$SNAPCRAFT_PART_INSTALL/bin" bin/containerd* bin/ctr
-    build-snaps: *go
+    go-channel: &gochannel '1.16/stable'
     build-packages:
       - make
 
@@ -201,7 +201,7 @@ parts:
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T runc "$SNAPCRAFT_PART_INSTALL/bin/runc"
-    build-snaps: *go
+    go-channel: *gochannel
     build-packages:
       - libapparmor-dev
       - libseccomp-dev
@@ -284,7 +284,7 @@ parts:
 
       install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
       install -T buildx "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-buildx"
-    build-snaps: *go
+    go-channel: *gochannel
 
   compose-v2:
     plugin: go
@@ -297,7 +297,7 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
       install -T bin/docker-compose "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
       # TODO remove "compose:" below and add a symlink from "$SNAPCRAFT_PART_INSTALL/bin/docker-compose" to this plugin (once v1 is fully EOL)
-    build-snaps: *go
+    go-channel: *gochannel
     build-packages:
       - make
 
