@@ -7,7 +7,7 @@
 for snap in /snap/*; do 
     snap="${snap:6}" 
     case "$snap" in 
-        "bin" | "$gadget_name" | "$kernel_name" | "$core_name" | "$SNAP_NAME" ) 
+        "bin" | "$gadget_name" | "$kernel_name" | "$core_name" | "$SNAP_NAME" | "$docker_base" )
             ;;  
         *)  
             snap remove "$snap" 

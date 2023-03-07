@@ -16,7 +16,7 @@
 
 set -e
 
-image_name=ubuntu-core-16.img
+image_name=pc.img
 channel=candidate
 spread_opts="-v"
 force_new_image=0

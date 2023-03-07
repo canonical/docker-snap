@@ -33,16 +33,15 @@ fi
 
 model=pc
 arch=amd64
-image_name=ubuntu-core-16.img
+image_name=pc.img
 ubuntu_image_extra_args=
 
 if [ ! -z "$snap" ] ; then
 	ubuntu_image_extra_args="--extra-snaps $snap"
 fi
 
-ubuntu-image \
+ubuntu-image snap \
 	--channel $channel \
-	-o $image_name \
 	--image-size 4G \
 	$ubuntu_image_extra_args \
 	$model.model
