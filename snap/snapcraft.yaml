@@ -35,9 +35,18 @@ base: core22
 confinement: strict
 assumes: [snapd2.50]
 
+environment:
+  # For nvidia support #
+  LD_LIBRARY_PATH:    $SNAP/graphics/lib:${SNAP}/lib/:${SNAP}/lib/${SNAPCRAFT_ARCH_TRIPLET}:${SNAP}/usr/lib/:${SNAP}/usr/lib/${SNAPCRAFT_ARCH_TRIPLET}
+  LIBGL_DRIVERS_PATH: $SNAP/graphics/dri
+  LIBVA_DRIVERS_PATH: $SNAP/graphics/dri
+
 layout:
   /etc/docker:
     bind: $SNAP_DATA/etc/docker
+  # Container Device Interface (CDI) Support - https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#container-device-interface-cdi-support
+  /etc/cdi:
+    bind: $SNAP_DATA/etc/cdi
   /etc/gitconfig:
     bind-file: $SNAP_DATA/etc/gitconfig
   /usr/libexec/docker/cli-plugins:
@@ -58,6 +67,11 @@ plugs:
     privileged-containers: true
   docker-cli:
     interface: docker
+  # For nvidia userspace libs support #
+  graphics-core22:
+    interface: content
+    target: $SNAP/graphics
+    default-provider: nvidia-core22
 slots:
   docker-daemon:
     interface: docker
@@ -93,6 +107,7 @@ apps:
       - network-control
       - privileged
       - support
+      - graphics-core22
     slots:
       - docker-daemon
 
@@ -201,6 +216,45 @@ parts:
       - libapparmor-dev
       - libseccomp-dev
       - make
+
+  nvidia-container-toolkit:
+    plugin: make
+    source: https://github.com/NVIDIA/nvidia-container-toolkit.git
+    source-tag: v1.12.0
+    source-depth: 1
+    override-build: |
+      PLATFORM_DIST="ubuntu18.04"
+
+      make ${PLATFORM_DIST}
+
+      dpkg-deb -x ${SNAPCRAFT_PART_BUILD}/dist/${PLATFORM_DIST}/${SNAPCRAFT_TARGET_ARCH}/nvidia-container-toolkit_*.deb ${SNAPCRAFT_PART_INSTALL}
+      dpkg-deb -x ${SNAPCRAFT_PART_BUILD}/dist/${PLATFORM_DIST}/${SNAPCRAFT_TARGET_ARCH}/nvidia-container-toolkit-base_*.deb ${SNAPCRAFT_PART_INSTALL}
+
+      # From nvidia-container-toolkit package postinst
+      (cd "$SNAPCRAFT_PART_INSTALL/usr/bin" && ln -s nvidia-container-runtime-hook nvidia-container-toolkit)
+    build-packages:
+      - make
+    # Recursive - could also use docker.io build-packages #
+    build-snaps:
+      - docker
+
+  libnvidia-container:
+    plugin: make
+    source: https://github.com/NVIDIA/libnvidia-container.git
+    source-tag: v1.12.0
+    source-depth: 1
+    override-build: |
+      PLATFORM_DIST="ubuntu18.04"
+
+      make ${PLATFORM_DIST}
+
+      dpkg-deb -x ${SNAPCRAFT_PART_BUILD}/dist/${PLATFORM_DIST}/${SNAPCRAFT_TARGET_ARCH}/libnvidia-container1_*.deb ${SNAPCRAFT_PART_INSTALL}
+      dpkg-deb -x ${SNAPCRAFT_PART_BUILD}/dist/${PLATFORM_DIST}/${SNAPCRAFT_TARGET_ARCH}/libnvidia-container-tools_*.deb ${SNAPCRAFT_PART_INSTALL}
+    build-packages:
+      - make
+    # Recursive - could also use docker.io build-packages #
+    build-snaps:
+      - docker
 
   libnetwork:
     plugin: make
