@@ -179,7 +179,7 @@ parts:
     plugin: go
     source: https://github.com/containerd/containerd.git
     # from https://github.com/docker/docker/blob/v20.10.17/hack/dockerfile/install/containerd.installer
-    source-commit: v1.6.6
+    source-tag: v1.6.6
     override-build: |
       make GIT_COMMIT= GIT_BRANCH= LDFLAGS=
 
@@ -195,7 +195,7 @@ parts:
     plugin: go
     source: https://github.com/opencontainers/runc.git
     # from https://github.com/docker/docker/blob/v20.10.17/hack/dockerfile/install/runc.installer
-    source-commit: v1.1.2
+    source-tag: v1.1.2
     override-build: |
       make BUILDTAGS='seccomp apparmor selinux' COMMIT=
 
@@ -233,7 +233,7 @@ parts:
     source: https://github.com/krallin/tini.git
     source-type: git
     # from https://github.com/docker/docker/blob/v20.10.17/hack/dockerfile/install/tini.installer
-    source-commit: v0.19.0
+    source-tag: v0.19.0
     organize:
       'bin/tini-static': bin/docker-init
     build-packages:
@@ -273,7 +273,7 @@ parts:
     plugin: go
     source: https://github.com/docker/buildx.git
     # https://github.com/docker/buildx/releases
-    source-commit: v0.8.2
+    source-tag: v0.8.2
     override-build: |
       # https://github.com/docker/buildx/blob/v0.8.2/Dockerfile
       PKG='github.com/docker/buildx'
@@ -290,7 +290,7 @@ parts:
     plugin: go
     source: https://github.com/docker/compose.git
     # https://github.com/docker/compose/releases
-    source-commit: v2.5.0
+    source-tag: v2.5.0
     override-build: |
       go get golang.org/x/net@v0.7.0
       go mod tidy -go=1.16 && go mod tidy -go=1.17
