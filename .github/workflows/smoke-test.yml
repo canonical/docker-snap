@@ -25,7 +25,9 @@ jobs:
           sudo apt-get purge --auto-remove -y 'docker.*' 'containerd.*' 'moby.*' 'runc.*'
           sudo rm -rf /var/lib/docker /etc/docker /run/docker* /var/lib/containerd /run/containerd*
           sudo ip link delete docker0 || :
-
+          sudo grep kernel-5.4-outoftree-network -r /etc/apparmor.d/ || :
+          sudo grep abi -r /etc/apparmor.d || :
+          sudo rm -rf /etc/apparmor.d/abi/ || :
           sudo apt update
           sudo apt install -y snapd
           sudo snap refresh
