@@ -31,7 +31,7 @@ description: |
 license: (Apache-2.0 AND MIT AND GPL-2.0)
 grade: stable
 
-base: core18
+base: core22
 confinement: strict
 assumes: [snapd2.50]
 
@@ -74,7 +74,7 @@ slots:
 
 apps:
   docker:
-    command: docker
+    command: bin/docker
     completer: bin/docker-completion.sh
     plugs:
       - docker-cli
@@ -83,7 +83,7 @@ apps:
       - removable-media
 
   dockerd:
-    command: dockerd-wrapper
+    command: bin/dockerd-wrapper
     daemon: simple
     plugs:
       - firewall-control
@@ -97,20 +97,20 @@ apps:
       - docker-daemon
 
   compose:
-    command: docker-compose
+    command: bin/docker-compose
     plugs:
       - docker-cli
       - network
       - home
   machine:
-    command: docker-machine
+    command: bin/docker-machine
     plugs:
       - docker-cli
       - network
       - home
       - network-bind
   help:
-    command: help
+    command: bin/help
 
 parts:
   wrapper-scripts:
@@ -158,7 +158,7 @@ parts:
     # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
     after: [wrapper-scripts]
     build-packages:
-      - btrfs-tools
+      - btrfs-progs
       - gcc
       - git
       - libc6-dev
@@ -168,7 +168,6 @@ parts:
       - patch
       - pkg-config
     stage-packages:
-      - aufs-tools
       - git
       - libltdl7
       - pigz
@@ -187,9 +186,10 @@ parts:
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -t "$SNAPCRAFT_PART_INSTALL/bin" bin/containerd* bin/ctr
-    go-channel: &gochannel '1.18/stable'
+    build-snaps: *go
     build-packages:
       - make
+      - libbtrfs-dev
 
   runc:
     plugin: go
@@ -201,7 +201,7 @@ parts:
 
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T runc "$SNAPCRAFT_PART_INSTALL/bin/runc"
-    go-channel: *gochannel
+    build-snaps: *go
     build-packages:
       - libapparmor-dev
       - libseccomp-dev
@@ -266,6 +266,7 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/bin"
       install -T "$GOPATH/src/github.com/docker/cli/build/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker"
       install -T "$GOPATH/src/github.com/docker/cli/contrib/completion/bash/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker-completion.sh"
+    after: [wrapper-scripts]
     stage-packages:
       - git
 
@@ -284,7 +285,7 @@ parts:
 
       install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
       install -T buildx "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-buildx"
-    go-channel: *gochannel
+    build-snaps: *go
 
   compose-v2:
     plugin: go
@@ -299,14 +300,13 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
       install -T bin/docker-compose "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
       # TODO remove "compose:" below and add a symlink from "$SNAPCRAFT_PART_INSTALL/bin/docker-compose" to this plugin (once v1 is fully EOL)
-    go-channel: *gochannel
+    build-snaps: *go
     build-packages:
       - make
 
   compose:
     plugin: python
     # https://github.com/docker/compose/blob/1.29.2/setup.py (Docker-supported Python versions)
-    python-version: python3
     source: https://github.com/docker/compose.git
     source-tag: 1.29.2
     source-depth: 1
