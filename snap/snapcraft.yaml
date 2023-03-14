@@ -102,13 +102,6 @@ apps:
       - docker-cli
       - network
       - home
-  machine:
-    command: bin/docker-machine
-    plugs:
-      - docker-cli
-      - network
-      - home
-      - network-bind
   help:
     command: bin/help
 
@@ -318,24 +311,5 @@ parts:
       - rustc
       - cargo
       - libssl-dev
-
-  # TODO figure out what we need to do to axe this -- it's totally 100% dead
-  machine:
-    plugin: make
-    source: https://github.com/docker/machine.git
-    source-tag: v0.16.2
-    source-depth: 1
-    override-build: |
-      # setup the go build environment for docker machine
-      . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
-      gopartbootstrap github.com/docker/machine
-
-      make build
-
-      install -d "$SNAPCRAFT_PART_INSTALL/bin"
-      install -T bin/docker-machine "$SNAPCRAFT_PART_INSTALL/bin/docker-machine"
-    # https://github.com/docker/machine/blob/v0.16.2/Dockerfile (Docker-supported Go version for Machine)
-    build-snaps: *go
-    after: [wrapper-scripts]
 
 # vim:set et ts=2 sw=2:
