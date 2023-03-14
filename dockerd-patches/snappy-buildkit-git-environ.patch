@@ -1,15 +1,17 @@
-https://github.com/docker-snap/docker-snap/pull/25#issuecomment-827849995
-https://github.com/moby/buildkit/pull/1533/files#diff-9a3248027714dcbcf2647fa27b75ec4dd3d9639ae80c40bfd6a68abd7805bd4eR494-R498
-
 diff --git a/vendor/github.com/moby/buildkit/source/git/gitsource.go b/vendor/github.com/moby/buildkit/source/git/gitsource.go
-index 9245008aa8..a7992e8039 100644
+index dd35fe55f7..466c0720ca 100644
 --- a/vendor/github.com/moby/buildkit/source/git/gitsource.go
 +++ b/vendor/github.com/moby/buildkit/source/git/gitsource.go
-@@ -617,6 +617,7 @@ func git(ctx context.Context, dir, sshAuthSock, knownHosts string, args ...strin
+@@ -672,6 +672,12 @@ func git(ctx context.Context, dir, sshAuthSock, knownHosts string, args ...strin
+ 			"GIT_CONFIG_NOSYSTEM=1", // Disable reading from system gitconfig.
+ 			"HOME=/dev/null",        // Disable reading from user gitconfig.
+ 		}
++		if envVal, ok := os.LookupEnv("GIT_EXEC_PATH"); ok {
++			cmd.Env = append(cmd.Env, "GIT_EXEC_PATH="+envVal)
++		}
++		if envVal, ok := os.LookupEnv("GIT_TEMPLATE_DIR"); ok {
++			cmd.Env = append(cmd.Env, "GIT_TEMPLATE_DIR="+envVal)
++		}
  		if sshAuthSock != "" {
  			cmd.Env = append(cmd.Env, "SSH_AUTH_SOCK="+sshAuthSock)
  		}
-+		cmd.Env = append(append([]string{}, os.Environ()...), cmd.Env...) // https://github.com/docker-snap/docker-snap/pull/25#issuecomment-827849995
- 		// remote git commands spawn helper processes that inherit FDs and don't
- 		// handle parent death signal so exec.CommandContext can't be used
- 		err := runProcessGroup(ctx, cmd)

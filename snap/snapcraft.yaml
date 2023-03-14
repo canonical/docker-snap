@@ -38,14 +38,12 @@ assumes: [snapd2.50]
 layout:
   /etc/docker:
     bind: $SNAP_DATA/etc/docker
-  /etc/gitconfig:
-    bind-file: $SNAP_DATA/etc/gitconfig
-  /usr/lib/git-core:
-    symlink: $SNAP/usr/lib/git-core
-  /usr/share/git-core/templates:
-    symlink: $SNAP/usr/share/git-core/templates
   /usr/libexec/docker/cli-plugins:
     symlink: $SNAP/usr/libexec/docker/cli-plugins
+
+environment:
+  GIT_EXEC_PATH: "$SNAP/usr/lib/git-core"
+  GIT_TEMPLATE_DIR: "$SNAP/usr/share/git-core/templates"
 
 plugs:
   home:
@@ -169,7 +167,6 @@ parts:
       - pkg-config
     stage-packages:
       - git
-      - libcurl3-gnutls
       - libltdl7
       - pigz
       - xz-utils
@@ -270,7 +267,6 @@ parts:
     after: [wrapper-scripts]
     stage-packages:
       - git
-      - libcurl3-gnutls
 
   buildx:
     plugin: go
