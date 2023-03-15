@@ -218,25 +218,24 @@ parts:
       - make
 
   nvidia-container-toolkit:
-    plugin: make
+    plugin: go
     source: https://github.com/NVIDIA/nvidia-container-toolkit.git
     source-tag: v1.12.0
     source-depth: 1
     override-build: |
-      PLATFORM_DIST="ubuntu18.04"
-
-      make ${PLATFORM_DIST}
-
-      dpkg-deb -x ${SNAPCRAFT_PART_BUILD}/dist/${PLATFORM_DIST}/${SNAPCRAFT_TARGET_ARCH}/nvidia-container-toolkit_*.deb ${SNAPCRAFT_PART_INSTALL}
-      dpkg-deb -x ${SNAPCRAFT_PART_BUILD}/dist/${PLATFORM_DIST}/${SNAPCRAFT_TARGET_ARCH}/nvidia-container-toolkit-base_*.deb ${SNAPCRAFT_PART_INSTALL}
+      craftctl default
 
       # From nvidia-container-toolkit package postinst
-      (cd "$SNAPCRAFT_PART_INSTALL/usr/bin" && ln -s nvidia-container-runtime-hook nvidia-container-toolkit)
+      (cd "${CRAFT_PART_INSTALL}/bin" && ln -s nvidia-container-runtime-hook nvidia-container-toolkit)
+    build-snaps: *go
     build-packages:
       - make
-    # Recursive - could also use docker.io build-packages #
-    build-snaps:
-      - docker
+    organize:
+      bin: usr/bin/
+    stage:
+      - usr/bin/nvidia-container-toolkit
+      - usr/bin/nvidia-container-runtime
+      - usr/bin/nvidia-container-runtime-hook
 
   libnvidia-container:
     plugin: make
@@ -244,17 +243,20 @@ parts:
     source-tag: v1.12.0
     source-depth: 1
     override-build: |
-      PLATFORM_DIST="ubuntu18.04"
+      patch -p1 < "${CRAFT_PROJECT_DIR}/patches/nvidia-0001-Fix-for-22.04-build.patch"
 
-      make ${PLATFORM_DIST}
-
-      dpkg-deb -x ${SNAPCRAFT_PART_BUILD}/dist/${PLATFORM_DIST}/${SNAPCRAFT_TARGET_ARCH}/libnvidia-container1_*.deb ${SNAPCRAFT_PART_INSTALL}
-      dpkg-deb -x ${SNAPCRAFT_PART_BUILD}/dist/${PLATFORM_DIST}/${SNAPCRAFT_TARGET_ARCH}/libnvidia-container-tools_*.deb ${SNAPCRAFT_PART_INSTALL}
+      craftctl default
     build-packages:
-      - make
-    # Recursive - could also use docker.io build-packages #
-    build-snaps:
-      - docker
+      - bmake
+      - libelf-dev
+      - libcap-dev
+    # Paths taken from upstream packaging #
+    organize:
+      usr/local/bin/nvidia-container-cli: usr/bin/nvidia-container-cli
+      usr/local/lib: usr/lib/${CRAFT_ARCH_TRIPLET}/
+    prime:
+      - usr/bin/nvidia-container-cli*
+      - usr/lib/${CRAFT_ARCH_TRIPLET}/libnvidia-container*.so*
 
   libnetwork:
     plugin: make
