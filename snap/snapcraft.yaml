@@ -38,6 +38,8 @@ assumes: [snapd2.50]
 layout:
   /etc/docker:
     bind: $SNAP_DATA/etc/docker
+  /etc/gitconfig:
+    bind-file: $SNAP_DATA/etc/gitconfig
   /usr/libexec/docker/cli-plugins:
     symlink: $SNAP/usr/libexec/docker/cli-plugins
 
