@@ -119,11 +119,13 @@ parts:
     stage:
       - bin/*
       - dockerd-patches/*
+      - cli-patches/*
       - config/daemon.json
     prime:
       - -bin/prep-dockerd-build.sh
       - -bin/go-build-helper.sh
       - -dockerd-patches/*
+      - -cli-patches/*
       - bin/*
       - config/daemon.json
 
@@ -251,6 +253,8 @@ parts:
       export DOCKER_GITCOMMIT=$(git rev-parse --short HEAD)
       export GITCOMMIT=$DOCKER_GITCOMMIT
       export DISABLE_WARN_OUTSIDE_CONTAINER=1
+
+      git apply --ignore-space-change --ignore-whitespace $SNAPCRAFT_STAGE/cli-patches/snappy-gitutils-git-environ.patch
 
       # setup the go build environment for docker-cli
       . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
