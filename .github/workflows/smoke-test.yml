@@ -29,6 +29,7 @@ jobs:
           sudo apt update
           sudo apt install -y snapd
           sudo snap refresh
+          sudo snap refresh --channel edge snapd
           sudo snap list
 
       - name: Build
@@ -47,7 +48,7 @@ jobs:
 
       - name: Install
         run: |
-          sudo snap install --dangerous --devmode ./docker.snap
+          sudo snap install --dangerous ./docker.snap
           # it will immediately be failing to start, so let's head that off as quickly as we can
           sudo snap stop --disable docker.dockerd
           sudo killall dockerd || :
@@ -99,7 +100,7 @@ jobs:
           expectedOutput="testing-journald-log-driver-$RANDOM-$RANDOM"
           sudo docker run --name test-journald --log-driver journald bash -c 'echo "$@"' -- "$expectedOutput"
           actualOutput="$(sudo docker logs test-journald)"
-          if ! [ -z "$actualOutput" ]; then [ -n "$(snap list | grep '^docker .* devmode$')" ] || exit 1; fi # verify that "log-observe" is still necessary
+          [ -z "$actualOutput" ] # verify that "log-observe" is still necessary
           sudo snap connect docker:log-observe
           actualOutput="$(sudo docker logs test-journald)"
           [ "$actualOutput" = "$expectedOutput" ]
