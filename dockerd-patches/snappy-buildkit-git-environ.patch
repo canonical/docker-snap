@@ -1,17 +1,14 @@
 diff --git a/vendor/github.com/moby/buildkit/source/git/gitsource.go b/vendor/github.com/moby/buildkit/source/git/gitsource.go
-index dd35fe55f7..466c0720ca 100644
+index 15e0d56a21..d94075a3ca 100644
 --- a/vendor/github.com/moby/buildkit/source/git/gitsource.go
 +++ b/vendor/github.com/moby/buildkit/source/git/gitsource.go
-@@ -672,6 +672,12 @@ func git(ctx context.Context, dir, sshAuthSock, knownHosts string, args ...strin
- 			"GIT_CONFIG_NOSYSTEM=1", // Disable reading from system gitconfig.
- 			"HOME=/dev/null",        // Disable reading from user gitconfig.
- 		}
-+		if envVal, ok := os.LookupEnv("GIT_EXEC_PATH"); ok {
-+			cmd.Env = append(cmd.Env, "GIT_EXEC_PATH="+envVal)
-+		}
-+		if envVal, ok := os.LookupEnv("GIT_TEMPLATE_DIR"); ok {
-+			cmd.Env = append(cmd.Env, "GIT_TEMPLATE_DIR="+envVal)
-+		}
- 		if sshAuthSock != "" {
- 			cmd.Env = append(cmd.Env, "SSH_AUTH_SOCK="+sshAuthSock)
- 		}
+@@ -613,6 +613,9 @@ func git(ctx context.Context, dir, sshAuthSock, knownHosts string, args ...strin
+ 		cmd.Stderr = io.MultiWriter(stderr, errbuf)
+ 		cmd.Env = []string{
+ 			"PATH=" + os.Getenv("PATH"),
++			"LD_LIBRARY_PATH=" + os.Getenv("LD_LIBRARY_PATH"),
++			"GIT_EXEC_PATH=" + os.Getenv("GIT_EXEC_PATH"),
++			"GIT_TEMPLATE_DIR=" + os.Getenv("GIT_TEMPLATE_DIR"),
+ 			"GIT_TERMINAL_PROMPT=0",
+ 			"GIT_SSH_COMMAND=" + getGitSSHCommand(knownHosts),
+ 			//	"GIT_TRACE=1",
