@@ -71,7 +71,8 @@ plugs:
   graphics-core22:
     interface: content
     target: $SNAP/graphics
-    default-provider: nvidia-core22
+    # Currnelty, this is the only relavent provier, but cannot be default as not supported on all archs #
+    #default-provider: nvidia-core22
 slots:
   docker-daemon:
     interface: docker
