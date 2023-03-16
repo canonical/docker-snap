@@ -234,9 +234,6 @@ parts:
         exit 0
 
       craftctl default
-
-      # From nvidia-container-toolkit package postinst
-      (cd "${CRAFT_PART_INSTALL}/bin" && ln -s nvidia-container-runtime-hook nvidia-container-toolkit)
     build-snaps: *go
     build-packages:
       - make
