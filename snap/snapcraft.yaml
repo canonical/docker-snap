@@ -35,12 +35,6 @@ base: core22
 confinement: strict
 assumes: [snapd2.50]
 
-environment:
-  # For nvidia support #
-  LD_LIBRARY_PATH:    $SNAP/graphics/lib:${SNAP}/lib/:${SNAP}/lib/${SNAPCRAFT_ARCH_TRIPLET}:${SNAP}/usr/lib/:${SNAP}/usr/lib/${SNAPCRAFT_ARCH_TRIPLET}
-  LIBGL_DRIVERS_PATH: $SNAP/graphics/dri
-  LIBVA_DRIVERS_PATH: $SNAP/graphics/dri
-
 layout:
   /etc/docker:
     bind: $SNAP_DATA/etc/docker
@@ -55,6 +49,10 @@ layout:
 environment:
   GIT_EXEC_PATH: "$SNAP/usr/lib/git-core"
   GIT_TEMPLATE_DIR: "$SNAP/usr/share/git-core/templates"
+  # For nvidia support #
+  LD_LIBRARY_PATH:    $SNAP/graphics/lib:${SNAP}/lib/:${SNAP}/lib/${SNAPCRAFT_ARCH_TRIPLET}:${SNAP}/usr/lib/:${SNAP}/usr/lib/${SNAPCRAFT_ARCH_TRIPLET}
+  LIBGL_DRIVERS_PATH: $SNAP/graphics/dri
+  LIBVA_DRIVERS_PATH: $SNAP/graphics/dri
 
 plugs:
   home:
