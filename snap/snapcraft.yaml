@@ -222,7 +222,17 @@ parts:
     source: https://github.com/NVIDIA/nvidia-container-toolkit.git
     source-tag: v1.12.0
     source-depth: 1
+    override-pull: |
+      [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
+        [ "${CRAFT_TARGET_ARCH}" != "arm64" ] && \
+        exit 0
+
+      craftctl default
     override-build: |
+      [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
+        [ "${CRAFT_TARGET_ARCH}" != "arm64" ] && \
+        exit 0
+
       craftctl default
 
       # From nvidia-container-toolkit package postinst
@@ -233,16 +243,24 @@ parts:
     organize:
       bin: usr/bin/
     stage:
-      - usr/bin/nvidia-container-toolkit
-      - usr/bin/nvidia-container-runtime
-      - usr/bin/nvidia-container-runtime-hook
+      - usr/bin/nvidia-container-*
 
   libnvidia-container:
     plugin: make
     source: https://github.com/NVIDIA/libnvidia-container.git
     source-tag: v1.12.0
     source-depth: 1
+    override-pull: |
+      [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
+        [ "${CRAFT_TARGET_ARCH}" != "arm64" ] && \
+        exit 0
+
+      craftctl default
     override-build: |
+      [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
+        [ "${CRAFT_TARGET_ARCH}" != "arm64" ] && \
+        exit 0
+
       patch -p1 < "${CRAFT_PROJECT_DIR}/patches/nvidia-0001-Fix-for-22.04-build.patch"
 
       craftctl default
