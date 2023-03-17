@@ -168,7 +168,7 @@ parts:
       - zfsutils-linux
 
   containerd:
-    plugin: go
+    plugin: make
     source: https://github.com/containerd/containerd.git
     # from https://github.com/docker/docker/blob/v20.10.23/hack/dockerfile/install/containerd.installer
     source-tag: v1.6.15
@@ -182,11 +182,10 @@ parts:
       install -t "$SNAPCRAFT_PART_INSTALL/bin" bin/containerd* bin/ctr
     build-snaps: *go
     build-packages:
-      - make
       - libbtrfs-dev
 
   runc:
-    plugin: go
+    plugin: make
     source: https://github.com/opencontainers/runc.git
     # from https://github.com/docker/docker/blob/v20.10.23/hack/dockerfile/install/runc.installer
     source-tag: v1.1.4
@@ -200,7 +199,6 @@ parts:
     build-packages:
       - libapparmor-dev
       - libseccomp-dev
-      - make
 
   libnetwork:
     plugin: make
@@ -222,7 +220,6 @@ parts:
     after: [wrapper-scripts]
     build-packages:
       - iptables
-      - make
 
   tini:
     plugin: cmake
@@ -268,7 +265,7 @@ parts:
       - git
 
   buildx:
-    plugin: go
+    plugin: nil
     source: https://github.com/docker/buildx.git
     # https://github.com/docker/buildx/releases
     source-tag: v0.9.1
@@ -284,13 +281,9 @@ parts:
       install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
       install -T buildx "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-buildx"
     build-snaps: *go
-    override-pull: |
-      snapcraftctl pull
-      # the "go" plugin does "go mod download" which modifies "go.mod" and invalidates "vendor/modules.txt" (which fails the build)
-      git checkout -- go.mod go.sum
 
   compose-v2:
-    plugin: go
+    plugin: make
     source: https://github.com/docker/compose.git
     # https://github.com/docker/compose/releases
     source-tag: v2.12.2
@@ -302,8 +295,6 @@ parts:
       install -T bin/build/docker-compose "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
       # TODO remove "compose:" below and add a symlink from "$SNAPCRAFT_PART_INSTALL/bin/docker-compose" to this plugin (once v1 is fully EOL)
     build-snaps: *go
-    build-packages:
-      - make
 
   compose:
     plugin: python
