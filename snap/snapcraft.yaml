@@ -38,6 +38,9 @@ assumes: [snapd2.50]
 layout:
   /etc/docker:
     bind: $SNAP_DATA/etc/docker
+  # Container Device Interface (CDI) Support - https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#container-device-interface-cdi-support
+  /etc/cdi:
+    bind: $SNAP_DATA/etc/cdi
   /etc/gitconfig:
     bind-file: $SNAP_DATA/etc/gitconfig
   /usr/libexec/docker/cli-plugins:
@@ -46,6 +49,10 @@ layout:
 environment:
   GIT_EXEC_PATH: "$SNAP/usr/lib/git-core"
   GIT_TEMPLATE_DIR: "$SNAP/usr/share/git-core/templates"
+  # For nvidia support #
+  LD_LIBRARY_PATH:    $SNAP/graphics/lib:${SNAP}/lib/:${SNAP}/lib/${SNAPCRAFT_ARCH_TRIPLET}:${SNAP}/usr/lib/:${SNAP}/usr/lib/${SNAPCRAFT_ARCH_TRIPLET}
+  LIBGL_DRIVERS_PATH: $SNAP/graphics/dri
+  LIBVA_DRIVERS_PATH: $SNAP/graphics/dri
 
 plugs:
   home:
@@ -58,6 +65,12 @@ plugs:
     privileged-containers: true
   docker-cli:
     interface: docker
+  # For nvidia userspace libs support #
+  graphics-core22:
+    interface: content
+    target: $SNAP/graphics
+    # Currnelty, this is the only relavent provier, but cannot be default as not supported on all archs #
+    #default-provider: nvidia-core22
 slots:
   docker-daemon:
     interface: docker
@@ -93,6 +106,7 @@ apps:
       - network-control
       - privileged
       - support
+      - graphics-core22
     slots:
       - docker-daemon
 
@@ -199,6 +213,62 @@ parts:
     build-packages:
       - libapparmor-dev
       - libseccomp-dev
+
+  nvidia-container-toolkit:
+    plugin: go
+    source: https://github.com/NVIDIA/nvidia-container-toolkit.git
+    source-tag: v1.12.0
+    source-depth: 1
+    override-pull: |
+      [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
+        [ "${CRAFT_TARGET_ARCH}" != "arm64" ] && \
+        exit 0
+
+      craftctl default
+    override-build: |
+      [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
+        [ "${CRAFT_TARGET_ARCH}" != "arm64" ] && \
+        exit 0
+
+      craftctl default
+    build-snaps: *go
+    build-packages:
+      - make
+    organize:
+      bin: usr/bin/
+    stage:
+      - usr/bin/nvidia-container-*
+
+  libnvidia-container:
+    plugin: make
+    source: https://github.com/NVIDIA/libnvidia-container.git
+    source-tag: v1.12.0
+    source-depth: 1
+    override-pull: |
+      [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
+        [ "${CRAFT_TARGET_ARCH}" != "arm64" ] && \
+        exit 0
+
+      craftctl default
+    override-build: |
+      [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
+        [ "${CRAFT_TARGET_ARCH}" != "arm64" ] && \
+        exit 0
+
+      patch -p1 < "${CRAFT_PROJECT_DIR}/patches/nvidia-0001-Fix-for-22.04-build.patch"
+
+      craftctl default
+    build-packages:
+      - bmake
+      - libelf-dev
+      - libcap-dev
+    # Paths taken from upstream packaging #
+    organize:
+      usr/local/bin/nvidia-container-cli: usr/bin/nvidia-container-cli
+      usr/local/lib: usr/lib/${CRAFT_ARCH_TRIPLET}/
+    prime:
+      - usr/bin/nvidia-container-cli*
+      - usr/lib/${CRAFT_ARCH_TRIPLET}/libnvidia-container*.so*
 
   libnetwork:
     plugin: make
