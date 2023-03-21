@@ -372,8 +372,6 @@ parts:
     source: https://github.com/docker/compose.git
     source-tag: 1.29.2
     source-depth: 1
-    stage:
-      - -lib/python3.6/site-packages/wheel*
     build-packages:
       - libffi-dev
       # for "cryptography" on non-wheel arches
