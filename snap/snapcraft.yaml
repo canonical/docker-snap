@@ -260,6 +260,7 @@ parts:
       craftctl default
     build-packages:
       - bmake
+      - curl
       - libelf-dev
       - libcap-dev
     # Paths taken from upstream packaging #
