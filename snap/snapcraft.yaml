@@ -131,7 +131,6 @@ parts:
       - config/daemon.json
     prime:
       - -bin/prep-dockerd-build.sh
-      - -bin/go-build-helper.sh
       - -dockerd-patches/*
       - bin/*
       - config/daemon.json
@@ -151,15 +150,11 @@ parts:
       # this patches the dockerd sources
       . "$CRAFT_STAGE/bin/prep-dockerd-build.sh"
 
-      # setup the go build environment for docker/docker
-      . "$CRAFT_STAGE/bin/go-build-helper.sh"
-      gopartbootstrap github.com/docker/docker
-
       # build the dockerd binary
       ./hack/make.sh dynbinary
 
       install -d "$CRAFT_PART_INSTALL/bin"
-      install -T "$GOPATH/src/github.com/docker/docker/bundles/dynbinary-daemon/dockerd" "$CRAFT_PART_INSTALL/bin/dockerd"
+      install -T "bundles/dynbinary-daemon/dockerd" "$CRAFT_PART_INSTALL/bin/dockerd"
     # https://github.com/moby/moby/blob/v20.10.23/Dockerfile.simple (Docker-supported Go version for Engine)
     build-snaps: &go ['go/1.19/stable']
     # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
@@ -278,17 +273,12 @@ parts:
     source-commit: 05b93e0d3a95952f70c113b0bc5bdb538d7afdd7
     source-depth: 1
     override-build: |
-      # setup the go build environment for libnetwork
-      . "$CRAFT_STAGE/bin/go-build-helper.sh"
-      gopartbootstrap github.com/docker/libnetwork
-
       make build-local
 
       install -d "$CRAFT_PART_INSTALL/bin"
       install -T bin/docker-proxy "$CRAFT_PART_INSTALL/bin/docker-proxy"
       install -T bin/dnet "$CRAFT_PART_INSTALL/bin/dnet"
     build-snaps: *go
-    after: [wrapper-scripts]
     build-packages:
       - iptables
 
@@ -319,19 +309,12 @@ parts:
       export GITCOMMIT=$DOCKER_GITCOMMIT
       export DISABLE_WARN_OUTSIDE_CONTAINER=1
 
-      # setup the go build environment for docker-cli
-      . $CRAFT_STAGE/bin/go-build-helper.sh
-      gopartbootstrap github.com/docker/cli
-
-      # build the docker cli binary
-      cd $GOPATH/src/github.com/docker/cli
       unset LDFLAGS
       make dynbinary
 
       install -d "$CRAFT_PART_INSTALL/bin"
       install -T "$GOPATH/src/github.com/docker/cli/build/docker" "$CRAFT_PART_INSTALL/bin/docker"
       install -T "$GOPATH/src/github.com/docker/cli/contrib/completion/bash/docker" "$CRAFT_PART_INSTALL/bin/docker-completion.sh"
-    after: [wrapper-scripts]
     stage-packages:
       - git
 
