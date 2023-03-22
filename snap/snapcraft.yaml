@@ -352,8 +352,8 @@ parts:
   compose-v2:
     plugin: make
     source: https://github.com/docker/compose.git
-    # https://github.com/docker/compose/releases
-    source-tag: v2.12.2
+    # https://github.com/docker/docker-ce-packaging/blob/20.10/common.mk
+    source-tag: v2.15.1
     source-depth: 1
     override-build: |
       make build
