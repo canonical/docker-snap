@@ -11,7 +11,7 @@ defaults:
 jobs:
   smoke-test:
     name: Snapcraft
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
 
@@ -144,3 +144,10 @@ jobs:
           sudo DOCKER_BUILDKIT=1 docker build --pull -t tianon/gosleep https://github.com/tianon/gosleep.git
           sudo docker run --rm tianon/gosleep gosleep --help
           sudo docker image rm tianon/gosleep
+
+      - name: Install Python
+        run: |
+          echo -n all |sudo tee /sys/module/apparmor/parameters/audit
+          sudo sysctl -w kernel.printk_ratelimit=0
+          sudo docker run --rm ubuntu:22.04 bash -c "apt-get update && apt-get install -y python3"
+          sudo journalctl --all --boot | grep 'profile="snap.docker.dockerd"' | grep __pycache__
