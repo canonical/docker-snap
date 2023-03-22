@@ -204,11 +204,14 @@ parts:
     source-tag: v1.1.4
     source-depth: 1
     override-build: |
+      $CRAFT_STAGE/patches/patch.sh
+
       make BUILDTAGS='seccomp apparmor selinux' COMMIT=
 
       install -d "$CRAFT_PART_INSTALL/bin"
       install -T runc "$CRAFT_PART_INSTALL/bin/runc"
     build-snaps: *go
+    after: [wrapper-scripts]
     build-packages:
       - libapparmor-dev
       - libseccomp-dev

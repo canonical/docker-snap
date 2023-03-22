@@ -1,0 +1,19 @@
+diff --git a/libcontainer/rootfs_linux.go b/libcontainer/rootfs_linux.go
+index ec7638e4..629c6bad 100644
+--- a/libcontainer/rootfs_linux.go
++++ b/libcontainer/rootfs_linux.go
+@@ -135,13 +135,7 @@ func prepareRootfs(pipe io.ReadWriter, iConfig *initConfig, mountFds []int) (err
+ 		return err
+ 	}
+ 
+-	if config.NoPivotRoot {
+-		err = msMoveRoot(config.Rootfs)
+-	} else if config.Namespaces.Contains(configs.NEWNS) {
+-		err = pivotRoot(config.Rootfs)
+-	} else {
+-		err = chroot()
+-	}
++	err = chroot()
+ 	if err != nil {
+ 		return fmt.Errorf("error jailing process inside rootfs: %w", err)
+ 	}
