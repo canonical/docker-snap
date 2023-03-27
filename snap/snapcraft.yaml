@@ -50,9 +50,9 @@ environment:
   GIT_EXEC_PATH: "$SNAP/usr/lib/git-core"
   GIT_TEMPLATE_DIR: "$SNAP/usr/share/git-core/templates"
   # For nvidia support #
-  LD_LIBRARY_PATH:    $SNAP/graphics/lib/${SNAPCRAFT_ARCH_TRIPLET}:${SNAP}/lib/:${SNAP}/lib/${SNAPCRAFT_ARCH_TRIPLET}:${SNAP}/usr/lib/:${SNAP}/usr/lib/${SNAPCRAFT_ARCH_TRIPLET}
-  LIBGL_DRIVERS_PATH: $SNAP/graphics/lib/${SNAPCRAFT_ARCH_TRIPLET}/dri
-  LIBVA_DRIVERS_PATH: $SNAP/graphics/lib/${SNAPCRAFT_ARCH_TRIPLET}/dri
+  LD_LIBRARY_PATH:    $SNAP/graphics/lib/${CRAFT_ARCH_TRIPLET}:${SNAP}/lib/:${SNAP}/lib/${CRAFT_ARCH_TRIPLET}:${SNAP}/usr/lib/:${SNAP}/usr/lib/${CRAFT_ARCH_TRIPLET}
+  LIBGL_DRIVERS_PATH: $SNAP/graphics/lib/${CRAFT_ARCH_TRIPLET}/dri
+  LIBVA_DRIVERS_PATH: $SNAP/graphics/lib/${CRAFT_ARCH_TRIPLET}/dri
 
 plugs:
   home:
@@ -69,7 +69,7 @@ plugs:
   graphics-core22:
     interface: content
     target: $SNAP/graphics
-    # Currnelty, this is the only relavent provier, but cannot be default as not supported on all archs #
+    # Currently, this is the only relevant provider, but cannot be default as not supported on all archs #
     #default-provider: nvidia-core22
 slots:
   docker-daemon:
@@ -127,12 +127,11 @@ parts:
       - mount
     stage:
       - bin/*
-      - dockerd-patches/*
       - config/daemon.json
+      - patches/*
     prime:
-      - -bin/prep-dockerd-build.sh
       - -bin/go-build-helper.sh
-      - -dockerd-patches/*
+      - -patches/*
       - bin/*
       - config/daemon.json
 
@@ -142,24 +141,24 @@ parts:
     source-tag: v20.10.23
     source-depth: 1
     override-build: |
+      $CRAFT_STAGE/patches/patch.sh
+
       # docker build specific environment variables
-      export VERSION=$SNAPCRAFT_PROJECT_VERSION
+      export VERSION=$(craftctl get version)
       export DOCKER_GITCOMMIT=$(git rev-parse --short HEAD)
       export GITCOMMIT=$DOCKER_GITCOMMIT
       export DISABLE_WARN_OUTSIDE_CONTAINER=1
-
-      # this patches the dockerd sources
-      . "$SNAPCRAFT_STAGE/bin/prep-dockerd-build.sh"
+      export DOCKER_BUILDTAGS='apparmor seccomp selinux'
 
       # setup the go build environment for docker/docker
-      . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
+      . "$CRAFT_STAGE/bin/go-build-helper.sh"
       gopartbootstrap github.com/docker/docker
 
       # build the dockerd binary
       ./hack/make.sh dynbinary
 
-      install -d "$SNAPCRAFT_PART_INSTALL/bin"
-      install -T "$GOPATH/src/github.com/docker/docker/bundles/dynbinary-daemon/dockerd" "$SNAPCRAFT_PART_INSTALL/bin/dockerd"
+      install -d "$CRAFT_PART_INSTALL/bin"
+      install -T bundles/dynbinary-daemon/dockerd "$CRAFT_PART_INSTALL/bin/dockerd"
     # https://github.com/moby/moby/blob/v20.10.23/Dockerfile.simple (Docker-supported Go version for Engine)
     build-snaps: &go ['go/1.19/stable']
     # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
@@ -192,8 +191,8 @@ parts:
 
       rm bin/containerd-stress
 
-      install -d "$SNAPCRAFT_PART_INSTALL/bin"
-      install -t "$SNAPCRAFT_PART_INSTALL/bin" bin/containerd* bin/ctr
+      install -d "$CRAFT_PART_INSTALL/bin"
+      install -t "$CRAFT_PART_INSTALL/bin" bin/containerd* bin/ctr
     build-snaps: *go
     build-packages:
       - libbtrfs-dev
@@ -207,8 +206,8 @@ parts:
     override-build: |
       make BUILDTAGS='seccomp apparmor selinux' COMMIT=
 
-      install -d "$SNAPCRAFT_PART_INSTALL/bin"
-      install -T runc "$SNAPCRAFT_PART_INSTALL/bin/runc"
+      install -d "$CRAFT_PART_INSTALL/bin"
+      install -T runc "$CRAFT_PART_INSTALL/bin/runc"
     build-snaps: *go
     build-packages:
       - libapparmor-dev
@@ -255,11 +254,13 @@ parts:
         [ "${CRAFT_TARGET_ARCH}" != "arm64" ] && \
         exit 0
 
-      patch -p1 < "${CRAFT_PROJECT_DIR}/patches/nvidia-0001-Fix-for-22.04-build.patch"
+      $CRAFT_STAGE/patches/patch.sh
 
       craftctl default
+    after: [wrapper-scripts]
     build-packages:
       - bmake
+      - curl
       - libelf-dev
       - libcap-dev
     # Paths taken from upstream packaging #
@@ -278,14 +279,14 @@ parts:
     source-depth: 1
     override-build: |
       # setup the go build environment for libnetwork
-      . "$SNAPCRAFT_STAGE/bin/go-build-helper.sh"
+      . "$CRAFT_STAGE/bin/go-build-helper.sh"
       gopartbootstrap github.com/docker/libnetwork
 
       make build-local
 
-      install -d "$SNAPCRAFT_PART_INSTALL/bin"
-      install -T bin/docker-proxy "$SNAPCRAFT_PART_INSTALL/bin/docker-proxy"
-      install -T bin/dnet "$SNAPCRAFT_PART_INSTALL/bin/dnet"
+      install -d "$CRAFT_PART_INSTALL/bin"
+      install -T bin/docker-proxy "$CRAFT_PART_INSTALL/bin/docker-proxy"
+      install -T bin/dnet "$CRAFT_PART_INSTALL/bin/dnet"
     build-snaps: *go
     after: [wrapper-scripts]
     build-packages:
@@ -313,23 +314,22 @@ parts:
     source-depth: 1
     override-build: |
       # docker build specific environment variables
-      export VERSION=$SNAPCRAFT_PROJECT_VERSION
+      export VERSION=$(craftctl get version)
       export DOCKER_GITCOMMIT=$(git rev-parse --short HEAD)
       export GITCOMMIT=$DOCKER_GITCOMMIT
       export DISABLE_WARN_OUTSIDE_CONTAINER=1
 
       # setup the go build environment for docker-cli
-      . $SNAPCRAFT_STAGE/bin/go-build-helper.sh
+      . $CRAFT_STAGE/bin/go-build-helper.sh
       gopartbootstrap github.com/docker/cli
 
       # build the docker cli binary
-      cd $GOPATH/src/github.com/docker/cli
       unset LDFLAGS
       make dynbinary
 
-      install -d "$SNAPCRAFT_PART_INSTALL/bin"
-      install -T "$GOPATH/src/github.com/docker/cli/build/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker"
-      install -T "$GOPATH/src/github.com/docker/cli/contrib/completion/bash/docker" "$SNAPCRAFT_PART_INSTALL/bin/docker-completion.sh"
+      install -d "$CRAFT_PART_INSTALL/bin"
+      install -T build/docker "$CRAFT_PART_INSTALL/bin/docker"
+      install -T contrib/completion/bash/docker "$CRAFT_PART_INSTALL/bin/docker-completion.sh"
     after: [wrapper-scripts]
     stage-packages:
       - git
@@ -337,33 +337,29 @@ parts:
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
-    # https://github.com/docker/buildx/releases
-    source-tag: v0.9.1
+    # https://github.com/docker/docker-ce-packaging/blob/20.10/plugins/buildx.installer
+    source-tag: v0.10.4
     source-depth: 1
     override-build: |
-      # https://github.com/docker/buildx/blob/v0.9.1/Dockerfile
-      PKG='github.com/docker/buildx'
-      VERSION=$(git describe --match 'v[0-9]*' --always --tags)
-      REVISION=$(git rev-parse HEAD)
-      export CGO_ENABLED=0
-      go build -mod=vendor -ldflags "-w -s -X ${PKG}/version.Version=${VERSION} -X ${PKG}/version.Revision=${REVISION} -X ${PKG}/version.Package=${PKG}" -o ./buildx ./cmd/buildx
-
-      install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
-      install -T buildx "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-buildx"
+      export DESTDIR="$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
+      export VERSION=$(git describe --match 'v[0-9]*' --always --tags)
+      export REVISION=$(git rev-parse HEAD)
+      export GO_EXTRA_LDFLAGS="-s -w"
+      ./hack/build
     build-snaps: *go
 
   compose-v2:
     plugin: make
     source: https://github.com/docker/compose.git
-    # https://github.com/docker/compose/releases
-    source-tag: v2.12.2
+    # https://github.com/docker/docker-ce-packaging/blob/20.10/common.mk
+    source-tag: v2.15.1
     source-depth: 1
     override-build: |
       make build
 
-      install -d "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
-      install -T bin/build/docker-compose "$SNAPCRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
-      # TODO remove "compose:" below and add a symlink from "$SNAPCRAFT_PART_INSTALL/bin/docker-compose" to this plugin (once v1 is fully EOL)
+      install -d "$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
+      install -T bin/build/docker-compose "$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
+      # TODO remove "compose:" below and add a symlink from "$CRAFT_PART_INSTALL/bin/docker-compose" to this plugin (once v1 is fully EOL)
     build-snaps: *go
 
   compose:
@@ -372,8 +368,6 @@ parts:
     source: https://github.com/docker/compose.git
     source-tag: 1.29.2
     source-depth: 1
-    stage:
-      - -lib/python3.6/site-packages/wheel*
     build-packages:
       - libffi-dev
       # for "cryptography" on non-wheel arches
