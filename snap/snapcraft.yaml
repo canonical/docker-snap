@@ -129,12 +129,14 @@ parts:
     stage:
       - bin/*
       - config/daemon.json
+      - config/kernel-5.4-outoftree-network
       - patches/*
     prime:
       - -bin/go-build-helper.sh
       - -patches/*
       - bin/*
       - config/daemon.json
+      - config/kernel-5.4-outoftree-network
 
   engine:
     plugin: make

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# until snapd 2.59.1 is out
+exec /sbin/apparmor_parser --config-file=/dev/null --policy-features $SNAP/config/kernel-5.4-outoftree-network "$@"
