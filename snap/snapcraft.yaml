@@ -160,7 +160,7 @@ parts:
       install -d "$CRAFT_PART_INSTALL/bin"
       install -T bundles/dynbinary-daemon/dockerd "$CRAFT_PART_INSTALL/bin/dockerd"
     # https://github.com/moby/moby/blob/v20.10.23/Dockerfile.simple (Docker-supported Go version for Engine)
-    build-snaps: &go ['go/1.19/stable']
+    build-snaps: &go ['go/1.20/stable']
     # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
     after: [wrapper-scripts]
     build-packages:
