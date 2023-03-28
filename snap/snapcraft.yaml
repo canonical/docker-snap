@@ -111,11 +111,12 @@ apps:
       - docker-daemon
 
   compose:
-    command: bin/docker-compose
+    command: usr/libexec/docker/cli-plugins/docker-compose
     plugs:
       - docker-cli
       - network
       - home
+
   help:
     command: bin/help
 
@@ -359,20 +360,6 @@ parts:
 
       install -d "$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
       install -T bin/build/docker-compose "$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
-      # TODO remove "compose:" below and add a symlink from "$CRAFT_PART_INSTALL/bin/docker-compose" to this plugin (once v1 is fully EOL)
     build-snaps: *go
-
-  compose:
-    plugin: python
-    # https://github.com/docker/compose/blob/1.29.2/setup.py (Docker-supported Python versions)
-    source: https://github.com/docker/compose.git
-    source-tag: 1.29.2
-    source-depth: 1
-    build-packages:
-      - libffi-dev
-      # for "cryptography" on non-wheel arches
-      - rustc
-      - cargo
-      - libssl-dev
 
 # vim:set et ts=2 sw=2:
