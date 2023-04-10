@@ -11,13 +11,27 @@ defaults:
 jobs:
   smoke-test:
     name: Snapcraft
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
 
+      - name: Build
+        # https://github.com/snapcore/action-build/releases
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-args: snap --output docker.snap
+
+      - name: Upload
+        # TODO the goal of this "if:" condition is to avoid creating artifacts on private forks (and using up all their storage quota), but Tianon couldn't find a clean way to do that so this was the next best thing
+        if: github.repository == 'docker-snap/docker-snap'
+        uses: actions/upload-artifact@v2
+        with:
+          name: docker.snap
+          path: docker.snap
+
       - name: Prep
         run: |
-          # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md
+          # https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md
 
           # TODO figure out a better way to get Go and friends out of our path than dropping a nuke
           sudo rm -rf /opt/hostedtoolcache/*
@@ -32,20 +46,6 @@ jobs:
           sudo snap refresh --channel beta snapd
           sudo snap list
 
-      - name: Build
-        # https://github.com/snapcore/action-build/releases
-        uses: snapcore/action-build@v1.1.1
-        with:
-          snapcraft-args: snap --output docker.snap
-
-      - name: Upload
-        # TODO the goal of this "if:" condition is to avoid creating artifacts on private forks (and using up all their storage quota), but Tianon couldn't find a clean way to do that so this was the next best thing
-        if: github.repository == 'docker-snap/docker-snap'
-        uses: actions/upload-artifact@v2
-        with:
-          name: docker.snap
-          path: docker.snap
-
       - name: Install
         run: |
           sudo snap install --dangerous ./docker.snap
@@ -55,8 +55,7 @@ jobs:
 
       - name: Connect
         run: |
-          # TODO figure out why the daemon doesn't work at all in Actions without setting "debug" to true (possibly AppArmor related?)
-          echo '{ "debug": true, "log-level": "debug" }' | sudo tee /var/snap/docker/current/config/daemon.json
+          echo '{ "log-level": "debug" }' | sudo tee /var/snap/docker/current/config/daemon.json
 
           # normally, snap does this automatically during install, but not when we install from a local file (for security)
           sudo snap connect docker:docker-cli docker:docker-daemon
@@ -64,6 +63,7 @@ jobs:
           sudo snap connect docker:home :home
           sudo snap connect docker:network-control :network-control
           sudo snap connect docker:support :docker-support
+          sudo snap connect docker:privileged :docker-support
 
           sudo snap stop --disable docker.dockerd # for good measure
           sleep 1
@@ -99,9 +99,6 @@ jobs:
           trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
           expectedOutput="testing-journald-log-driver-$RANDOM-$RANDOM"
           sudo docker run --name test-journald --log-driver journald bash -c 'echo "$@"' -- "$expectedOutput"
-          actualOutput="$(sudo docker logs test-journald)"
-          [ -z "$actualOutput" ] # verify that "log-observe" is still necessary
-          sudo snap connect docker:log-observe
           actualOutput="$(sudo docker logs test-journald)"
           [ "$actualOutput" = "$expectedOutput" ]
           docker rm test-journald
