@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 # Ensure nvidia support setup correctly #
-if snapctl is-connected nvidia-core22:graphics-core22 ; then
+if snapctl is-connected graphics-core22 ; then
 
     # Generate the CDI config #
     $SNAP/usr/bin/nvidia-ctk cdi generate --nvidia-ctk-path "$SNAP/usr/bin/nvidia-ctk" --output="$SNAP_DATA/etc/cdi/nvidia.yaml"
