@@ -65,6 +65,7 @@ plugs:
     privileged-containers: true
   docker-cli:
     interface: docker
+  opengl:
   # For nvidia userspace libs support #
   graphics-core22:
     interface: content
