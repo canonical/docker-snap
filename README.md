@@ -47,6 +47,18 @@ Docker should function normally, with the following caveats:
 
 * Additional certificates used by the Docker daemon to authenticate with registries need to be located in `/var/snap/docker/common/etc/certs.d` instead of `/etc/docker/certs.d`.
 
+## NVIDIA support
+
+If the system to found to have an NVIDIA graphics card available, the nvidia container toolkit will be setup and configured to enable use of the local GPU from docker.  This can be used to enable use of CUDA from a docker container, for instance.
+
+This requires use the use connection of the graphics-core22 content interface provided by the nvidia-core22 snap, which should be automatically connected.
+
+Example usage:
+
+```shell
+docker run --rm --gpus all {cuda-container-image-name}
+```
+
 ### Examples
 
 * [Setup a secure private registry](registry-example.md)
