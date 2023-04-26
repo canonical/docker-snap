@@ -118,6 +118,14 @@ apps:
       - network
       - home
 
+  nvidia-container-toolkit:
+    command: bin/nvidia-container-toolkit
+    daemon: oneshot
+    plugs:
+      - graphics-core22
+    before:
+      - dockerd
+
   help:
     command: bin/help
 
@@ -218,7 +226,7 @@ parts:
   nvidia-container-toolkit:
     plugin: go
     source: https://github.com/NVIDIA/nvidia-container-toolkit.git
-    source-tag: v1.13.1
+    source-tag: v1.12.0
     source-depth: 1
     override-pull: |
       [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
@@ -244,7 +252,7 @@ parts:
   libnvidia-container:
     plugin: make
     source: https://github.com/NVIDIA/libnvidia-container.git
-    source-tag: v1.13.1
+    source-tag: v1.12.0
     source-depth: 1
     override-pull: |
       [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
