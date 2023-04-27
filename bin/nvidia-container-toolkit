@@ -2,12 +2,38 @@
 
 set -eu
 
-# Ensure nvidia support setup correctly #
+device_wait() {
+
+    COUNT=0
+    SLEEP=3
+    TRIES=10
+
+    echo "Waiting for device to become available: ${1}"
+
+    while [ ${COUNT} -le ${TRIES} ] ; do
+        echo "Checking device: ${COUNT}/${TRIES}"
+        test -c "${1}"
+        if [ $? -eq 0 ] ; then
+            echo "Device found"
+            return 0
+        fi
+        sleep $SLEEP
+        COUNT=$(($COUNT + 1))
+    done
+
+    echo "Device not found"
+    return 1
+
+}
+
+# Ensure nvidia support setup correctly, and only if hardware is preset and correct #
 if snapctl is-connected graphics-core22 ; then
 
-    # Only set this up if the system has an nvidia card available #
+    # If module is loaded - hardware _should_ be present #
     grep -Eq "^nvidia" /proc/modules || exit 0
-    test -c /dev/nvidiactl || exit 0
+
+    # As service order is not guaranteed outside of snap - wait a bit for nvidia assemble to complete #
+    device_wait /dev/nvidiactl || exit 0
     echo "NVIDIA detected"
 
     # Ensure the layouts dir for /etc/cdi exists #
@@ -18,5 +44,7 @@ if snapctl is-connected graphics-core22 ; then
 
     # Generate the dockerd runtime config #
     "${SNAP}/usr/bin/nvidia-ctk" runtime configure --runtime=docker --runtime-path "${SNAP}/usr/bin/nvidia-ctk" --config "${SNAP_DATA}/config/daemon.json"
+
+    echo "Conainter Toolkit setup complete"
 
 fi
