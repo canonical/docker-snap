@@ -49,11 +49,16 @@ Docker should function normally, with the following caveats:
 
 * Specifying the option `--security-opt="no-new-privileges=true"` with the `docker run` command (or the equivalent in docker-compose) will result in a failure of the container to start. This is due to an an underlying external constraint on AppArmor (see https://bugs.launchpad.net/snappy/+bug/1908448 for details).
 
+### Examples
+
+* [Setup a secure private registry](registry-example.md)
+
+
 ## NVIDIA support on Ubuntu Core 22
 
-If the system to found to have an NVIDIA graphics card available, the nvidia container toolkit will be setup and configured to enable use of the local GPU from docker.  This can be used to enable use of CUDA from a docker container, for instance.
+If the system is found to have an NVIDIA graphics card available, the nvidia container toolkit will be setup and configured to enable use of the local GPU from docker.  This can be used to enable use of CUDA from a docker container, for instance.
 
-This requires use the use connection of the graphics-core22 content interface provided by the nvidia-core22 snap, which should be automatically connected.
+This requires connection of the graphics-core22 content interface provided by the nvidia-core22 snap, which should be automatically connected.
 
 Example usage:
 
@@ -61,9 +66,12 @@ Example usage:
 docker run --rm --gpus all {cuda-container-image-name}
 ```
 
-### Examples
+### Disable NVIDIA support
 
-* [Setup a secure private registry](registry-example.md)
+Use of NVIDIA hardware or not should be automatic, but you may wish to specifically disable it.  You can do so via the following snap config:
+```shell
+snap set docker nvidia-support.disabled=true
+```
 
 ## Development
 
