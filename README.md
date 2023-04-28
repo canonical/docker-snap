@@ -47,7 +47,9 @@ Docker should function normally, with the following caveats:
 
 * Additional certificates used by the Docker daemon to authenticate with registries need to be located in `/var/snap/docker/common/etc/certs.d` instead of `/etc/docker/certs.d`.
 
-## NVIDIA support
+* Specifying the option `--security-opt="no-new-privileges=true"` with the `docker run` command (or the equivalent in docker-compose) will result in a failure of the container to start. This is due to an an underlying external constraint on AppArmor (see https://bugs.launchpad.net/snappy/+bug/1908448 for details).
+
+## NVIDIA support on Ubuntu Core 22
 
 If the system to found to have an NVIDIA graphics card available, the nvidia container toolkit will be setup and configured to enable use of the local GPU from docker.  This can be used to enable use of CUDA from a docker container, for instance.
 
