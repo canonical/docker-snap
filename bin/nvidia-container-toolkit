@@ -33,12 +33,13 @@ NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
 # Ensure nvidia support setup correctly, and only if hardware is preset and correct #
 if snapctl is-connected graphics-core22 ; then
 
-    # If module is loaded - hardware _should_ be present #
-    grep -Eq "^nvidia" /proc/modules || exit 0
+    # Check if hardware is present - just exit if not #
+    lspci -d 10de: | grep -q 'NVIDIA Corporation' || exit 0
+    echo "NVIDIA hardware detected: $(lspci -d 10de:)"
 
     # As service order is not guaranteed outside of snap - wait a bit for nvidia assemble to complete #
     device_wait /dev/nvidiactl || exit 0
-    echo "NVIDIA detected"
+    echo "NVIDIA ready"
 
     # Ensure the layouts dir for /etc/cdi exists #
     mkdir -p "$SNAP_DATA/etc/cdi"

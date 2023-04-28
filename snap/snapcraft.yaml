@@ -150,6 +150,7 @@ parts:
     plugin: nil
     stage-packages:
       - jq
+      - pciutils
 
   engine:
     plugin: make
