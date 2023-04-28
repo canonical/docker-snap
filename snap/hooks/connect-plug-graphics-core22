@@ -1,4 +1,10 @@
-#!/bin/bash -e
+#!/bin/bash
+
+set -eu
+
+# Just exit if NVIDIA support is disabled #
+NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
+[ "${NVIDIA_SUPPORT_DISABLED}" != "true" ] || exit 0
 
 # Ensure nvidia support setup correctly #
 if snapctl is-connected graphics-core22 ; then

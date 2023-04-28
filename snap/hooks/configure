@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -eux
+
+HOOK_LOG="${SNAP_COMMON}/hooks/${SNAP_REVISION}/$(basename "$0").log" && mkdir -p "${HOOK_LOG%/*}"
+exec &> >(tee -a "${HOOK_LOG}")
+
+# Flag to trigger service restart if any condition requires it #
+SVC_RESTART=false
+
+
+# Check if nvidia support is disabled #
+NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
+
+if [ "${NVIDIA_SUPPORT_DISABLED}" == "true" ] ; then
+
+    # Remove nvidia runtime config, if it exists #
+    jq -r 'del(.runtimes.nvidia)' "${SNAP_DATA}/config/daemon.json" > "${SNAP_DATA}/config/daemon.json.new"
+
+    # If it was removed [ there was a change ], copy in the new config, remove CDI config,  and set service restart flag #
+    if ! cmp "${SNAP_DATA}/config/daemon.json"{,.new} >/dev/null ; then
+        mv "${SNAP_DATA}/config/daemon.json"{.new,}
+        rm -f "${SNAP_DATA}/etc/cdi/nvidia.yaml"
+        SVC_RESTART=true
+    fi
+
+fi
+
+# Restart services if required #
+# If oneshot services are inactive they don't respond to restart, so stop/start #
+if $SVC_RESTART ; then
+    snapctl stop "${SNAP_NAME}"
+    snapctl start "${SNAP_NAME}"
+fi
