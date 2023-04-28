@@ -66,6 +66,7 @@ plugs:
     privileged-containers: true
   docker-cli:
     interface: docker
+  opengl:
   # For nvidia userspace libs support #
   graphics-core22:
     interface: content
@@ -117,6 +118,14 @@ apps:
       - docker-cli
       - network
       - home
+
+  nvidia-container-toolkit:
+    command: bin/nvidia-container-toolkit
+    daemon: oneshot
+    plugs:
+      - graphics-core22
+    before:
+      - dockerd
 
   help:
     command: bin/help
@@ -239,6 +248,7 @@ parts:
       bin: usr/bin/
     stage:
       - usr/bin/nvidia-container-*
+      - usr/bin/nvidia-ctk
 
   libnvidia-container:
     plugin: make

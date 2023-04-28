@@ -1,15 +1,16 @@
 #!/bin/bash -e
 
 # Ensure nvidia support setup correctly #
-if snapctl is-connected nvidia-core22:graphics-core22 ; then
+if snapctl is-connected graphics-core22 ; then
 
-    # Generate the CDI config #
-    $SNAP/usr/bin/nvidia-ctk cdi generate --nvidia-ctk-path "$SNAP/usr/bin/nvidia-ctk" --output="$SNAP_DATA/etc/cdi/nvidia.yaml"
+    # Only set this up if the system has an nvidia card available #
+    grep -Eq "^nvidia" /proc/modules || exit 0
+    test -c /dev/nvidiactl || exit 0
+    echo "NVIDIA detected"
 
-    # Generate the dockerd runtime config #
-    $SNAP/usr/bin/nvidia-ctk runtime configure --runtime=docker --runtime-path "$SNAP/usr/bin/nvidia-ctk" --config "$SNAP_DATA/config/daemon.json"
-
-    # Restart dockerd to reflect any changes #
-    snap restart "$SNAP_NAME.dockerd"
+    # Restart services to reflect any changes if required #
+    # Have to called by name - nvidia-container-toolkik is inactive and won't be included with just snap name #
+    snapctl restart "${SNAP_NAME}.nvidia-container-toolkit"
+    snapctl restart "${SNAP_NAME}.dockerd"
 
 fi
