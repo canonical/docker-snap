@@ -26,7 +26,7 @@ index 00d561e..8710bfd 100644
  LIB_LDLIBS_STATIC  += -l:libtirpc.a
  LIB_LDLIBS_SHARED  += -lpthread
 +else
-+LIB_CPPFLAGS       += $(shell pkg-config --cflags libtirpc)
++LIB_CPPFLAGS       += -DWITH_TIRPC $(shell pkg-config --cflags libtirpc)
 +LIB_LDLIBS_SHARED  += $(shell pkg-config --libs libtirpc)
  endif
  ifeq ($(WITH_SECCOMP), yes)

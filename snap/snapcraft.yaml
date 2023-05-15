@@ -235,18 +235,15 @@ parts:
     source: https://github.com/NVIDIA/nvidia-container-toolkit.git
     source-tag: v1.12.0
     source-depth: 1
-    override-pull: |
+    override-pull: &arch-restrict |
       [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
         [ "${CRAFT_TARGET_ARCH}" != "arm64" ] && \
         exit 0
-
+      [ "${CRAFT_STEP_NAME}" = "BUILD" ] && $CRAFT_STAGE/patches/patch.sh
       craftctl default
-    override-build: |
-      [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
-        [ "${CRAFT_TARGET_ARCH}" != "arm64" ] && \
-        exit 0
-
-      craftctl default
+    override-build: *arch-restrict
+    override-stage: *arch-restrict
+    override-prime: *arch-restrict
     build-snaps: *go
     build-packages:
       - make
@@ -261,20 +258,10 @@ parts:
     source: https://github.com/NVIDIA/libnvidia-container.git
     source-tag: v1.12.0
     source-depth: 1
-    override-pull: |
-      [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
-        [ "${CRAFT_TARGET_ARCH}" != "arm64" ] && \
-        exit 0
-
-      craftctl default
-    override-build: |
-      [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
-        [ "${CRAFT_TARGET_ARCH}" != "arm64" ] && \
-        exit 0
-
-      $CRAFT_STAGE/patches/patch.sh
-
-      craftctl default
+    override-pull: *arch-restrict
+    override-build: *arch-restrict
+    override-stage: *arch-restrict
+    override-prime: *arch-restrict
     after: [wrapper-scripts]
     build-packages:
       - bmake
