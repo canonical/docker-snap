@@ -146,6 +146,12 @@ parts:
       - bin/*
       - config/daemon.json
 
+  utils:
+    plugin: nil
+    stage-packages:
+      - jq
+      - pciutils
+
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
