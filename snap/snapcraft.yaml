@@ -247,6 +247,7 @@ parts:
     build-snaps: *go
     build-packages:
       - make
+      - lsb-release
     organize:
       bin: usr/bin/
     stage:
@@ -268,6 +269,7 @@ parts:
       - curl
       - libelf-dev
       - libcap-dev
+      - lsb-release
     # Paths taken from upstream packaging #
     organize:
       usr/local/bin/nvidia-container-cli: usr/bin/nvidia-container-cli
