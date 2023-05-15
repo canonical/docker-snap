@@ -257,6 +257,7 @@ parts:
 
   libnvidia-container:
     plugin: make
+    make-parameters: WITH_LIBELF=yes
     source: https://github.com/NVIDIA/libnvidia-container.git
     source-tag: v1.12.0
     source-depth: 1
