@@ -248,6 +248,7 @@ parts:
     build-packages:
       - make
       - lsb-release
+      - groff-base
     organize:
       bin: usr/bin/
     stage:
@@ -270,6 +271,7 @@ parts:
       - libelf-dev
       - libcap-dev
       - lsb-release
+      - groff-base
     # Paths taken from upstream packaging #
     organize:
       usr/local/bin/nvidia-container-cli: usr/bin/nvidia-container-cli
