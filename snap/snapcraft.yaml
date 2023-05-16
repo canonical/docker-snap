@@ -274,6 +274,7 @@ parts:
       - libcap-dev
       - lsb-release
       - groff-base
+      - libntirpc-dev
     # Paths taken from upstream packaging #
     organize:
       usr/local/bin/nvidia-container-cli: usr/bin/nvidia-container-cli
