@@ -1,3 +1,5 @@
+[![docker](https://snapcraft.io/docker/badge.svg)](https://snapcraft.io/docker)
+
 # Docker Snap
 
 This repository contains the source for the `docker` snap package.  The package provides a distribution of Docker Community Edition (CE) for Ubuntu Core 16 (and other snap-compatible) systems.  It is built from an upstream Docker CE release tag with some patches to fit the snap format and is available on `armhf`, `arm64`, `amd64`, `i386`, and `ppc64el` architectures.  The rest of this page describes installation, usage, and development.
