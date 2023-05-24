@@ -370,4 +370,11 @@ parts:
       install -T bin/build/docker-compose "$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
     build-snaps: *go
 
+lint:
+  ignore:
+    # Change to unused-library, once available
+    - library:
+        - usr/lib/**/libltdl.so.*
+        - usr/lib/**/libnvidia-container-go.so.*
+
 # vim:set et ts=2 sw=2:
