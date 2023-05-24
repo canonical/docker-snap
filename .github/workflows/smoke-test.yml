@@ -103,6 +103,9 @@ jobs:
           [ "$actualOutput" = "$expectedOutput" ]
           docker rm test-journald
 
+      - name: Hello World (init)
+        run: sudo docker run --rm --init hello-world
+
       - name: Docker Build
         run: |
           sudo docker build --pull -t debian-hello - <<'EOF'
