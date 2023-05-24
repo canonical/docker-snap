@@ -313,7 +313,7 @@ parts:
     build-packages:
       - build-essential
     prime:
-      - -bin/tini
+      - -usr/local/bin/tini
 
   docker-cli:
     plugin: make
