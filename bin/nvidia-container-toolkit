@@ -36,8 +36,17 @@ runtime_configure () {
     "${SNAP}/usr/bin/nvidia-ctk" runtime configure --runtime=docker --runtime-path "${SNAP}/usr/bin/nvidia-ctk" --config "${SNAP_DATA}/config/daemon.json"
 }
 
-setup_warn () {
+setup_fail () {
     echo "WARNING: Conainter Toolkit setup seemed to fail with an error"
+
+    # Remove nvidia runtime config, if it exists #
+    jq -r 'del(.runtimes.nvidia)' "${SNAP_DATA}/config/daemon.json" > "${SNAP_DATA}/config/daemon.json.new"
+
+    # If it was removed [ there was a change ], copy in the new config, remove CDI config,  and set service restart flag #
+    if ! cmp "${SNAP_DATA}/config/daemon.json"{,.new} >/dev/null ; then
+        mv "${SNAP_DATA}/config/daemon.json"{.new,}
+        rm -f "${SNAP_DATA}/etc/cdi/nvidia.yaml"
+    fi
 }
 
 setup_info () {
@@ -69,6 +78,6 @@ if snapctl is-connected graphics-core22 ; then
     mkdir -p "$SNAP_DATA/etc/cdi"
 
     # Setup nvidia support, but do not exit on failure #
-    cdi_generate && runtime_configure && setup_info || setup_warn
+    cdi_generate && runtime_configure && setup_info || setup_fail
 
 fi
