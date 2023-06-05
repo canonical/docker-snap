@@ -26,6 +26,24 @@ device_wait() {
 
 }
 
+cdi_generate () {
+    # Generate the CDI config #
+    "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "${SNAP}/usr/bin/nvidia-ctk" --output="${SNAP_DATA}/etc/cdi/nvidia.yaml"
+}
+
+runtime_configure () {
+    # Generate the dockerd runtime config #
+    "${SNAP}/usr/bin/nvidia-ctk" runtime configure --runtime=docker --runtime-path "${SNAP}/usr/bin/nvidia-ctk" --config "${SNAP_DATA}/config/daemon.json"
+}
+
+setup_warn () {
+    echo "WARNING: Conainter Toolkit setup seemed to fail with an error"
+}
+
+setup_info () {
+    echo "Conainter Toolkit setup complete"
+}
+
 # Just exit if NVIDIA support is disabled #
 NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
 [ "${NVIDIA_SUPPORT_DISABLED}" != "true" ] || exit 0
@@ -50,12 +68,7 @@ if snapctl is-connected graphics-core22 ; then
     # Ensure the layouts dir for /etc/cdi exists #
     mkdir -p "$SNAP_DATA/etc/cdi"
 
-    # Generate the CDI config #
-    "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "${SNAP}/usr/bin/nvidia-ctk" --output="${SNAP_DATA}/etc/cdi/nvidia.yaml"
-
-    # Generate the dockerd runtime config #
-    "${SNAP}/usr/bin/nvidia-ctk" runtime configure --runtime=docker --runtime-path "${SNAP}/usr/bin/nvidia-ctk" --config "${SNAP_DATA}/config/daemon.json"
-
-    echo "Conainter Toolkit setup complete"
+    # Setup nvidia support, but do not exit on failure #
+    cdi_generate && runtime_configure && setup_info || setup_warn
 
 fi
