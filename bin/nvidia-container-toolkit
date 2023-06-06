@@ -28,7 +28,7 @@ device_wait() {
 
 cdi_generate () {
     # Generate the CDI config #
-    "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "${SNAP}/usr/bin/nvidia-ctk" --output="${SNAP_DATA}/etc/cdi/nvidia.yaml"
+    "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "/snap/${SNAP_NAME}/current/usr/bin/nvidia-ctk" --output="${SNAP_DATA}/etc/cdi/nvidia.yaml"
 }
 
 runtime_configure () {
