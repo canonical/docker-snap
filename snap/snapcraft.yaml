@@ -115,6 +115,7 @@ apps:
       - privileged
       - support
       - graphics-core22
+      # FIXME: check `system-observe` is really required
       - system-observe
     slots:
       - docker-daemon
