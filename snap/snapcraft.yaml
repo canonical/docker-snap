@@ -113,6 +113,7 @@ apps:
       - privileged
       - support
       - graphics-core22
+      - system-observe
     slots:
       - docker-daemon
 
