@@ -6,5 +6,6 @@ if [ ! -f "$SNAP_DATA/config/daemon.json" ]; then
     cp "$SNAP/config/daemon.json" "$SNAP_DATA/config/daemon.json"
 fi
 
-# ensure the layouts dir for /etc/docker exists
+# ensure the layouts dir for /etc/{stuff} exists
 mkdir -p "$SNAP_DATA/etc/docker"
+mkdir -p "$SNAP_DATA/etc/nvidia-container-runtime"

@@ -46,6 +46,8 @@ layout:
   # Container Device Interface (CDI) Support - https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#container-device-interface-cdi-support
   /etc/cdi:
     bind: $SNAP_DATA/etc/cdi
+  /etc/nvidia-container-runtime:
+    bind: $SNAP_DATA/etc/nvidia-container-runtime
   /etc/gitconfig:
     bind-file: $SNAP_DATA/etc/gitconfig
   /usr/libexec/docker/cli-plugins:

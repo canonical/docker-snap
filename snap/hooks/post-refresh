@@ -1,5 +1,9 @@
 #!/bin/bash -e
 
+# ensure the layouts dir for /etc/{stuff} exists
+mkdir -p "$SNAP_DATA/etc/docker"
+mkdir -p "$SNAP_DATA/etc/nvidia-container-runtime"
+
 # copy the config file from $SNAP into $SNAP_DATA if it doesn't exist
 if [ ! -f "$SNAP_DATA/config/daemon.json" ]; then
     mkdir -p "$SNAP_DATA/config"
