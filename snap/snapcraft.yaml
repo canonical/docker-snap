@@ -115,8 +115,7 @@ apps:
       - privileged
       - support
       - graphics-core22
-      # FIXME: check `system-observe` is really required
-      - system-observe
+      - system-observe # Seems funtional without - but it generates quite a bit of noise in audit logs - can be manually connected
     slots:
       - docker-daemon
 
