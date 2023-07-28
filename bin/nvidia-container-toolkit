@@ -33,7 +33,7 @@ cdi_generate () {
 
 runtime_configure () {
     # Generate the dockerd runtime config #
-    "${SNAP}/usr/bin/nvidia-ctk" runtime configure --runtime=docker --runtime-path "/snap/${SNAP_NAME}/current/usr/bin/nvidia-ctk" --config "${SNAP_DATA}/config/daemon.json"
+    "${SNAP}/usr/bin/nvidia-ctk" runtime configure --runtime=docker --runtime-path "/snap/${SNAP_NAME}/current/usr/bin/nvidia-container-runtime" --config "${SNAP_DATA}/config/daemon.json"
 }
 
 setup_fail () {
