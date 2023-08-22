@@ -1,6 +1,6 @@
 name: docker
 #title: Docker
-version: '20.10.24'
+version: '24.0.5'
 summary: Docker container runtime
 description: |
   Build and run container images with Docker.
@@ -161,7 +161,7 @@ parts:
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
-    source-tag: v20.10.24
+    source-tag: v24.0.5
     source-depth: 1
     override-build: |
       $CRAFT_STAGE/patches/patch.sh
@@ -182,7 +182,9 @@ parts:
 
       install -d "$CRAFT_PART_INSTALL/bin"
       install -T bundles/dynbinary-daemon/dockerd "$CRAFT_PART_INSTALL/bin/dockerd"
-    # https://github.com/moby/moby/blob/v20.10.24/Dockerfile.simple (Docker-supported Go version for Engine)
+      # install docker-proxy previously provided by libnetwork part
+      install -T bundles/dynbinary-daemon/docker-proxy "$CRAFT_PART_INSTALL/bin/docker-proxy"
+    # https://github.com/moby/moby/blob/v24.0.5/Dockerfile.simple (Docker-supported Go version for Engine)
     build-snaps: &go ['go/1.20/stable']
     # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
     after: [wrapper-scripts]
@@ -206,8 +208,8 @@ parts:
   containerd:
     plugin: make
     source: https://github.com/containerd/containerd.git
-    # from https://github.com/moby/moby/releases/tag/v20.10.24
-    source-tag: v1.6.20
+    # from https://github.com/moby/moby/releases/tag/v24.0.5
+    source-tag: v1.6.21
     source-depth: 1
     override-build: |
       make GIT_COMMIT= GIT_BRANCH= LDFLAGS=
@@ -223,8 +225,8 @@ parts:
   runc:
     plugin: make
     source: https://github.com/opencontainers/runc.git
-    # from https://github.com/moby/moby/releases/tag/v20.10.24
-    source-tag: v1.1.5
+    # from https://github.com/moby/moby/releases/tag/v24.0.5
+    source-tag: v1.1.7
     source-depth: 1
     override-build: |
       make BUILDTAGS='seccomp apparmor selinux' COMMIT=
@@ -239,7 +241,7 @@ parts:
   nvidia-container-toolkit:
     plugin: go
     source: https://github.com/NVIDIA/nvidia-container-toolkit.git
-    source-tag: v1.12.0
+    source-tag: v1.13.5
     source-depth: 1
     override-pull: &arch-restrict |
       [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
@@ -262,7 +264,7 @@ parts:
   libnvidia-container:
     plugin: make
     source: https://github.com/NVIDIA/libnvidia-container.git
-    source-tag: v1.12.0
+    source-tag: v1.13.5
     source-depth: 1
     override-pull: *arch-restrict
     override-build: *arch-restrict
@@ -282,32 +284,11 @@ parts:
       - usr/bin/nvidia-container-cli*
       - usr/lib/${CRAFT_ARCH_TRIPLET}/libnvidia-container*.so*
 
-  libnetwork:
-    plugin: make
-    source: https://github.com/docker/libnetwork.git
-    # from https://github.com/moby/moby/blob/v20.10.24/hack/dockerfile/install/proxy.installer
-    source-commit: 05b93e0d3a95952f70c113b0bc5bdb538d7afdd7
-    source-depth: 1
-    override-build: |
-      # setup the go build environment for libnetwork
-      . "$CRAFT_STAGE/bin/go-build-helper.sh"
-      gopartbootstrap github.com/docker/libnetwork
-
-      make build-local
-
-      install -d "$CRAFT_PART_INSTALL/bin"
-      install -T bin/docker-proxy "$CRAFT_PART_INSTALL/bin/docker-proxy"
-      install -T bin/dnet "$CRAFT_PART_INSTALL/bin/dnet"
-    build-snaps: *go
-    after: [wrapper-scripts]
-    build-packages:
-      - iptables
-
   tini:
     plugin: cmake
     source: https://github.com/krallin/tini.git
     source-type: git
-    # from https://github.com/moby/moby/blob/v20.10.24/hack/dockerfile/install/tini.installer
+    # from https://github.com/moby/moby/blob/v24.0.5/hack/dockerfile/install/tini.installer
     source-tag: v0.19.0
     source-depth: 1
     organize:
@@ -321,7 +302,7 @@ parts:
     plugin: make
     build-snaps: *go
     source: https://github.com/docker/cli.git
-    source-tag: v20.10.24
+    source-tag: v24.0.5
     source-depth: 1
     override-build: |
       $CRAFT_STAGE/patches/patch.sh
@@ -350,8 +331,8 @@ parts:
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
-    # https://github.com/moby/moby/releases/tag/v20.10.24
-    source-tag: v0.10.4
+    # https://github.com/moby/moby/releases/tag/v24.0.5
+    source-tag: v0.11.2
     source-depth: 1
     override-build: |
       export DESTDIR="$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
@@ -365,7 +346,7 @@ parts:
     plugin: make
     source: https://github.com/docker/compose.git
     # https://github.com/docker/docker-ce-packaging/blob/master/common.mk
-    source-tag: v2.17.2
+    source-tag: v2.20.3
     source-depth: 1
     override-build: |
       make build
