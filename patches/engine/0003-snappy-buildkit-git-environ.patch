@@ -1,0 +1,26 @@
+From 9d87c45c50ebf6a5353e81f147a1c575d6e35f14 Mon Sep 17 00:00:00 2001
+From: Lucas Kanashiro <lucas.kanashiro@canonical.com>
+Date: Wed, 23 Aug 2023 18:59:37 -0300
+Subject: [PATCH 3/5] snappy-buildkit-git-environ
+
+---
+ vendor/github.com/moby/buildkit/source/git/gitsource.go | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/vendor/github.com/moby/buildkit/source/git/gitsource.go b/vendor/github.com/moby/buildkit/source/git/gitsource.go
+index dd35fe55f7..c811c09ead 100644
+--- a/vendor/github.com/moby/buildkit/source/git/gitsource.go
++++ b/vendor/github.com/moby/buildkit/source/git/gitsource.go
+@@ -666,6 +666,9 @@ func git(ctx context.Context, dir, sshAuthSock, knownHosts string, args ...strin
+ 		cmd.Stderr = io.MultiWriter(stderr, errbuf)
+ 		cmd.Env = []string{
+ 			"PATH=" + os.Getenv("PATH"),
++			"LD_LIBRARY_PATH=" + os.Getenv("LD_LIBRARY_PATH"),
++                       "GIT_EXEC_PATH=" + os.Getenv("GIT_EXEC_PATH"),
++                       "GIT_TEMPLATE_DIR=" + os.Getenv("GIT_TEMPLATE_DIR"),
+ 			"GIT_TERMINAL_PROMPT=0",
+ 			"GIT_SSH_COMMAND=" + getGitSSHCommand(knownHosts),
+ 			//	"GIT_TRACE=1",
+-- 
+2.25.1
+

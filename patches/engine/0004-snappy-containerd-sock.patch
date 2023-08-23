@@ -1,8 +1,17 @@
+From 042248de499837fe812943c2650778d84155b7ae Mon Sep 17 00:00:00 2001
+From: Lucas Kanashiro <lucas.kanashiro@canonical.com>
+Date: Wed, 23 Aug 2023 19:00:13 -0300
+Subject: [PATCH 4/5] snappy-containerd-sock
+
+---
+ .../github.com/containerd/containerd/defaults/defaults_unix.go  | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
 diff --git a/vendor/github.com/containerd/containerd/defaults/defaults_unix.go b/vendor/github.com/containerd/containerd/defaults/defaults_unix.go
-index 30ed42235e..e3f46720f4 100644
+index 8e2619a381..2d05c433a7 100644
 --- a/vendor/github.com/containerd/containerd/defaults/defaults_unix.go
 +++ b/vendor/github.com/containerd/containerd/defaults/defaults_unix.go
-@@ -26,7 +26,7 @@ const (
+@@ -27,7 +27,7 @@ const (
  	// transient data
  	DefaultStateDir = "/run/containerd"
  	// DefaultAddress is the default unix socket address
@@ -11,3 +20,6 @@ index 30ed42235e..e3f46720f4 100644
  	// DefaultDebugAddress is the default unix socket address for pprof data
  	DefaultDebugAddress = "/run/containerd/debug.sock"
  	// DefaultFIFODir is the default location used by client-side cio library
+-- 
+2.25.1
+
