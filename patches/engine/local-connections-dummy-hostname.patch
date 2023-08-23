@@ -1,0 +1,189 @@
+diff --git a/client/client.go b/client/client.go
+index 0d3614d5db..316a0666be 100644
+--- a/client/client.go
++++ b/client/client.go
+@@ -56,6 +56,37 @@ import (
+ 	"github.com/pkg/errors"
+ )
+ 
++// DummyHost is a hostname used for local communication.
++//
++// It acts as a valid formatted hostname for local connections (such as "unix://"
++// or "npipe://") which do not require a hostname. It should never be resolved,
++// but uses the special-purpose ".localhost" TLD (as defined in [RFC 2606, Section 2]
++// and [RFC 6761, Section 6.3]).
++//
++// [RFC 7230, Section 5.4] defines that an empty header must be used for such
++// cases:
++//
++//	If the authority component is missing or undefined for the target URI,
++//	then a client MUST send a Host header field with an empty field-value.
++//
++// However, [Go stdlib] enforces the semantics of HTTP(S) over TCP, does not
++// allow an empty header to be used, and requires req.URL.Scheme to be either
++// "http" or "https".
++//
++// For further details, refer to:
++//
++//   - https://github.com/docker/engine-api/issues/189
++//   - https://github.com/golang/go/issues/13624
++//   - https://github.com/golang/go/issues/61076
++//   - https://github.com/moby/moby/issues/45935
++//
++// [RFC 2606, Section 2]: https://www.rfc-editor.org/rfc/rfc2606.html#section-2
++// [RFC 6761, Section 6.3]: https://www.rfc-editor.org/rfc/rfc6761#section-6.3
++// [RFC 7230, Section 5.4]: https://datatracker.ietf.org/doc/html/rfc7230#section-5.4
++// [Go stdlib]: https://github.com/golang/go/blob/6244b1946bc2101b01955468f1be502dbadd6807/src/net/http/transport.go#L558-L569
++const DummyHost = "api.moby.localhost"
++
++
+ // ErrRedirect is the error returned by checkRedirect when the request is non-GET.
+ var ErrRedirect = errors.New("unexpected redirect in response")
+ 
+diff --git a/client/hijack.go b/client/hijack.go
+index e1dc49ef0f..b8fac0be7e 100644
+--- a/client/hijack.go
++++ b/client/hijack.go
+@@ -62,7 +62,11 @@ func fallbackDial(proto, addr string, tlsConfig *tls.Config) (net.Conn, error) {
+ }
+ 
+ func (cli *Client) setupHijackConn(ctx context.Context, req *http.Request, proto string) (net.Conn, error) {
+-	req.Host = cli.addr
++	req.URL.Host = cli.addr
++	if cli.proto == "unix" || cli.proto == "npipe" {
++		// Override host header for non-tcp connections.
++		req.Host = DummyHost
++	}
+ 	req.Header.Set("Connection", "Upgrade")
+ 	req.Header.Set("Upgrade", proto)
+ 
+diff --git a/client/request.go b/client/request.go
+index d3d9a3fe64..66530d4b04 100644
+--- a/client/request.go
++++ b/client/request.go
+@@ -88,16 +88,14 @@ func (cli *Client) buildRequest(method, path string, body io.Reader, headers hea
+ 		return nil, err
+ 	}
+ 	req = cli.addHeaders(req, headers)
++	req.URL.Scheme = cli.scheme
++	req.URL.Host = cli.addr
+ 
+ 	if cli.proto == "unix" || cli.proto == "npipe" {
+-		// For local communications, it doesn't matter what the host is. We just
+-		// need a valid and meaningful host name. (See #189)
+-		req.Host = "docker"
++		// Override host header for non-tcp connections.
++		req.Host = DummyHost
+ 	}
+ 
+-	req.URL.Host = cli.addr
+-	req.URL.Scheme = cli.scheme
+-
+ 	if expectedPayload && req.Header.Get("Content-Type") == "" {
+ 		req.Header.Set("Content-Type", "text/plain")
+ 	}
+diff --git a/client/request_test.go b/client/request_test.go
+index b93b5460d3..c1a1092344 100644
+--- a/client/request_test.go
++++ b/client/request_test.go
+@@ -26,24 +26,24 @@ func TestSetHostHeader(t *testing.T) {
+ 		expectedURLHost string
+ 	}{
+ 		{
+-			"unix:///var/run/docker.sock",
+-			"docker",
+-			"/var/run/docker.sock",
++			host:            "unix:///var/run/docker.sock",
++			expectedHost:    DummyHost,
++			expectedURLHost: "/var/run/docker.sock",
+ 		},
+ 		{
+-			"npipe:////./pipe/docker_engine",
+-			"docker",
+-			"//./pipe/docker_engine",
++			host:            "npipe:////./pipe/docker_engine",
++			expectedHost:    DummyHost,
++			expectedURLHost: "//./pipe/docker_engine",
+ 		},
+ 		{
+-			"tcp://0.0.0.0:4243",
+-			"",
+-			"0.0.0.0:4243",
++			host:            "tcp://0.0.0.0:4243",
++			expectedHost:    "",
++			expectedURLHost: "0.0.0.0:4243",
+ 		},
+ 		{
+-			"tcp://localhost:4243",
+-			"",
+-			"localhost:4243",
++			host:            "tcp://localhost:4243",
++			expectedHost:    "",
++			expectedURLHost: "localhost:4243",
+ 		},
+ 	}
+ 
+diff --git a/integration-cli/docker_api_attach_test.go b/integration-cli/docker_api_attach_test.go
+index 48bf47e528..7664883813 100644
+--- a/integration-cli/docker_api_attach_test.go
++++ b/integration-cli/docker_api_attach_test.go
+@@ -235,6 +235,11 @@ func requestHijack(method, endpoint string, data io.Reader, ct, daemon string, m
+ 	req.URL.Scheme = "http"
+ 	req.URL.Host = hostURL.Host
+ 
++	if hostURL.Scheme == "unix" || hostURL.Scheme == "npipe" {
++		// Override host header for non-tcp connections.
++		req.Host = client.DummyHost
++	}
++
+ 	for _, opt := range modifiers {
+ 		opt(req)
+ 	}
+diff --git a/pkg/plugins/client.go b/pkg/plugins/client.go
+index 752fecd0ae..e683eb777d 100644
+--- a/pkg/plugins/client.go
++++ b/pkg/plugins/client.go
+@@ -18,6 +18,12 @@ import (
+ 
+ const (
+ 	defaultTimeOut = 30
++
++	// dummyHost is a hostname used for local communication.
++	//
++	// For local communications (npipe://, unix://), the hostname is not used,
++	// but we need valid and meaningful hostname.
++	dummyHost = "plugin.moby.localhost"
+ )
+ 
+ func newTransport(addr string, tlsConfig *tlsconfig.Options) (transport.Transport, error) {
+@@ -44,8 +50,12 @@ func newTransport(addr string, tlsConfig *tlsconfig.Options) (transport.Transpor
+ 		return nil, err
+ 	}
+ 	scheme := httpScheme(u)
+-
+-	return transport.NewHTTPTransport(tr, scheme, socket), nil
++	hostName := u.Host
++	if hostName == "" || u.Scheme == "unix" || u.Scheme == "npipe" {
++		// Override host header for non-tcp connections.
++		hostName = dummyHost
++	}
++	return transport.NewHTTPTransport(tr, scheme, hostName), nil
+ }
+ 
+ // NewClient creates a new plugin client (http).
+diff --git a/testutil/request/request.go b/testutil/request/request.go
+index 4f82012684..fab0a84ce9 100644
+--- a/testutil/request/request.go
++++ b/testutil/request/request.go
+@@ -126,6 +126,11 @@ func newRequest(endpoint string, opts *Options) (*http.Request, error) {
+ 	}
+ 	req.URL.Host = hostURL.Host
+ 
++	if hostURL.Scheme == "unix" || hostURL.Scheme == "npipe" {
++		// Override host header for non-tcp connections.
++		req.Host = client.DummyHost
++	}
++
+ 	for _, config := range opts.requestModifiers {
+ 		if err := config(req); err != nil {
+ 			return nil, err

@@ -322,6 +322,8 @@ parts:
     source-tag: v20.10.24
     source-depth: 1
     override-build: |
+      $CRAFT_STAGE/patches/patch.sh
+
       # docker build specific environment variables
       export VERSION=$(craftctl get version)
       export DOCKER_GITCOMMIT=$(git rev-parse --short HEAD)
