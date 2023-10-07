@@ -1,0 +1,75 @@
+From e9302d52e7cdc7b4b6364f08dfe15d52b920fff5 Mon Sep 17 00:00:00 2001
+From: Lucas Kanashiro <lucas.kanashiro@canonical.com>
+Date: Wed, 23 Aug 2023 18:58:55 -0300
+Subject: [PATCH 2/5] snappy-apparmor-tweaks
+
+---
+ profiles/apparmor/apparmor.go | 18 ++++++++++++++++++
+ profiles/apparmor/template.go |  8 ++++++++
+ 2 files changed, 26 insertions(+)
+
+diff --git a/profiles/apparmor/apparmor.go b/profiles/apparmor/apparmor.go
+index d0f2361605..5a0a371d9b 100644
+--- a/profiles/apparmor/apparmor.go
++++ b/profiles/apparmor/apparmor.go
+@@ -7,7 +7,9 @@ import (
+ 	"bufio"
+ 	"io"
+ 	"os"
++	"os/exec"
+ 	"path"
++	"strconv"
+ 	"strings"
+ 	"text/template"
+ 
+@@ -27,6 +29,8 @@ type profileData struct {
+ 	Imports []string
+ 	// InnerImports defines the apparmor functions to import in the profile.
+ 	InnerImports []string
++	// SnapSecurityLabel is the name of the peer group to use in the snap
++       SnapSecurityLabel string
+ }
+ 
+ // generateDefault creates an apparmor profile from ProfileData.
+@@ -46,6 +50,20 @@ func (p *profileData) generateDefault(out io.Writer) error {
+ 		p.InnerImports = append(p.InnerImports, "#include <abstractions/base>")
+ 	}
+ 
++	// on snap distributions, we need to determine the name of the peer group
++       // to use for communication between the container and dockerd
++       if _, isSnap := os.LookupEnv("SNAP"); isSnap {
++               // this uses ps to get the systemd unit for the current process
++               cmd := exec.Command("ps", "-o", "unit=", strconv.Itoa(os.Getpid()))
++               out, err := cmd.CombinedOutput()
++               if err != nil {
++                       return err
++               }
++               // the snapd security label, which is the peer group we want, doesn't
++               // include the suffix ".service"
++               p.SnapSecurityLabel = strings.TrimSuffix(strings.TrimSpace(string(out)), ".service")
++       }
++
+ 	return compiled.Execute(out, p)
+ }
+ 
+diff --git a/profiles/apparmor/template.go b/profiles/apparmor/template.go
+index 5dcf35bf45..c9bae7187d 100644
+--- a/profiles/apparmor/template.go
++++ b/profiles/apparmor/template.go
+@@ -51,5 +51,13 @@ profile {{.Name}} flags=(attach_disconnected,mediate_deleted) {
+ 
+   # suppress ptrace denials when using 'docker ps' or using 'ps' inside a container
+   ptrace (trace,read,tracedby,readby) peer={{.Name}},
++{{if .SnapSecurityLabel}}
++  # Snap based docker distribution accesses
++  #   Allow the daemon to trace/signal containers
++  ptrace (readby, tracedby) peer="{{.SnapSecurityLabel}}",
++  signal (receive) peer="{{.SnapSecurityLabel}}",
++  #   Allow container processes to signal other container processes
++  signal (send, receive) peer=docker-default,
++{{end}}
+ }
+ `
+-- 
+2.25.1
+

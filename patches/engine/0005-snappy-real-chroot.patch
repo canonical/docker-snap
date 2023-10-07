@@ -1,0 +1,36 @@
+From a65b520e0fb2dd2a2ba50ce139e0baf7812e2aa2 Mon Sep 17 00:00:00 2001
+From: Lucas Kanashiro <lucas.kanashiro@canonical.com>
+Date: Wed, 23 Aug 2023 19:00:48 -0300
+Subject: [PATCH 5/5] snappy-real-chroot
+
+The snappy-real-chroot.patch was changed in content because in this new
+version there is no reexec before chroot:
+
+https://github.com/moby/moby/commit/5de229644fbda206a2ad1860ed1a73bb0a56143b
+
+Therefore the SNAP var was not set when reexecing docker-applyLayer.
+---
+ internal/mounttree/switchroot_linux.go | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/internal/mounttree/switchroot_linux.go b/internal/mounttree/switchroot_linux.go
+index 8797a04b45..ba0b45900e 100644
+--- a/internal/mounttree/switchroot_linux.go
++++ b/internal/mounttree/switchroot_linux.go
+@@ -17,6 +17,13 @@ import (
+ // the desired propagation mode of path's parent mount beforehand to prevent
+ // unwanted propagation into different mount namespaces.
+ func SwitchRoot(path string) error {
++	// LP:1703988 Unfortunately this issue happens when storage backend is one of them(aufs, overlay, btrfs) in snappy,
++       // To unblock this, we use realChroot as a workaround at this moment.
++       if os.Getenv("SNAP") != "" {
++               // Ubuntu Snappy 16.04+
++               return realChroot(path)
++       }
++
+ 	if mounted, _ := mountinfo.Mounted(path); !mounted {
+ 		if err := mount.Mount(path, path, "bind", "rbind,rw"); err != nil {
+ 			return realChroot(path)
+-- 
+2.25.1
+
