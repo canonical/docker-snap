@@ -21,6 +21,7 @@ if [ "${NVIDIA_SUPPORT_DISABLED}" == "true" ] ; then
     if ! cmp "${SNAP_DATA}/config/daemon.json"{,.new} >/dev/null ; then
         mv "${SNAP_DATA}/config/daemon.json"{.new,}
         rm -f "${SNAP_DATA}/etc/cdi/nvidia.yaml"
+        rm -f "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
         SVC_RESTART=true
     fi
 
@@ -31,4 +32,8 @@ fi
 if $SVC_RESTART ; then
     snapctl stop "${SNAP_NAME}"
     snapctl start "${SNAP_NAME}"
+# Otherwise, just restart the nvidia-container-toolkit #
+else
+    snapctl stop "${SNAP_NAME}.nvidia-container-toolkit"
+    snapctl start "${SNAP_NAME}.nvidia-container-toolkit"
 fi

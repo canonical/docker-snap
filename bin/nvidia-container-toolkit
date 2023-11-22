@@ -2,6 +2,13 @@
 
 set -eu
 
+U_MACHINE="$(uname -m)"
+U_OS="$(uname -o)"
+U_KERNEL="${U_OS##*/}"
+U_USERLAND="${U_OS%%/*}"
+
+ARCH_TRIPLET="${U_MACHINE}-${U_KERNEL,,}-${U_USERLAND,,}"
+
 device_wait() {
 
     COUNT=0
@@ -26,16 +33,31 @@ device_wait() {
 
 }
 
+# Generate the CDI config #
 cdi_generate () {
-    # Generate the CDI config #
-    "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "/snap/${SNAP_NAME}/current/usr/bin/nvidia-ctk" --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
+    "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "/snap/${SNAP_NAME}/current/usr/bin/nvidia-ctk" --library-search-path "${SNAP}/graphics/lib/${ARCH_TRIPLET}" --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
 }
 
-runtime_configure () {
-    # Generate the dockerd runtime config #
+# Create the nvidia runtime config, either snap default or custom #
+nvidia_runtime_config () {
+    RUNTIME_CONFIG_OVERRIDE="$(snapctl get nvidia-support.runtime.config-override)"
+
+    # Custom #
+    if [ -n "${RUNTIME_CONFIG_OVERRIDE}" ] ; then
+        echo "${RUNTIME_CONFIG_OVERRIDE}" > "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
+    # Default - opinionated, but most viable option for now #
+    else
+        rm -f "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
+        "${SNAP}/usr/bin/nvidia-ctk" config --in-place --set nvidia-container-runtime.mode=cdi
+    fi
+}
+
+# Generate the dockerd runtime config #
+docker_runtime_configure () {
     "${SNAP}/usr/bin/nvidia-ctk" runtime configure --runtime=docker --runtime-path "/snap/${SNAP_NAME}/current/usr/bin/nvidia-container-runtime" --config "${SNAP_DATA}/config/daemon.json"
 }
 
+# Setup failure recovery #
 setup_fail () {
     echo "WARNING: Conainter Toolkit setup seemed to fail with an error"
 
@@ -46,9 +68,11 @@ setup_fail () {
     if ! cmp "${SNAP_DATA}/config/daemon.json"{,.new} >/dev/null ; then
         mv "${SNAP_DATA}/config/daemon.json"{.new,}
         rm -f "${SNAP_DATA}/etc/cdi/nvidia.yaml"
+        rm -f "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
     fi
 }
 
+# Info #
 setup_info () {
     echo "Conainter Toolkit setup complete"
 }
@@ -74,10 +98,11 @@ if snapctl is-connected graphics-core22 ; then
     device_wait /dev/nvidiactl || exit 0
     echo "NVIDIA ready"
 
-    # Ensure the layouts dir for /etc/cdi exists #
-    mkdir -p "$SNAP_DATA/etc/cdi"
+    # Ensure the layout dirs for cdi exists #
+    mkdir -p "${SNAP_DATA}/etc/cdi"
+    mkdir -p "${SNAP_DATA}/etc/nvidia-container-runtime"
 
     # Setup nvidia support, but do not exit on failure #
-    cdi_generate && runtime_configure && setup_info || setup_fail
+    cdi_generate && nvidia_runtime_config && docker_runtime_configure && setup_info || setup_fail
 
 fi
