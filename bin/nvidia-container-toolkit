@@ -35,7 +35,11 @@ device_wait() {
 
 # Generate the CDI config #
 cdi_generate () {
-    "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "/snap/${SNAP_NAME}/current/usr/bin/nvidia-ctk" --library-search-path "${SNAP}/graphics/lib/${ARCH_TRIPLET}" --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
+    # Allow configred device-name-strategy, or default to index [ default in nvidia-ctk ] #
+    CDI_DEVICE_NAME_STRATEGY="$(snapctl get nvidia-support.cdi.device-name-strategy)"
+    CDI_DEVICE_NAME_STRATEGY="${CDI_DEVICE_NAME_STRATEGY:-index}"
+
+    "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "/snap/${SNAP_NAME}/current/usr/bin/nvidia-ctk" --library-search-path "${SNAP}/graphics/lib/${ARCH_TRIPLET}" --device-name-strategy "${CDI_DEVICE_NAME_STRATEGY}" --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
 }
 
 # Create the nvidia runtime config, either snap default or custom #
