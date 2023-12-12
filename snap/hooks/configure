@@ -5,12 +5,10 @@ set -eux
 HOOK_LOG="${SNAP_COMMON}/hooks/${SNAP_REVISION}/$(basename "$0").log" && mkdir -p "${HOOK_LOG%/*}"
 exec &> >(tee -a "${HOOK_LOG}")
 
+. "${SNAP}/usr/share/nvidia-container-toolkit/lib"
+
 # Flag to trigger service restart if any condition requires it #
 SVC_RESTART=false
-
-
-# Check if nvidia support is disabled #
-NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
 
 if [ "${NVIDIA_SUPPORT_DISABLED}" == "true" ] ; then
 

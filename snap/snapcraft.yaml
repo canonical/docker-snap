@@ -147,15 +147,20 @@ parts:
     source: .
     stage-packages:
       - mount
+    organize:
+      nvidia/lib: usr/share/nvidia-container-toolkit/lib
+      nvidia/nvidia-container-toolkit: bin/
     stage:
       - bin/*
       - config/daemon.json
       - patches/*
+      - usr/share/nvidia-container-toolkit/*
     prime:
       - -bin/go-build-helper.sh
       - -patches/*
       - bin/*
       - config/daemon.json
+      - usr/share/nvidia-container-toolkit/*
 
   utils:
     plugin: nil

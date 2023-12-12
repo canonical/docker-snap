@@ -1,6 +1,4 @@
-#!/bin/bash
-
-set -eu
+# nvidia toolkit related setup funtions #
 
 U_MACHINE="$(uname -m)"
 U_OS="$(uname -o)"
@@ -8,6 +6,8 @@ U_KERNEL="${U_OS##*/}"
 U_USERLAND="${U_OS%%/*}"
 
 ARCH_TRIPLET="${U_MACHINE}-${U_KERNEL,,}-${U_USERLAND,,}"
+
+NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
 
 device_wait() {
 
@@ -33,13 +33,25 @@ device_wait() {
 
 }
 
+# Check if hardware is present - just exit if not #
+nvidia_hw_ensure() {
+    lspci -d 10de: | grep -q 'NVIDIA Corporation' || exit 0
+    echo "NVIDIA hardware detected: $(lspci -d 10de:)"
+}
+
+# Create any data dirs if missing #
+ensure_nvidia_data_dirs() {
+    mkdir -p "${SNAP_DATA}/etc/cdi"
+    mkdir -p "${SNAP_DATA}/etc/nvidia-container-runtime"
+}
+
 # Generate the CDI config #
 cdi_generate () {
-    # Allow configred device-name-strategy, or default to index [ default in nvidia-ctk ] #
+    # Allow configured device-name-strategy, or default to index [ default in nvidia-ctk ] #
     CDI_DEVICE_NAME_STRATEGY="$(snapctl get nvidia-support.cdi.device-name-strategy)"
     CDI_DEVICE_NAME_STRATEGY="${CDI_DEVICE_NAME_STRATEGY:-index}"
 
-    "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "${SNAP}/usr/bin/nvidia-ctk" --library-search-path "${SNAP}/graphics/lib/${ARCH_TRIPLET}" --device-name-strategy "${CDI_DEVICE_NAME_STRATEGY}" --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
+    PATH="${PATH}:${SNAP}/graphics/bin" "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "${SNAP}/usr/bin/nvidia-ctk" --library-search-path "${SNAP}/graphics/lib/${ARCH_TRIPLET}" --device-name-strategy "${CDI_DEVICE_NAME_STRATEGY}" --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
 }
 
 # Create the nvidia runtime config, either snap default or custom #
@@ -80,33 +92,3 @@ setup_fail () {
 setup_info () {
     echo "Conainter Toolkit setup complete"
 }
-
-# Just exit if NVIDIA support is disabled #
-NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
-[ "${NVIDIA_SUPPORT_DISABLED}" != "true" ] || exit 0
-
-# Ensure nvidia support setup correctly, and only if hardware is preset and correct #
-if snapctl is-connected graphics-core22 ; then
-
-    # Connection hooks are run early - copy the config file from $SNAP into $SNAP_DATA if it doesn't exist
-    if [ ! -f "$SNAP_DATA/config/daemon.json" ]; then
-        mkdir -p "$SNAP_DATA/config"
-        cp "$SNAP/config/daemon.json" "$SNAP_DATA/config/daemon.json"
-    fi
-
-    # Check if hardware is present - just exit if not #
-    lspci -d 10de: | grep -q 'NVIDIA Corporation' || exit 0
-    echo "NVIDIA hardware detected: $(lspci -d 10de:)"
-
-    # As service order is not guaranteed outside of snap - wait a bit for nvidia assemble to complete #
-    device_wait /dev/nvidiactl || exit 0
-    echo "NVIDIA ready"
-
-    # Ensure the layout dirs for cdi exists #
-    mkdir -p "${SNAP_DATA}/etc/cdi"
-    mkdir -p "${SNAP_DATA}/etc/nvidia-container-runtime"
-
-    # Setup nvidia support, but do not exit on failure #
-    cdi_generate && nvidia_runtime_config && docker_runtime_configure && setup_info || setup_fail
-
-fi
