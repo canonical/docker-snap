@@ -1,6 +1,9 @@
 #!/bin/bash
 
-set -eu
+set -eux
+
+HOOK_LOG="${SNAP_COMMON}/hooks/${SNAP_REVISION}/$(basename "$0").log" && mkdir -p "${HOOK_LOG%/*}"
+exec &> >(tee -a "${HOOK_LOG}")
 
 # Just exit if NVIDIA support is disabled #
 NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
@@ -15,8 +18,9 @@ if snapctl is-connected graphics-core22 ; then
     echo "NVIDIA detected"
 
     # Restart services to reflect any changes if required #
-    # Have to called by name - nvidia-container-toolkik is inactive and won't be included with just snap name #
-    snapctl restart "${SNAP_NAME}.nvidia-container-toolkit"
+    # If oneshot services are inactive they don't respond to restart, so stop/start #
+    snapctl stop "${SNAP_NAME}.nvidia-container-toolkit"
+    snapctl start "${SNAP_NAME}.nvidia-container-toolkit"
     snapctl restart "${SNAP_NAME}.dockerd"
 
 fi
