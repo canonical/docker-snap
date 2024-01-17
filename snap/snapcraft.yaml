@@ -80,6 +80,16 @@ plugs:
     # Currently, this is the only relevant provider, but cannot be default as not supported on all archs #
     #default-provider: nvidia-core22
 slots:
+  config:
+    interface: content
+    content: docker-config
+    write:
+      - $SNAP_DATA/config
+  config-ro:
+    interface: content
+    content: docker-config-ro
+    read:
+      - $SNAP_DATA/config
   docker-daemon:
     interface: docker
   docker-executables:
