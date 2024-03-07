@@ -322,7 +322,7 @@ parts:
 
       # build the docker cli binary
       unset LDFLAGS
-      make dynbinary
+      make binary
 
       install -d "$CRAFT_PART_INSTALL/bin"
       install -T build/docker "$CRAFT_PART_INSTALL/bin/docker"
