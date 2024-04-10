@@ -9,6 +9,12 @@ ARCH_TRIPLET="${U_MACHINE}-${U_KERNEL,,}-${U_USERLAND,,}"
 
 NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
 
+if [ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ] ; then
+    NVIDIA_SUPPORT_CLASSIC="true"
+else
+    NVIDIA_SUPPORT_CLASSIC="false"
+fi
+
 device_wait() {
 
     COUNT=0
@@ -51,7 +57,14 @@ cdi_generate () {
     CDI_DEVICE_NAME_STRATEGY="$(snapctl get nvidia-support.cdi.device-name-strategy)"
     CDI_DEVICE_NAME_STRATEGY="${CDI_DEVICE_NAME_STRATEGY:-index}"
 
-    PATH="${PATH}:${SNAP}/graphics/bin" "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "${SNAP}/usr/bin/nvidia-ctk" --library-search-path "${SNAP}/graphics/lib/${ARCH_TRIPLET}" --device-name-strategy "${CDI_DEVICE_NAME_STRATEGY}" --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
+    # Default CDI libs search path and shell path for install on core systems #
+    CDI_LIB_SEARCH_PATH="${SNAP}/graphics/lib/${ARCH_TRIPLET}"
+    CDI_PATH="${PATH}:${SNAP}/graphics/bin"
+    # Otherwise, if on classic and nvidia driver is installed, set hostfs for the CDI libs search path and shell path #
+    [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] && CDI_LIB_SEARCH_PATH="/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}"
+    [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] && CDI_PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin"
+
+    LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${CDI_LIB_SEARCH_PATH}" PATH="${CDI_PATH}" "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "${SNAP}/usr/bin/nvidia-ctk" --library-search-path "${CDI_LIB_SEARCH_PATH}" --device-name-strategy "${CDI_DEVICE_NAME_STRATEGY}" --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
 }
 
 # Create the nvidia runtime config, either snap default or custom #
