@@ -43,11 +43,6 @@ passthrough:
 layout:
   /etc/docker:
     bind: $SNAP_DATA/etc/docker
-  # Container Device Interface (CDI) Support - https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#container-device-interface-cdi-support
-  /etc/cdi:
-    bind: $SNAP_DATA/etc/cdi
-  /etc/nvidia-container-runtime:
-    bind: $SNAP_DATA/etc/nvidia-container-runtime
   /etc/gitconfig:
     bind-file: $SNAP_DATA/etc/gitconfig
   /usr/libexec/docker/cli-plugins:
@@ -60,6 +55,8 @@ environment:
   LD_LIBRARY_PATH:    $SNAP/graphics/lib/${CRAFT_ARCH_TRIPLET}:${SNAP}/lib/:${SNAP}/lib/${CRAFT_ARCH_TRIPLET}:${SNAP}/usr/lib/:${SNAP}/usr/lib/${CRAFT_ARCH_TRIPLET}
   LIBGL_DRIVERS_PATH: $SNAP/graphics/lib/${CRAFT_ARCH_TRIPLET}/dri
   LIBVA_DRIVERS_PATH: $SNAP/graphics/lib/${CRAFT_ARCH_TRIPLET}/dri
+  # nvidia-container-runtime can only set alternative config directory via XDG_CONFIG_HOME #
+  XDG_CONFIG_HOME: $SNAP_DATA/etc
 
 plugs:
   home:

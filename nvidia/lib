@@ -59,12 +59,14 @@ cdi_generate () {
 
     # Default CDI libs search path and shell path for install on core systems #
     CDI_LIB_SEARCH_PATH="${SNAP}/graphics/lib/${ARCH_TRIPLET}"
+    CDI_CONFIG_SEARCH_PATH="${SNAP}/graphics/share"
     CDI_PATH="${PATH}:${SNAP}/graphics/bin"
     # Otherwise, if on classic and nvidia driver is installed, set hostfs for the CDI libs search path and shell path #
     [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] && CDI_LIB_SEARCH_PATH="/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}"
+    [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] && CDI_CONFIG_SEARCH_PATH="/var/lib/snapd/hostfs/usr/share"
     [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] && CDI_PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin"
 
-    LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${CDI_LIB_SEARCH_PATH}" PATH="${CDI_PATH}" "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "${SNAP}/usr/bin/nvidia-ctk" --library-search-path "${CDI_LIB_SEARCH_PATH}" --device-name-strategy "${CDI_DEVICE_NAME_STRATEGY}" --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
+    XDG_DATA_DIRS="${XDG_DATA_DIRS:-}:${CDI_CONFIG_SEARCH_PATH}" LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${CDI_LIB_SEARCH_PATH}" PATH="${CDI_PATH}" "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "${SNAP}/usr/bin/nvidia-ctk" --library-search-path "${CDI_LIB_SEARCH_PATH}" --device-name-strategy "${CDI_DEVICE_NAME_STRATEGY}" --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
 }
 
 # Create the nvidia runtime config, either snap default or custom #
@@ -76,8 +78,9 @@ nvidia_runtime_config () {
         echo "${RUNTIME_CONFIG_OVERRIDE}" > "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
     # Default - opinionated, but most viable option for now #
     else
+        # FIXME: CDI spec-dirs can be set is a list using `"${SNAP_DATA}/etc/cdi",/var/run/cdi`, once this is fixed: https://github.com/NVIDIA/nvidia-container-toolkit/issues/466
         rm -f "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
-        "${SNAP}/usr/bin/nvidia-ctk" config --in-place --set nvidia-container-runtime.mode=cdi
+        "${SNAP}/usr/bin/nvidia-ctk" config --in-place --set nvidia-container-runtime.mode=cdi --set nvidia-container-runtime.modes.cdi.spec-dirs="${SNAP_DATA}/etc/cdi" --config "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
     fi
 }
 
