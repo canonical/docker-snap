@@ -5,12 +5,10 @@ set -eux
 HOOK_LOG="${SNAP_COMMON}/hooks/${SNAP_REVISION}/$(basename "$0").log" && mkdir -p "${HOOK_LOG%/*}"
 exec &> >(tee -a "${HOOK_LOG}")
 
+. "${SNAP}/usr/share/nvidia-container-toolkit/lib"
+
 # Flag to trigger service restart if any condition requires it #
 SVC_RESTART=false
-
-
-# Check if nvidia support is disabled #
-NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
 
 if [ "${NVIDIA_SUPPORT_DISABLED}" == "true" ] ; then
 
@@ -21,6 +19,7 @@ if [ "${NVIDIA_SUPPORT_DISABLED}" == "true" ] ; then
     if ! cmp "${SNAP_DATA}/config/daemon.json"{,.new} >/dev/null ; then
         mv "${SNAP_DATA}/config/daemon.json"{.new,}
         rm -f "${SNAP_DATA}/etc/cdi/nvidia.yaml"
+        rm -f "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
         SVC_RESTART=true
     fi
 
@@ -31,4 +30,8 @@ fi
 if $SVC_RESTART ; then
     snapctl stop "${SNAP_NAME}"
     snapctl start "${SNAP_NAME}"
+# Otherwise, just restart the nvidia-container-toolkit #
+else
+    snapctl stop "${SNAP_NAME}.nvidia-container-toolkit"
+    snapctl start "${SNAP_NAME}.nvidia-container-toolkit"
 fi

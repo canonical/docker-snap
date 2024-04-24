@@ -58,19 +58,40 @@ Docker should function normally, with the following caveats:
 
 ## NVIDIA support on Ubuntu Core 22
 
-If the system is found to have an NVIDIA graphics card available, the nvidia container toolkit will be setup and configured to enable use of the local GPU from docker.  This can be used to enable use of CUDA from a docker container, for instance.
+If the system is found to have an nvidia graphics card available, the nvidia container toolkit will be setup and configured to enable use of the local GPU from docker.  This can be used to enable use of CUDA from a docker container, for instance.
 
-This requires connection of the graphics-core22 content interface provided by the nvidia-core22 snap, which should be automatically connected.
+This requires connection of the graphics-core22 content interface provided by the nvidia-core22 snap, which should be automatically connected once installed.
+
+To enable proper use of the GPU within docker, the nvidia runtime must be used.  By default, the nvidia runtime will be configured to use ([CDI](https://github.com/cncf-tags/container-device-interface)) mode, and a the appropriate nvidia CDI config will be automatically created for the system.  You just need to specify the nvidia runtime when running a container.
 
 Example usage:
 
 ```shell
-docker run --rm --gpus all {cuda-container-image-name}
+docker run --rm --runtime nvidia {cuda-container-image-name}
+```
+
+### Custom NVIDIA runtime config
+
+If you want to make some adjustments to the automatically generated runtime config, you can use the `nvidia-support.runtime.config-override` snap config to completely replace it.
+
+```shell
+snap set docker nvidia-support.runtime.config-override="$(cat cutom-nvidia-config.toml)"
+```
+
+### CDI device naming strategy
+
+By default, the `device-name-strategy` for the CDI config will use `index`.  Optionally, you can specify an alternative from the currently supported:
+* `index`
+* `uuid`
+* `type-index`
+
+```shell
+snap set docker nvidia-support.cdi.device-name-strategy=uuid
 ```
 
 ### Disable NVIDIA support
 
-Use of NVIDIA hardware or not should be automatic, but you may wish to specifically disable it.  You can do so via the following snap config:
+Setting up the nvidia support should be automatic the hardware is present, but you may wish to specifically disable it so that setup is not even attempted.  You can do so via the following snap config:
 ```shell
 snap set docker nvidia-support.disabled=true
 ```
