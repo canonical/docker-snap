@@ -56,19 +56,23 @@ Docker should function normally, with the following caveats:
 * [Setup a secure private registry](registry-example.md)
 
 
-## NVIDIA support on Ubuntu Core 22
+## NVIDIA support
 
-If the system is found to have an nvidia graphics card available, the nvidia container toolkit will be setup and configured to enable use of the local GPU from docker.  This can be used to enable use of CUDA from a docker container, for instance.
+If the system is found to have an nvidia graphics card available, and the host has the required nvidia libraries installed, the nvidia container toolkit will be setup and configured to enable use of the local GPU from docker.  This can be used to enable use of CUDA from a docker container, for instance.
+
+To enable proper use of the GPU within docker, the nvidia runtime must be used.  By default, the nvidia runtime will be configured to use [CDI](https://github.com/cncf-tags/container-device-interface) mode, and a the appropriate nvidia CDI config will be automatically created for the system.  You just need to specify the nvidia runtime when running a container.
+
+### Ubuntu Core 22
+
+The required nvidia libraries are available in the nvidia-core22 snap.
 
 This requires connection of the graphics-core22 content interface provided by the nvidia-core22 snap, which should be automatically connected once installed.
 
-To enable proper use of the GPU within docker, the nvidia runtime must be used.  By default, the nvidia runtime will be configured to use ([CDI](https://github.com/cncf-tags/container-device-interface)) mode, and a the appropriate nvidia CDI config will be automatically created for the system.  You just need to specify the nvidia runtime when running a container.
+### Ubuntu Server / Desktop
 
-Example usage:
+The required nvidia libraries are available in the nvidia container toolkit packages.
 
-```shell
-docker run --rm --runtime nvidia {cuda-container-image-name}
-```
+Instruction on how to install them can be found ([here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html))
 
 ### Custom NVIDIA runtime config
 
@@ -94,6 +98,32 @@ snap set docker nvidia-support.cdi.device-name-strategy=uuid
 Setting up the nvidia support should be automatic the hardware is present, but you may wish to specifically disable it so that setup is not even attempted.  You can do so via the following snap config:
 ```shell
 snap set docker nvidia-support.disabled=true
+```
+
+### Usage examples
+
+Generic example usage would look something like:
+
+```shell
+docker run --rm --runtime nvidia --gpus all {cuda-container-image-name}
+```
+
+or
+
+```shell
+docker run --rm --runtime nvidia --env NVIDIA_VISIBLE_DEVICES=all {cuda-container-image-name}
+```
+
+If your container image already has appropriate environment variables set, may be able to just specify the nvidia runtime with no additional args required.
+
+Please refer to [this guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html) for mode detail regarding environment variables that can be used.
+
+*NOTE*: library path and discovery is automatically handled, but binary paths are not, so if you wish to test using something like the `nvidia-smi` binary passed into the container from the host, you could either specify the full path or set the PATH environment variable.
+
+e.g.
+
+```
+docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin" ubuntu nvidia-smi
 ```
 
 ## Development
