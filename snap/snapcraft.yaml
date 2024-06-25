@@ -233,7 +233,7 @@ parts:
     plugin: make
     source: https://github.com/opencontainers/runc.git
     # from https://github.com/moby/moby/releases/tag/v24.0.5
-    source-tag: v1.1.7
+    source-tag: v1.1.12
     source-depth: 1
     override-build: |
       make BUILDTAGS='seccomp apparmor selinux' COMMIT=
