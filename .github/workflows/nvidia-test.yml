@@ -1,0 +1,62 @@
+name: Nvidia Graphics Tests
+
+on:
+    workflow_run:
+      workflows:
+        - "Smoke Test"
+      types:
+        - completed
+    push: # OBS; To be Removed latter, used only to check workflow functionallity
+      branches: [ main, nvidia-ci-workflow ] # TODO; Remove this latter
+    pull_request: # TODO; Remove this latter
+      branches: [ main ] # TODO; Remove this latter
+
+jobs:
+
+    build-and-test:
+        runs-on: [self-hosted, testflinger]
+        strategy:
+          fail-fast: true
+          matrix:
+            queue:
+              - 202008-28167
+            data_source:
+              - "distro: noble"
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Build docker-snap
+              uses: snapcore/action-build@v1
+              id: snapcraft
+              with:
+                snapcraft-args: snap --build-for=amd64 --output docker.snap
+
+            - name: Submit Testflinger job
+              uses: canonical/testflinger/.github/actions/submit@main
+              with:
+                poll: true
+                job: |
+                  job_queue: ${{ matrix.queue }}
+                  global_timeout: 3600
+                  output_timeout: 1800
+                  provision_data:
+                    ${{ matrix.data_source }}
+                  test_data:
+                    test_cmds: |
+                      #!/usr/bin/env bash
+                      set -x
+                      # install docker-snap
+                      sudo snap install ${{ steps.snapcraft.outputs.docker.snap }} --dangerous
+
+                      # Connecting needed interfaces
+                      sudo snap connect docker:network-control    :network-control
+                      sudo snap connect docker:firewall-control   :firewall-control
+                      sudo snap connect docker:support            :docker-support
+                      sudo snap connect docker:privileged         :docker-support
+                      sudo snap connect docker:docker-cli         docker:docker-daemon
+
+                      # Check installation
+                      docker --version
+
+
