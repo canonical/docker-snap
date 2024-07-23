@@ -26,11 +26,11 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            - name: Build docker-snap
-              uses: snapcore/action-build@v1
-              id: snapcraft
-              with:
-                snapcraft-args: snap --build-for=amd64 --output docker.snap
+            # - name: Build docker-snap
+            #   uses: snapcore/action-build@v1
+            #   id: snapcraft
+            #   with:
+            #     snapcraft-args: snap --build-for=amd64 --output docker.snap
 
             - name: Submit Testflinger job
               uses: canonical/testflinger/.github/actions/submit@main
