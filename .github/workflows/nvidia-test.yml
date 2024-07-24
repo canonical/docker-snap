@@ -46,8 +46,9 @@ jobs:
                     test_cmds: |
                       #!/usr/bin/env bash
                       set -x
+                      
                       # install docker-snap
-                      sudo snap install ${{ steps.snapcraft.outputs.docker.snap }} --dangerous
+                      sudo snap install docker --edge
 
                       # Connecting needed interfaces
                       sudo snap connect docker:network-control    :network-control
