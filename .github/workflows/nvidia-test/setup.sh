@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -x
+set -ex
 
 install_docker() {
   # install docker-snap
@@ -17,7 +17,7 @@ install_docker() {
   docker --version || exit 1
 }
 
-classic_setup() {
+setup_classic() {
   sudo apt-get update && sudo apt-get install -y curl
 
   wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
@@ -37,7 +37,7 @@ classic_setup() {
   sudo apt-get install -y nvidia-container-toolkit
 }
 
-core_setup() {
+setup_core() {
   sudo snap install nvidia-core22
   sudo snap install nvidia-assemble --channel 22/stable
 }
@@ -45,48 +45,19 @@ core_setup() {
 setup() {
   . /etc/os-release
 
-  if [ ! -f $HOME/setup-done ]; then
-    install_docker
-
-    if [[ $ID == "ubuntu" ]]; then
-      classic_setup
-
-    elif [[ $ID == "ubuntu-core" ]]; then
-      core_setup
-
-    else
-      echo "Invalid system type"
-      exit 1
-    fi
-
-    # Since the reboot is necessary
-    touch $HOME/setup-done
-
-    sudo reboot now
-  fi
-}
-
-# Test nvidia-smi
-smi_test() {
+  install_docker
 
   if [[ $ID == "ubuntu" ]]; then
+    setup_classic
 
-    sudo docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin" ubuntu nvidia-smi || exit 1
   elif [[ $ID == "ubuntu-core" ]]; then
-    sudo docker run --rm --runtime nvidia --gpus all -it ubuntu bash -c "/snap/docker/*/graphics/bin/nvidia-smi" || exit 1
+    setup_core
+
   else
     echo "Invalid system type"
     exit 1
   fi
 }
 
-# Test a vector addition sample workload
-vector_add_test() {
-  sudo docker run --rm --runtime=nvidia --gpus all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda10.2 || exit 1
-}
 
 setup
-
-smi_test
-
-vector_add_test
