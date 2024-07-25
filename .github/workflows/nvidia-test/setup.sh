@@ -54,10 +54,12 @@ setup() {
     setup_core
 
   else
-    echo "Invalid system type"
+    echo "Unexpected operating system ID: $ID"
     exit 1
   fi
 }
 
 
 setup
+
+echo "A reboot is required!"

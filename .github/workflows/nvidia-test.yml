@@ -20,17 +20,12 @@ jobs:
           matrix:
             queue:
               - 202008-28167
+              - 202112-29789
             data_source:
               - "distro: noble"
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
-
-            # - name: Build docker-snap
-            #   uses: snapcore/action-build@v1
-            #   id: snapcraft
-            #   with:
-            #     snapcraft-args: snap --build-for=amd64 --output docker.snap
 
             - name: Submit Testflinger job
               uses: canonical/testflinger/.github/actions/submit@main
@@ -43,21 +38,34 @@ jobs:
                   provision_data:
                     ${{ matrix.data_source }}
                   test_data:
+                  
+                    # Copy files from the GH runner to the Testflinger Agent
                     attachments:
                       - local: ".github/workflows/nvidia-test"
-                        agent: "test"
+                        agent: "scripts"
+
+                    # Run commands on the Testflinger Agent
                     test_cmds: |
-                      find .
+                      #!/usr/bin/env bash
+                      set -ex
 
-                      file test/setup.sh
+                      # List the attached files
+                      find attachments/test
 
-                      cat ./test/setup.sh | ssh ubuntu@$DEVICE_IP 
+                      SCRIPTS=./attachments/test/scripts
 
-                      ssh ubuntu@$DEVICE_IP sudo reboot
+                      # Setup the environment on the target device
+                      ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/setup.sh)"
 
-                      # wait TBA
+                      # Reboot it
+                      ssh ubuntu@$DEVICE_IP "sudo reboot &"
 
-                      #cat ./test/test.sh | ssh ubuntu@$DEVICE_IP 
+                      echo "Wait for the device to boot and start its SSH server"
+                      $SCRIPTS/wait_for_port.sh $DEVICE_IP 22
+
+                      # Run the tests
+                      ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/test.sh)"
+
 
                       
 
