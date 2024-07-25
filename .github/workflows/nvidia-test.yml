@@ -13,7 +13,36 @@ on:
 
 jobs:
 
-    build-and-test:
+    build-and-upload-artifact:
+        runs-on: [ubuntu-latest]
+        env:
+            PR_NUMBER: ${{ github.event.number }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+            
+            - name: Setup upterm session
+              uses: lhotari/action-upterm@v1
+              with:
+                wait-timeout-minutes: 2
+
+            - name: Build docker snap
+              uses: snapcore/action-build@v1
+              id: snapcraft
+              with:
+                snapcraft-args: snap --output docker.snap
+            
+            - name: Install snapcraft
+              run: |
+                sudo snap install snapcraft --classic
+            
+            - name: Upload artifact to snapstore branch
+              run: |
+                export SNAPCRAFT_STORE_CREDENTIALS="${{ secrets.SNAPCRAFT_LOGIN }}"
+                snapcraft upload ${{steps.snapcraft.outputs.snap}} --release latest/edge/pr-${{ env.PR_NUMBER }}
+
+    test:
+        needs: build-and-upload-artifact
         runs-on: [self-hosted, testflinger]
         strategy:
           fail-fast: true
@@ -28,45 +57,14 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
+            - name: Setup upterm session
+              uses: lhotari/action-upterm@v1
+              with:
+                wait-timeout-minutes: 2
+
             - name: Submit Testflinger job
               uses: canonical/testflinger/.github/actions/submit@main
               with:
                 poll: true
-                job: |
-                  job_queue: ${{ matrix.queue }}
-                  global_timeout: 3600
-                  output_timeout: 1800
-                  provision_data:
-                    ${{ matrix.data_source }}
-                  test_data:
-                  
-                    # Copy files from the GH runner to the Testflinger Agent
-                    attachments:
-                      - local: ".github/workflows/nvidia-test"
-                        agent: "scripts"
-
-                    # Run commands on the Testflinger Agent
-                    test_cmds: |
-                      #!/usr/bin/env bash
-                      set -ex
-
-                      # List the attached files
-                      find attachments/test
-
-                      SCRIPTS=./attachments/test/scripts
-
-                      # Setup the environment on the target device
-                      ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/setup.sh)"
-
-                      # Reboot it
-                      ssh ubuntu@$DEVICE_IP "sudo reboot &"
-
-                      echo "Wait for the device to boot and start its SSH server"
-                      $SCRIPTS/wait_for_port.sh $DEVICE_IP 22
-
-                      # Run the tests
-                      ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/test.sh)"
-
-
-                      
+                job-path: .github/workflows/testflinger/nvidia.yaml
 
