@@ -19,6 +19,7 @@ jobs:
           fail-fast: true
           matrix:
             queue:
+              - 202007-28059
               - 202008-28167
               - 202112-29789
             data_source:
