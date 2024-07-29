@@ -3,6 +3,7 @@ set -ex
 
 # Test nvidia-smi
 smi_test() {
+  . /etc/os-release
 
   if [[ $ID == "ubuntu" ]]; then
     sudo docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin" ubuntu nvidia-smi || exit 1

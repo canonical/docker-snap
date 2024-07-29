@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -ex
 
+apt_update() {
+  # This is necessary due some Testflinger machines fail on
+  set +e
+  sudo apt-get update
+  set -e
+}
+
 install_docker() {
   # install docker-snap
   # sudo snap install ${{ steps.snapcraft.outputs.docker.snap }} --dangerous
@@ -18,13 +25,17 @@ install_docker() {
 }
 
 setup_classic() {
-  sudo apt-get update && sudo apt-get install -y curl
+  . /etc/os-release
+  UBUNTU_VERSION="${VERSION_ID//./}"
 
-  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+  apt_update
+  sudo apt-get install -y curl
+
+  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu$UBUNTU_VERSION/x86_64/cuda-keyring_1.1-1_all.deb
   sudo dpkg -i cuda-keyring_1.1-1_all.deb
-  sudo apt-get update
-  sudo apt-get -y install cuda-toolkit-12-5
 
+  apt_update
+  sudo apt-get -y install cuda-toolkit-12-5
   sudo apt-get install -y nvidia-driver-555-open
   sudo apt-get install -y cuda-drivers-555
 
@@ -33,7 +44,7 @@ setup_classic() {
     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' |
       sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
-  sudo apt-get update
+  apt_update
   sudo apt-get install -y nvidia-container-toolkit
 }
 
@@ -58,7 +69,6 @@ setup() {
     exit 1
   fi
 }
-
 
 setup
 
