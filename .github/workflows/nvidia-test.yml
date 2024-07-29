@@ -6,10 +6,6 @@ on:
         - "Smoke Test"
       types:
         - completed
-    push: # OBS; To be Removed latter, used only to check workflow functionallity
-      branches: [ main, nvidia-ci-workflow ] # TODO; Remove this latter
-    pull_request: # TODO; Remove this latter
-      branches: [ main ] # TODO; Remove this latter
 
 jobs:
 
