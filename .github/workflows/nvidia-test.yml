@@ -6,43 +6,18 @@ on:
     branches: [ main ] 
   # Manual trigger
   workflow_dispatch:
+    inputs:
+      snap-channel:
+        description: 'Docker snap channel'
+        required: true
+        type: string
+        default: 'latest/edge'
 
 jobs:
-
-    # build-and-upload-artifact:
-    #     runs-on: [ubuntu-latest]
-    #     env:
-    #         PR_NUMBER: ${{ github.event.number }}
-    #     steps:
-    #         - name: Checkout code
-    #           uses: actions/checkout@v4
-            
-    #         - name: Setup upterm session
-    #           uses: lhotari/action-upterm@v1
-    #           with:
-    #             wait-timeout-minutes: 2
-
-    #         - name: Build docker snap
-    #           uses: snapcore/action-build@v1
-    #           id: snapcraft
-    #           with:
-    #             snapcraft-args: snap --output docker.snap
-            
-    #         - name: Install snapcraft
-    #           run: |
-    #             sudo snap install snapcraft --classic
-            
-    #         - name: Upload artifact to snapstore branch
-    #           run: |
-    #             export SNAPCRAFT_STORE_CREDENTIALS="${{ secrets.SNAPCRAFT_LOGIN }}"
-    #             snapcraft upload ${{steps.snapcraft.outputs.snap}} --release latest/edge/pr-${{ env.PR_NUMBER }}
-
     test:
-        # needs: build-and-upload-artifact
         runs-on: [self-hosted, testflinger]
         env:
-          JOB_TEMPLATE: .github/workflows/testflinger/nvidia.yaml
-          GEN_JOB_PATH: ${{ github.workspace }}/job.yaml
+          GEN_JOB_PATH: ${{ github.workspace }}/generated-job.yaml
         strategy:
           fail-fast: true
           matrix:
@@ -56,23 +31,26 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            # - name: Setup upterm session
-            #   uses: lhotari/action-upterm@v1
-            #   with:
-            #     wait-timeout-minutes: 2
             - name: Create Testflinger job queue
               run: |
                 export JOB_QUEUE="${{ matrix.job-queue }}"
+                export SNAP_CHANNEL="${{ inputs.snap-channel }}"
                 
                 envsubst '$JOB_QUEUE' \
-                  < $JOB_TEMPLATE \
+                  < .github/workflows/testflinger/nvidia.yaml \
                   > $GEN_JOB_PATH
 
+                # # Replace channel with value from the manual trigger input
+                # sed -i "s/^[[:space:]]*DOCKER_SNAP_CHANNEL=.*/DOCKER_SNAP_CHANNEL=$SNAP_CHANNEL/" \
+                #   .github/workflows/scripts/testflinger/setup.sh
 
+                envsubst '$SNAP_CHANNEL' \
+                  < .github/workflows/scripts/setup.sh \
+                  > .github/workflows/scripts/temp.sh
+                mv .github/workflows/scripts/temp.sh .github/workflows/scripts/setup.sh
 
             - name: Submit Testflinger job
               uses: canonical/testflinger/.github/actions/submit@main
               with:
                 poll: true
                 job-path: ${{ env.GEN_JOB_PATH }}
-

@@ -10,8 +10,11 @@ apt_update() {
 
 install_docker() {
   # install docker-snap
-  # sudo snap install ${{ steps.snapcraft.outputs.docker.snap }} --dangerous
-  sudo snap install docker --edge
+  DOCKER_SNAP_CHANNEL=$SNAP_CHANNEL
+  if [[ -z "$DOCKER_SNAP_CHANNEL" ]]; then
+    DOCKER_SNAP_CHANNEL="latest/edge"
+  fi
+  sudo snap install docker --channel="$DOCKER_SNAP_CHANNEL"
 
   # Connecting needed interfaces (Not need now, but need when instaling from artifact)
   sudo snap connect docker:network-control :network-control
