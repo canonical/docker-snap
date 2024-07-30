@@ -1,11 +1,11 @@
 name: Nvidia Graphics Tests
 
 on:
-    workflow_run:
-      workflows:
-        - "Smoke Test"
-      types:
-        - completed
+  # TODO: remove this trigger which is for testing
+  pull_request:
+    branches: [ main ] 
+  # Manual trigger
+  workflow_dispatch:
 
 jobs:
 
@@ -40,15 +40,18 @@ jobs:
     test:
         # needs: build-and-upload-artifact
         runs-on: [self-hosted, testflinger]
+        env:
+          JOB_TEMPLATE: .github/workflows/testflinger/nvidia.yaml
+          GEN_JOB_PATH: ${{ github.workspace }}/job.yaml
         strategy:
           fail-fast: true
           matrix:
-            queue:
+            job-queue:
               - 202007-28059
               # - 202008-2816s7
               # - 202112-29789
-            data_source:
-              - "distro: noble"
+              # noprovision node, for CI testing
+              # - 202302-31212
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -57,10 +60,19 @@ jobs:
             #   uses: lhotari/action-upterm@v1
             #   with:
             #     wait-timeout-minutes: 2
+            - name: Create Testflinger job queue
+              run: |
+                export JOB_QUEUE="${{ matrix.job-queue }}"
+                
+                envsubst '$JOB_QUEUE' \
+                  < $JOB_TEMPLATE \
+                  > $GEN_JOB_PATH
+
+
 
             - name: Submit Testflinger job
               uses: canonical/testflinger/.github/actions/submit@main
               with:
                 poll: true
-                job-path: .github/workflows/testflinger/nvidia.yaml
+                job-path: ${{ env.GEN_JOB_PATH }}
 

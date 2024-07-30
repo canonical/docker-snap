@@ -1,4 +1,4 @@
-job_queue: ${{ matrix.queue }}
+job_queue: $JOB_QUEUE
 global_timeout: 3600
 output_timeout: 1800
 provision_data:
@@ -24,8 +24,8 @@ test_data:
     # Setup the environment on the target device
     ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/setup.sh)"
 
-    # Reboot it
-    ssh ubuntu@$DEVICE_IP "sudo reboot &"
+    # Reboot the device in background to avoid breaking the SSH connection prematurely
+    ssh ubuntu@$DEVICE_IP "(sleep 3 && sudo reboot) &"
 
     echo "Wait for the device to boot and start its SSH server"
     $SCRIPTS/wait_for_port.sh $DEVICE_IP 22
