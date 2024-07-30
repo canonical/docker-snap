@@ -44,9 +44,9 @@ jobs:
           fail-fast: true
           matrix:
             queue:
-              # - 202007-28059
+              - 202007-28059
               # - 202008-2816s7
-              - 202112-29789
+              # - 202112-29789
             data_source:
               - "distro: noble"
         steps:
