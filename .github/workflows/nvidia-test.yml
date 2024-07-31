@@ -1,9 +1,9 @@
 name: Nvidia Graphics Tests
 
 on:
-  # TODO: remove this trigger which is for testing
+  # Uncomment this trigger only during workflow development
   pull_request:
-    branches: [ main ] 
+    branches: [ main ]
   # Manual trigger
   workflow_dispatch:
     inputs:
@@ -44,7 +44,7 @@ jobs:
                 envsubst '$SNAP_CHANNEL' \
                   < TESTFLINGER_DIR/scripts/setup.sh \
                   > TESTFLINGER_DIR/scripts/temp.sh
-                  
+
                 mv TESTFLINGER_DIR/scripts/temp.sh TESTFLINGER_DIR/scripts/setup.sh
 
             - name: Submit Testflinger job

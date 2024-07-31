@@ -10,7 +10,7 @@ smi_test() {
   elif [[ $ID == "ubuntu-core" ]]; then
     sudo docker run --rm --runtime nvidia --gpus all -it ubuntu bash -c "/snap/docker/*/graphics/bin/nvidia-smi" || exit 1
   else
-    echo "Invalid system type"
+    echo "Unexpected operating system ID: $ID"
     exit 1
   fi
 }

@@ -2,28 +2,23 @@
 set -ex
 
 apt_update() {
-  # This is necessary due some Testflinger machines fail on
+  # ignore errors, some nodes fail to access the repos
   set +e
   sudo apt-get update
   set -e
 }
 
 install_docker() {
-  # install docker-snap
+  # SNAP_CHANNEL may be set by the caller, or replaced in CI
   DOCKER_SNAP_CHANNEL=$SNAP_CHANNEL
   if [[ -z "$DOCKER_SNAP_CHANNEL" ]]; then
     DOCKER_SNAP_CHANNEL="latest/edge"
   fi
+
+  # install docker-snap
   sudo snap install docker --channel="$DOCKER_SNAP_CHANNEL"
 
-  # Connecting needed interfaces (Not need now, but need when instaling from artifact)
-  sudo snap connect docker:network-control :network-control
-  sudo snap connect docker:firewall-control :firewall-control
-  sudo snap connect docker:support :docker-support
-  sudo snap connect docker:privileged :docker-support
-  sudo snap connect docker:docker-cli docker:docker-daemon
-
-  # Check installation
+  # check the installation
   docker --version || exit 1
 }
 
