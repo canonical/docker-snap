@@ -17,7 +17,6 @@ jobs:
     test:
         runs-on: [self-hosted, testflinger]
         env:
-          GEN_JOB_PATH: ${{ github.workspace }}/generated-job.yaml
           TESTFLINGER_DIR: .github/workflows/testflinger
         strategy:
           fail-fast: true
@@ -38,17 +37,18 @@ jobs:
                 export SNAP_CHANNEL="${{ inputs.snap-channel }}"
                 
                 envsubst '$JOB_QUEUE' \
-                  < TESTFLINGER_DIR/nvidia-job.yaml \
-                  > $GEN_JOB_PATH
+                  < $TESTFLINGER_DIR/nvidia-job.yaml \
+                  > $TESTFLINGER_DIR/nvidia-job.temp
 
                 envsubst '$SNAP_CHANNEL' \
-                  < TESTFLINGER_DIR/scripts/setup.sh \
-                  > TESTFLINGER_DIR/scripts/temp.sh
+                  < $TESTFLINGER_DIR/scripts/setup.sh \
+                  > $TESTFLINGER_DIR/scripts/setup.temp
 
-                mv TESTFLINGER_DIR/scripts/temp.sh TESTFLINGER_DIR/scripts/setup.sh
+                mv $TESTFLINGER_DIR/nvidia-job.temp $TESTFLINGER_DIR/nvidia-job.yaml
+                mv $TESTFLINGER_DIR/scripts/setup.temp $TESTFLINGER_DIR/scripts/setup.sh
 
             - name: Submit Testflinger job
               uses: canonical/testflinger/.github/actions/submit@main
               with:
                 poll: true
-                job-path: ${{ env.GEN_JOB_PATH }}
+                job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job.yaml
