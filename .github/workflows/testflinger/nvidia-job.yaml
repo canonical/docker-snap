@@ -1,3 +1,5 @@
+# This is a template
+# Some variables should be replaced with envsubst before use
 job_queue: $JOB_QUEUE
 global_timeout: 3600
 output_timeout: 1800
@@ -7,7 +9,7 @@ test_data:
 
   # Copy files from the GH runner to the Testflinger Agent
   attachments:
-    - local: ".github/workflows/scripts"
+    - local: ".github/workflows/testflinger/scripts"
       agent: "scripts"
 
   # Run commands on the Testflinger Agent

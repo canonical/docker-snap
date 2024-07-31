@@ -18,6 +18,7 @@ jobs:
         runs-on: [self-hosted, testflinger]
         env:
           GEN_JOB_PATH: ${{ github.workspace }}/generated-job.yaml
+          TESTFLINGER_DIR: .github/workflows/testflinger
         strategy:
           fail-fast: true
           matrix:
@@ -37,17 +38,14 @@ jobs:
                 export SNAP_CHANNEL="${{ inputs.snap-channel }}"
                 
                 envsubst '$JOB_QUEUE' \
-                  < .github/workflows/testflinger/nvidia.yaml \
+                  < TESTFLINGER_DIR/nvidia-job.yaml \
                   > $GEN_JOB_PATH
 
-                # # Replace channel with value from the manual trigger input
-                # sed -i "s/^[[:space:]]*DOCKER_SNAP_CHANNEL=.*/DOCKER_SNAP_CHANNEL=$SNAP_CHANNEL/" \
-                #   .github/workflows/scripts/testflinger/setup.sh
-
                 envsubst '$SNAP_CHANNEL' \
-                  < .github/workflows/scripts/setup.sh \
-                  > .github/workflows/scripts/temp.sh
-                mv .github/workflows/scripts/temp.sh .github/workflows/scripts/setup.sh
+                  < TESTFLINGER_DIR/scripts/setup.sh \
+                  > TESTFLINGER_DIR/scripts/temp.sh
+                  
+                mv TESTFLINGER_DIR/scripts/temp.sh TESTFLINGER_DIR/scripts/setup.sh
 
             - name: Submit Testflinger job
               uses: canonical/testflinger/.github/actions/submit@main
