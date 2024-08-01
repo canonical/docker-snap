@@ -2,8 +2,8 @@ name: Nvidia Graphics Tests
 
 on:
   # Uncomment this trigger only during workflow development
-  pull_request:
-    branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
   # Manual trigger
   workflow_dispatch:
     inputs:
