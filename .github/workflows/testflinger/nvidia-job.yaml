@@ -1,0 +1,36 @@
+# This is a template
+# Some variables should be replaced with envsubst before use
+job_queue: $JOB_QUEUE
+global_timeout: 3600
+output_timeout: 1800
+provision_data:
+    distro: "noble"
+test_data:
+
+  # Copy files from the GH runner to the Testflinger Agent
+  attachments:
+    - local: ".github/workflows/testflinger/scripts"
+      agent: "scripts"
+
+  # Run commands on the Testflinger Agent
+  test_cmds: |
+    #!/usr/bin/env bash
+    set -ex
+
+    # List the attached files
+    find attachments/test
+
+    SCRIPTS=./attachments/test/scripts
+
+    echo "Testing: DEVICE_IP = $DEVICE_IP"
+    # Setup the environment on the target device
+    ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/setup.sh)"
+
+    # Reboot the device in background to avoid breaking the SSH connection prematurely
+    ssh ubuntu@$DEVICE_IP "(sleep 3 && sudo reboot) &"
+
+    echo "Wait for the device to boot and start its SSH server"
+    $SCRIPTS/wait_for_port.sh $DEVICE_IP 22
+
+    # Run the tests
+    ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/test.sh)"

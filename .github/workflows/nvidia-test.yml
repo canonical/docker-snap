@@ -1,0 +1,54 @@
+name: Nvidia Graphics Tests
+
+on:
+  # Uncomment this trigger only during workflow development
+  # pull_request:
+  #   branches: [ main ]
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      snap-channel:
+        description: 'Docker snap channel'
+        required: true
+        type: string
+        default: 'latest/edge'
+
+jobs:
+    test:
+        runs-on: [self-hosted, testflinger]
+        env:
+          TESTFLINGER_DIR: .github/workflows/testflinger
+        strategy:
+          fail-fast: true
+          matrix:
+            job-queue:
+              - 202007-28059
+              # - 202008-2816s7
+              # - 202112-29789
+              # noprovision node, for CI testing
+              # - 202302-31212
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Create Testflinger job queue
+              run: |
+                export JOB_QUEUE="${{ matrix.job-queue }}"
+                export SNAP_CHANNEL="${{ inputs.snap-channel }}"
+                
+                envsubst '$JOB_QUEUE' \
+                  < $TESTFLINGER_DIR/nvidia-job.yaml \
+                  > $TESTFLINGER_DIR/nvidia-job.temp
+
+                envsubst '$SNAP_CHANNEL' \
+                  < $TESTFLINGER_DIR/scripts/setup.sh \
+                  > $TESTFLINGER_DIR/scripts/setup.temp
+
+                mv $TESTFLINGER_DIR/nvidia-job.temp $TESTFLINGER_DIR/nvidia-job.yaml
+                mv $TESTFLINGER_DIR/scripts/setup.temp $TESTFLINGER_DIR/scripts/setup.sh
+
+            - name: Submit Testflinger job
+              uses: canonical/testflinger/.github/actions/submit@main
+              with:
+                poll: true
+                job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job.yaml
