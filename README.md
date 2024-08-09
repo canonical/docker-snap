@@ -2,9 +2,10 @@
 
 # Docker Snap
 
-This repository contains the source for the `docker` snap package.  The package provides a distribution of Docker Community Edition (CE) for Ubuntu Core 16 (and other snap-compatible) systems.  It is built from an upstream Docker CE release tag with some patches to fit the snap format and is available on `armhf`, `arm64`, `amd64`, `i386`, and `ppc64el` architectures.  The rest of this page describes installation, usage, and development.
+This repository contains the source for the `docker` snap package.  The package provides a distribution of Docker Engine along with the Nvidia toolkit for Ubuntu Core and other snap-compatible systems.  The Docker Engine is built from an upstream release tag with some patches to fit the snap format and is available on `armhf`, `arm64`, `amd64`, `i386`, and `ppc64el` architectures.  The rest of this page describes installation, usage, and development.
 
-> NOTE: Docker's official documentation ([https://docs.docker.com](https://docs.docker.com)) does not yet discuss the `docker` snap package.
+> [!NOTE]
+> [Docker's official documentation](https://docs.docker.com) does not discuss the `docker` snap package.
 
 ## Installation
 
@@ -14,17 +15,22 @@ To install the latest stable release of Docker CE using `snap`:
 sudo snap install docker
 ```
 
-If you are using Ubuntu Core 16,
-
-* Connect the `docker:home` plug as it's not auto-connected by default:
+If you are using Ubuntu Core 16, connect the `docker:home` plug as it's not auto-connected by default:
 
 ```shell
 sudo snap connect docker:home
 ```
 
-If you are using an alternative snap-compatible Linux distribution ("classic" in snap lingo), and would like to run `docker` as a normal user:
+### Running Docker as normal user
 
-* Create and join the `docker` group.
+By default, Docker is only accessible with root privileges (`sudo`). If you want to use docker as a regular user, you need to add your user to the `docker` group. This isn't possible on Ubuntu Core because it disallows the addition of users to system groups [[1](https://forum.snapcraft.io/t/adding-users-to-system-groups-on-ubuntu-core/20109), [2](https://github.com/snapcore/core20/issues/72)].
+
+> [!WARNING]
+> If you add your user to the `docker` group, it will have similar power as the `root` user. For details on how this impacts security in your system, see [Docker daemon attack surface](https://docs.docker.com/engine/security/#docker-daemon-attack-surface).
+
+If you would like to run `docker` as a normal user:
+
+* Create and join the `docker` group:
 
 ```shell
 sudo addgroup --system docker
@@ -32,7 +38,7 @@ sudo adduser $USER docker
 newgrp docker
 ```
 
-* You will also need to disable and re-enable the `docker` snap if you added the group while it was running.
+* Disable and re-enable the `docker` snap if you added the group while Docker Engine was running:
 
 ```shell
 sudo snap disable docker
@@ -45,16 +51,16 @@ Docker should function normally, with the following caveats:
 
 * All files that `docker` needs access to should live within your `$HOME` folder.
 
-  * If you are using Ubuntu Core 16, you'll need to work within a subfolder of `$HOME` that is readable by root. https://github.com/docker/docker-snap/issues/8
+  * If you are using Ubuntu Core 16, you'll need to work within a subfolder of `$HOME` that is readable by root; see [#8](https://github.com/docker/docker-snap/issues/8).
 
 * Additional certificates used by the Docker daemon to authenticate with registries need to be located in `/var/snap/docker/common/etc/certs.d` instead of `/etc/docker/certs.d`.
 
-* Specifying the option `--security-opt="no-new-privileges=true"` with the `docker run` command (or the equivalent in docker-compose) will result in a failure of the container to start. This is due to an an underlying external constraint on AppArmor (see https://bugs.launchpad.net/snappy/+bug/1908448 for details).
+* Specifying the option `--security-opt="no-new-privileges=true"` with the `docker run` command (or the equivalent in docker-compose) will result in a failure of the container to start. This is due to an an underlying external constraint on AppArmor; see [LP#1908448](https://bugs.launchpad.net/snappy/+bug/1908448) for details.
 
 ### Examples
 
 * [Setup a secure private registry](registry-example.md)
-
+* [Create a snap that uses this Docker Engine](https://ubuntu.com/core/docs/docker-deploy)
 
 ## NVIDIA support
 
@@ -100,7 +106,7 @@ Setting up the nvidia support should be automatic the hardware is present, but y
 snap set docker nvidia-support.disabled=true
 ```
 
-### Usage examples
+### Nvidia usage examples
 
 Generic example usage would look something like:
 
@@ -128,102 +134,49 @@ docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/h
 
 ## Development
 
-Developing the `docker` snap package is typically performed on a "classic" Ubuntu distribution.  The instructions here are written for Ubuntu 16.04 "Xenial".
+Developing the `docker` snap package is typically performed on a "classic" Ubuntu distribution (Ubuntu Server / Desktop).
 
-* Install the snap tooling (requires `snapd>2.21` and `snapcraft>=2.26`):
+Install the snap tooling:
 
 ```shell
-sudo apt-get install snapd snapcraft
-sudo snap install core
+sudo snap install snapcraft --classic
 ```
 
-* Checkout this repository and build the `docker` snap package:
+Checkout and enter this repository:
 
 ```shell
-git clone https://github.com/docker/docker-snap
+git clone https://github.com/canonical/docker-snap
 cd docker-snap
-sudo snapcraft
 ```
 
-* Install the newly-created snap package:
+Build the snap:
 
 ```shell
-sudo snap install --dangerous docker_[VER]_[ARCH].snap
+snapcraft -v
 ```
 
-* Manually connect the relevant plugs and slots which are not auto-connected:
+Install the newly-created snap package:
+
+```shell
+sudo snap install --dangerous ./docker_[VER]_[ARCH].snap
+```
+
+Manually connect the relevant plugs and slots which are not auto-connected:
 
 ```shell
 sudo snap connect docker:privileged :docker-support
 sudo snap connect docker:support :docker-support
 sudo snap connect docker:firewall-control :firewall-control
+sudo snap connect docker:network-control :network-control
 sudo snap connect docker:docker-cli docker:docker-daemon
+
 sudo snap disable docker
 sudo snap enable docker
 ```
 
-  You should end up with output similar to:
-
-```shell
-sudo snap interfaces docker
-    Slot                  Plug
-    :docker-support       docker:privileged,docker:support
-    :firewall-control     docker
-    :home                 docker
-    :network              docker
-    :network-bind         docker
-    docker:docker-daemon  docker:docker-cli
-```
-
 ## Testing
 
-We rely on spread (https://github.com/snapcore/spread) to run full-system test on Ubuntu Core 16. We also provide a utility script (run-spread-test.sh) to launch the spread test. It will
-
-1. Fetch primary snaps( kernel, core, gadget) and build custom Ubuntu Core image with them
-2. Boot the image in qemu emulator
-3. Deploy test suits in emulation environment
-4. Execute full-system testing
-
-Firstly, install ubuntu-image tool since we need to create a custom Ubuntu Core image during test preparation.
-
-```shell
-sudo snap install --beta --classic ubuntu-image
-```
-
-Secondly, install qemu-kvm package since we use it as the backend to run the spread test.
-
-```shell
-sudo apt install qemu-kvm
-```
-
-Meanwhile, you need a classic-mode supported spread binary to launch kvm from its context. You can either build spread from this [branch](https://github.com/rmescandon/spread/tree/snap-as-classic) or download the spread snap package [here](http://people.canonical.com/~gary-wzl77/spread_2017.05.24_amd64.snap).
-
-```shell
-sudo snap install --classic --dangerous spread_2017.05.24_amd64.snap
-```
-
-You may build the docker snap locally in advance and then execute the spread tests with the following commands:
-
-```shell
-snapcraft
-./run-spread-tests.sh
-```
-
-When doing a local build, you can also specify --test-from-channel to fetch the snap from the specific channel of the store. The snap from `candidate` channel is used by default as test target if `--channel` option is not specified.
-
-```shell
-./run-spread-tests.sh --test-from-channel --channel=stable
-```
-
-In order to run an individual spread test, please run the following command:
-
-```shell
-spread spread/main/installation
-```
-
-This will run the test case under spread/main/installation folder.
-You can specify the `SNAP_CHANNEL` environment variable to install a snap from a specific channel for the testing as well.
-
-```shell
-SNAP_CHANNEL=candidate spread spread/main/update_policy
-```
+The snap has various tests in place:
+- [Automated smoke testing via a Github workflow](.github/workflows/smoke-test.yml)
+- [Nvidia testing via Testflinger](.github/workflows/testflinger/README.md)
+- [Spread tests](spread.md)
