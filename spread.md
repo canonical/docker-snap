@@ -1,6 +1,6 @@
 # Spread tests
 
-We rely on spread (https://github.com/snapcore/spread) to run full-system test on Ubuntu Core 16. We also provide a utility script (run-spread-test.sh) to launch the spread test. It will
+We rely on [spread](https://github.com/snapcore/spread) to run full-system test on Ubuntu Core 16. We also provide a utility script ([run-spread-test.sh](./run-spread-tests.sh)) to launch the spread test. It will
 
 1. Fetch primary snaps( kernel, core, gadget) and build custom Ubuntu Core image with them
 2. Boot the image in qemu emulator
