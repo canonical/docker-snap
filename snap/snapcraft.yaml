@@ -47,6 +47,8 @@ layout:
     bind-file: $SNAP_DATA/etc/gitconfig
   /usr/libexec/docker/cli-plugins:
     symlink: $SNAP/usr/libexec/docker/cli-plugins
+  /usr/bin/ssh:
+    bind-file: $SNAP/usr/bin/ssh
 
 environment:
   GIT_EXEC_PATH: "$SNAP/usr/lib/git-core"
@@ -104,6 +106,8 @@ apps:
       - network
       - home
       - removable-media
+      - ssh-keys
+      - ssh-public-keys
 
   dockerd:
     command: bin/dockerd-wrapper
@@ -164,6 +168,11 @@ parts:
     stage-packages:
       - jq
       - pciutils
+
+  ssh:
+    plugin: nil
+    stage-packages:
+      - openssh-client
 
   engine:
     plugin: make
