@@ -1,9 +1,6 @@
 name: Smoke Test
 
 on:
-  pull_request:
-  push:
-
   workflow_run:
     workflows: ["Build"]
     types:
