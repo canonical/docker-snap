@@ -20,6 +20,7 @@ Additional access is granted via [snap interfaces](https://snapcraft.io/docs/int
 
 Upon installation using the above command, the snap connects automatically to the following system interface slots:
 - [docker-support](https://snapcraft.io/docs/docker-support-interface)
+- [firewall-control](https://snapcraft.io/docs/firewall-control-interface)
 - [home](https://snapcraft.io/docs/home-interface)
 - [network](https://snapcraft.io/docs/network-interface)
 - [network-bind](https://snapcraft.io/docs/network-bind-interface)
