@@ -15,6 +15,18 @@ To install the latest stable release of Docker CE using `snap`:
 sudo snap install docker
 ```
 
+This snap is confined, which means that it can access a limited set of resources on the system.
+Additional access is granted via [snap interfaces](https://snapcraft.io/docs/interfaces).
+
+Upon installation using the above command, the snap connects automatically to the following system interface slots:
+- [docker-support](https://snapcraft.io/docs/docker-support-interface)
+- [home](https://snapcraft.io/docs/home-interface)
+- [network](https://snapcraft.io/docs/network-interface)
+- [network-bind](https://snapcraft.io/docs/network-bind-interface)
+- [network-control](https://snapcraft.io/docs/network-control-interface)
+- [opengl](https://snapcraft.io/docs/opengl-interface)
+
+
 If you are using Ubuntu Core 16, connect the `docker:home` plug as it's not auto-connected by default:
 
 ```shell
