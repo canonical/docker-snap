@@ -7,11 +7,10 @@ on:
   # Manual trigger
   workflow_dispatch:
     inputs:
-      snap-channel:
-        description: 'Docker snap channel'
+      run_id:
+        description: 'Run id number'
         required: true
-        type: string
-        default: 'latest/edge'
+        type: number
 
 jobs:
     test:
@@ -31,11 +30,25 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
+            - name: Get the artifact
+              uses: dawidd6/action-download-artifact@v6
+              with:
+                workflow: build.yml
+                name: docker_${{ github.event.inputs.run_id }}.snap
+
+            - name: Publish to Store
+              uses: snapcore/action-publish@v1
+              env:
+                SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
+              with:
+                snap: docker_${{ github.event.inputs.run_id }}.snap
+                release: latest/edge/runid-${{ github.event.inputs.run_id }}
+
             - name: Create Testflinger job queue
               run: |
                 export JOB_QUEUE="${{ matrix.job-queue }}"
                 export SNAP_CHANNEL="${{ inputs.snap-channel }}"
-                
+
                 envsubst '$JOB_QUEUE' \
                   < $TESTFLINGER_DIR/nvidia-job.yaml \
                   > $TESTFLINGER_DIR/nvidia-job.temp
