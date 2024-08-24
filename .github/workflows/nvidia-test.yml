@@ -47,7 +47,7 @@ jobs:
             - name: Create Testflinger job queue
               run: |
                 export JOB_QUEUE="${{ matrix.job-queue }}"
-                export SNAP_CHANNEL="${{ inputs.snap-channel }}"
+                export SNAP_CHANNEL="latest/edge/runid-${{ github.event.inputs.run_id }}"
 
                 envsubst '$JOB_QUEUE' \
                   < $TESTFLINGER_DIR/nvidia-job.yaml \
