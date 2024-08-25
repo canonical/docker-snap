@@ -34,15 +34,15 @@ jobs:
               uses: dawidd6/action-download-artifact@v6
               with:
                 workflow: build.yml
-                name: docker_${{ github.event.inputs.run_id }}.snap
+                name: docker_${{ inputs.run_id }}.snap
 
             - name: Publish to Store
               uses: snapcore/action-publish@v1
               env:
                 SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
               with:
-                snap: docker_${{ github.event.inputs.run_id }}.snap
-                release: latest/edge/runid-${{ github.event.inputs.run_id }}
+                snap: docker_${{ inputs.run_id }}.snap
+                release: latest/edge/runid-${{ inputs.run_id }}
 
             - name: Create Testflinger job queue
               run: |
