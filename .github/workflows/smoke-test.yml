@@ -45,6 +45,7 @@ jobs:
 
       - name: Install
         run: |
+          # dawidd6/action-download-artifact action creates a directory when the name is fetch as a RegExp
           cd ./docker_*.snap
           sudo snap install --dangerous ./docker_*.snap
           # it will immediately be failing to start, so let's head that off as quickly as we can
