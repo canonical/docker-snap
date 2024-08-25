@@ -4,10 +4,6 @@ on:
   pull_request:
   push:
 
-defaults:
-  run:
-    shell: 'bash -Eeuo pipefail -x {0}'
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,9 +18,6 @@ jobs:
           snapcraft-args: snap --output docker_${{ github.run_id}}.snap
 
       - name: Upload
-        # TODO: the goal of this "if:" condition is to avoid creating artifacts on private forks (and using up all their storage quota),
-        # but Tianon couldn't find a clean way to do that so this was the next best thing
-        if: github.repository == 'canonical/docker-snap'
         uses: actions/upload-artifact@v4
         with:
           name: docker_${{ github.run_id}}.snap
