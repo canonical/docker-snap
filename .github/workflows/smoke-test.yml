@@ -1,8 +1,10 @@
 name: Smoke Test
 
 on:
-  pull_request:
-  push:
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
 
 defaults:
   run:
@@ -10,24 +12,18 @@ defaults:
 
 jobs:
   smoke-test:
-    name: Snapcraft
     runs-on: ubuntu-22.04
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Build
-        # https://github.com/snapcore/action-build/releases
-        uses: snapcore/action-build@v1
+      - name: Get the artifact
+        uses: dawidd6/action-download-artifact@v6
         with:
-          snapcraft-args: snap --output docker.snap
-
-      - name: Upload
-        # TODO the goal of this "if:" condition is to avoid creating artifacts on private forks (and using up all their storage quota), but Tianon couldn't find a clean way to do that so this was the next best thing
-        if: github.repository == 'docker-snap/docker-snap'
-        uses: actions/upload-artifact@v2
-        with:
-          name: docker.snap
-          path: docker.snap
+          workflow: build.yml
+          name: docker_[0-9]+.snap
+          name_is_regexp: true
 
       - name: Prep
         run: |
@@ -48,7 +44,10 @@ jobs:
 
       - name: Install
         run: |
-          sudo snap install --dangerous ./docker.snap
+          # dawidd6/action-download-artifact action creates a directory when the name is given as a RegExp
+          cd ./docker_*.snap
+          sudo snap install --dangerous ./docker_*.snap
+
           # it will immediately be failing to start, so let's head that off as quickly as we can
           sudo snap stop --disable docker.dockerd
           sudo killall dockerd || :
