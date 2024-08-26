@@ -21,7 +21,7 @@ jobs:
       - name: Get the artifact
         uses: dawidd6/action-download-artifact@v6
         with:
-          workflow: build.yml
+          workflow_search: true
           name: docker_[0-9]+.snap
           name_is_regexp: true
 
