@@ -1,29 +1,47 @@
 name: Smoke Test
 
 on:
-  workflow_run:
-    workflows: ["Build"]
-    types:
-      - completed
+  push:
+    branches: [ main ]
+  pull_request:
+  # Manual trigger
+  workflow_dispatch:
 
 defaults:
   run:
     shell: 'bash -Eeuo pipefail -x {0}'
 
 jobs:
-  smoke-test:
-    runs-on: ubuntu-22.04
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+  build:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Get the artifact
-        uses: dawidd6/action-download-artifact@v6
+      - name: Build
+        uses: snapcore/action-build@v1
+        id: snapcraft
         with:
-          workflow_search: true
-          name: docker_[0-9]+.snap
-          name_is_regexp: true
+          snapcraft-args: snap --output docker_${{ github.run_id}}.snap
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker_${{ github.run_id}}.snap
+          path: ${{ steps.snapcraft.outputs.snap }}
+
+  smoke-test:
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker_${{ github.run_id }}.snap
 
       - name: Prep
         run: |
@@ -44,9 +62,7 @@ jobs:
 
       - name: Install
         run: |
-          # dawidd6/action-download-artifact action creates a directory when the name is given as a RegExp
-          cd ./docker_*.snap
-          sudo snap install --dangerous ./docker_*.snap
+          sudo snap install --dangerous ./docker_${{ github.run_id }}.snap
 
           # it will immediately be failing to start, so let's head that off as quickly as we can
           sudo snap stop --disable docker.dockerd
