@@ -30,6 +30,17 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
+            - name: Debug system resources
+              run: |
+
+                echo -e "\nChecking memory"
+                free -h
+                cat /proc/meminfo
+                echo -e "\nChecking disk"
+                df -h
+                cd / && du -sh *
+                exit -1
+
             - name: Get the artifact
               uses: dawidd6/action-download-artifact@v6
               with:
