@@ -33,7 +33,6 @@ jobs:
             - name: Get the artifact
               uses: dawidd6/action-download-artifact@v6
               with:
-                workflow_search: true
                 run_id: ${{ inputs.run_id }}
                 name: docker_${{ inputs.run_id }}.snap
 
