@@ -13,8 +13,26 @@ on:
         type: number
 
 jobs:
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Get the artifact
+              uses: dawidd6/action-download-artifact@v6
+              with:
+                run_id: ${{ inputs.run_id }}
+                name: docker_${{ inputs.run_id }}.snap
+
+            - name: Publish to Store
+              uses: snapcore/action-publish@v1
+              env:
+                SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
+              with:
+                snap: docker_${{ inputs.run_id }}.snap
+                release: latest/edge/runid-${{ inputs.run_id }}
+
     test:
         runs-on: [self-hosted, testflinger]
+        needs: publish
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger
         strategy:
@@ -29,20 +47,6 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
-
-            - name: Get the artifact
-              uses: dawidd6/action-download-artifact@v6
-              with:
-                run_id: ${{ inputs.run_id }}
-                name: docker_${{ inputs.run_id }}.snap
-
-            - name: Publish to Store
-              uses: snapcore/action-publish@v1
-              env:
-                SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
-              with:
-                snap: docker_${{ inputs.run_id }}.snap
-                release: latest/edge/runid-${{ inputs.run_id }}
 
             - name: Create Testflinger job queue
               run: |
