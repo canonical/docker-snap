@@ -336,7 +336,7 @@ parts:
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
-    # https://github.com/moby/moby/releases/tag/v27.1.0
+    # https://github.com/moby/moby/blob/v27.2.0/Dockerfile#L15
     source-tag: v0.16.1
     source-depth: 1
     override-build: |
