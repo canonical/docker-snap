@@ -2,7 +2,7 @@ name: Smoke Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, improve-smoke-tests ]
   pull_request:
   # Manual trigger
   workflow_dispatch:
@@ -33,7 +33,10 @@ jobs:
 
   smoke-test:
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-20.04, ubuntu-22.04, ubuntu-24.04 ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
