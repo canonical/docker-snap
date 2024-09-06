@@ -60,8 +60,8 @@ jobs:
           sudo apt update
           sudo apt install -y snapd
           sudo snap refresh
-          sudo snap install --channel=beta snapd
-          sudo snap refresh --channel=beta snapd
+          sudo snap install snapd
+          sudo snap refresh snapd
           sudo snap list
 
       - name: Install
