@@ -2,7 +2,7 @@ name: Smoke Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, smoke-test-24.0.5 ]
   pull_request:
   # Manual trigger
   workflow_dispatch:
