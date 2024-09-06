@@ -1,28 +1,27 @@
-From e9302d52e7cdc7b4b6364f08dfe15d52b920fff5 Mon Sep 17 00:00:00 2001
-From: Lucas Kanashiro <lucas.kanashiro@canonical.com>
-Date: Wed, 23 Aug 2023 18:58:55 -0300
+From 173566eebc60e3ed18ec595686688ad10f25388b Mon Sep 17 00:00:00 2001
+From: Lincoln Wallace <lincoln.wallace@canonical.com>
+Date: Wed, 28 Aug 2024 17:30:12 -0300
 Subject: [PATCH 2/5] snappy-apparmor-tweaks
 
+Signed-off-by: Lincoln Wallace <lincoln.wallace@canonical.com>
 ---
- profiles/apparmor/apparmor.go | 18 ++++++++++++++++++
+ profiles/apparmor/apparmor.go | 17 +++++++++++++++++
  profiles/apparmor/template.go |  8 ++++++++
- 2 files changed, 26 insertions(+)
+ 2 files changed, 25 insertions(+)
 
 diff --git a/profiles/apparmor/apparmor.go b/profiles/apparmor/apparmor.go
-index d0f2361605..5a0a371d9b 100644
+index 277c853ebe..92e3872722 100644
 --- a/profiles/apparmor/apparmor.go
 +++ b/profiles/apparmor/apparmor.go
-@@ -7,7 +7,9 @@ import (
- 	"bufio"
- 	"io"
+@@ -9,6 +9,7 @@ import (
  	"os"
-+	"os/exec"
+ 	"os/exec"
  	"path"
 +	"strconv"
  	"strings"
  	"text/template"
- 
-@@ -27,6 +29,8 @@ type profileData struct {
+ )
+@@ -26,6 +27,8 @@ type profileData struct {
  	Imports []string
  	// InnerImports defines the apparmor functions to import in the profile.
  	InnerImports []string
@@ -31,7 +30,7 @@ index d0f2361605..5a0a371d9b 100644
  }
  
  // generateDefault creates an apparmor profile from ProfileData.
-@@ -46,6 +50,20 @@ func (p *profileData) generateDefault(out io.Writer) error {
+@@ -45,6 +48,20 @@ func (p *profileData) generateDefault(out io.Writer) error {
  		p.InnerImports = append(p.InnerImports, "#include <abstractions/base>")
  	}
  
@@ -53,10 +52,10 @@ index d0f2361605..5a0a371d9b 100644
  }
  
 diff --git a/profiles/apparmor/template.go b/profiles/apparmor/template.go
-index 5dcf35bf45..c9bae7187d 100644
+index 8dbc1b6102..c908b98999 100644
 --- a/profiles/apparmor/template.go
 +++ b/profiles/apparmor/template.go
-@@ -51,5 +51,13 @@ profile {{.Name}} flags=(attach_disconnected,mediate_deleted) {
+@@ -55,5 +55,13 @@ profile {{.Name}} flags=(attach_disconnected,mediate_deleted) {
  
    # suppress ptrace denials when using 'docker ps' or using 'ps' inside a container
    ptrace (trace,read,tracedby,readby) peer={{.Name}},
@@ -71,5 +70,5 @@ index 5dcf35bf45..c9bae7187d 100644
  }
  `
 -- 
-2.25.1
+2.43.0
 
