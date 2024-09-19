@@ -35,24 +35,14 @@ jobs:
         needs: publish
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger
-        strategy:
-          fail-fast: true
-          matrix:
-            job-queue:
-              - 202007-28059
-              # - 202008-2816s7
-              # - 202112-29789
-              # noprovision node, for CI testing
-              # - 202302-31212
+          JOB_QUEUE: docker-nvidia
+          SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
 
             - name: Create Testflinger job queue
               run: |
-                export JOB_QUEUE="${{ matrix.job-queue }}"
-                export SNAP_CHANNEL="latest/edge/runid-${{ inputs.run_id }}"
-
                 envsubst '$JOB_QUEUE' \
                   < $TESTFLINGER_DIR/nvidia-job.yaml \
                   > $TESTFLINGER_DIR/nvidia-job.temp
