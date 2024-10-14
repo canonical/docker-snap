@@ -1,0 +1,77 @@
+name: Bug Report
+description: File a bug report
+labels: "Bug"
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Thanks for taking the time to fill out this bug report! Before
+        submitting your issue, make sure this has not been already
+        reported or if it works with the latest published version
+        of Docker snap.
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug Description
+      description: >
+        If applicable, add screenshots to help explain your
+        problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: To Reproduce
+      description: >
+        Provide a step-by-step instruction of how to reproduce the behavior.
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Snap channel
+      description: >
+        Which channel of the Docker snap are you using?
+        You can check this by running `snap list docker` under the `Tracking` column.
+      multiple: false
+      options:
+        - latest/stable
+        - latest/candidate
+        - latest/beta
+        - latest/edge
+        - core18/stable
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: >
+        We need to know a bit more about the context in which Docker failed.
+        Please paste here the output for the commands:
+        - `snap version`
+        - `cat /etc/os-release`
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: >
+        Please copy and paste any relevant log output. This will be
+        automatically formatted into code, so no need for backticks.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Provide any additional information you may find useful here.
+
