@@ -46,6 +46,17 @@ body:
     validations:
       required: true
 
+  - type: input
+    id: revision
+    attributes:
+      label: Docker snap revision number
+      description: >
+        Which revision number of the Docker snap are you using?
+        You can check this by running `snap list docker` under the `Rev` column.
+      placeholder: "123"
+      validations:
+        required: true
+
   - type: textarea
     id: environment
     attributes:
