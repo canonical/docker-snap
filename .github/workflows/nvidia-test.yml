@@ -17,7 +17,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Get the artifact
-              uses: dawidd6/action-download-artifact@v6
+              uses: dawidd6/action-download-artifact@v7
               with:
                 run_id: ${{ inputs.run_id }}
                 name: docker_${{ inputs.run_id }}.snap
