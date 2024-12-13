@@ -348,7 +348,7 @@ parts:
     plugin: make
     source: https://github.com/docker/compose.git
     # https://github.com/docker/docker-ce-packaging/blob/master/common.mk // reference URL
-    # https://github.com/moby/moby/blob/92a83937d0280dcbea92099b01e01aa4251c1777/Dockerfile#L16 // Fetch from
+    # https://github.com/moby/moby/blob/v27.4.0/Dockerfile#L16 // Fetch from
     source-tag: v2.30.3
     source-depth: 1
     override-build: |
