@@ -1,6 +1,9 @@
 name: Smoke Test
 
 on:
+  schedule:
+    # Runs at midnight (00:00) on Monday, every two weeks
+    - cron: "0 0 */14 * *"
   push:
     branches: [ main ]
   pull_request:
@@ -19,6 +22,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Fetch Newest version if running on schedule
+        if: ${{ github.event_name == 'schedule' }}
+        run: |
+
+          sudo apt update
+          sudo apt install -y curl
+          sudo snap install yq
+          # Running upgrade script
+          ./.github/workflows/upgrade.sh
+
+      # Upload snapcraft manifest file for reproductive builds
+      # in case of running from the scheduled trigger
+      - name: Upload snap manifest file
+        if: ${{ github.event_name == 'schedule' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapcraft.yaml
+          path: snap/snapcraft.yaml
+
       - name: Build
         uses: snapcore/action-build@v1
         id: snapcraft
@@ -30,6 +52,15 @@ jobs:
         with:
           name: docker_${{ github.run_id}}.snap
           path: ${{ steps.snapcraft.outputs.snap }}
+
+      - name: Publish snap to edge
+        uses: snapcore/action-publish@v1
+        if: ${{ github.event_name == 'schedule' }}
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
+        with:
+          snap: ${{ steps.snapcraft.outputs.snap }}
+          release: latest/edge
 
   smoke-test:
     needs: build
@@ -159,3 +190,23 @@ jobs:
           sudo DOCKER_BUILDKIT=1 docker build --pull -t tianon/gosleep https://github.com/tianon/gosleep.git
           sudo docker run --rm tianon/gosleep gosleep --help
           sudo docker image rm tianon/gosleep
+
+  promote-beta:
+    name: Promote to Beta
+    # Only promote if it's a scheduled event
+    if: ${{ github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    needs: smoke-test
+    steps:
+      - name: Install Snapcraft
+        run: |
+          sudo snap install snapcraft --classic
+          echo /snap/bin >> $GITHUB_PATH
+        shell: bash
+
+      - name: Promote Snap
+        env: # Workaround for https://github.com/snapcore/snapcraft/issues/4439
+          SNAPCRAFT_HAS_TTY: "true"
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
+        run: |
+          yes | snapcraft promote $SNAP_NAME --from-channel latest/edge --to-channel latest/beta
