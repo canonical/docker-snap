@@ -4,7 +4,7 @@ set -eux
 
 fetch_latest() {
   # Fetch latest version from Github releases API
-  LATEST=$(curl -s "https://api.github.com/repos/moby/moby/releases" | jq -r '.[0].name')
+  LATEST=$(curl -s "https://api.github.com/repos/moby/moby/releases" | jq -r '.[0].tag_name')
 }
 
 # Validate the version format
