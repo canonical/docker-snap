@@ -2,16 +2,13 @@
 
 set -eux
 
-fetch_latest(){
-  # Fetch latest version from Github API
-  #  NOTE: It uses the index number 2 instead of 0 because on moby
-  #  there are the tags xdocs-v1.10-28-mar-2016 and xdocs-v1.10-09-05-2016
-  #  being listed first
- LATEST=$(curl -s "https://api.github.com/repos/moby/moby/tags" | jq -r '.[2].name')
+fetch_latest() {
+  # Fetch latest version from Github releases API
+  LATEST=$(curl -s "https://api.github.com/repos/moby/moby/releases" | jq -r '.[0].name')
 }
 
 # Validate the version format
-validate_version(){
+validate_version() {
   # Original simplified RegEx:
   # v\d+.\d+.\d+\-*(rc.\d|rc\d|beta.\d)*
   # By analysing the last tags on github.com/moby/moby/tags
@@ -24,9 +21,11 @@ validate_version(){
   fi
 }
 
-main(){
+main() {
 
   fetch_latest
+
+  echo "Latest TAG: $LATEST"
 
   validate_version
 
