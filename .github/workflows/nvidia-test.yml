@@ -11,9 +11,14 @@ on:
         description: 'Run id number'
         required: true
         type: number
+      publish:
+        description: 'Publish to Store'
+        default: true
+        type: boolean
 
 jobs:
     publish:
+        if: ${{ inputs.publish == true }}
         runs-on: ubuntu-latest
         steps:
             - name: Get the artifact
@@ -31,8 +36,9 @@ jobs:
                 release: latest/edge/runid-${{ inputs.run_id }}
 
     test:
-        runs-on: [self-hosted, testflinger]
         needs: publish
+        if: ${{ always() && !failure() && !cancelled() }}
+        runs-on: [self-hosted, testflinger]
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger
           JOB_QUEUE: docker-nvidia
