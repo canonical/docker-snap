@@ -9,7 +9,7 @@ test_data:
 
   # Copy files from the GH runner to the Testflinger Agent
   attachments:
-    - local: ".github/workflows/testflinger/scripts"
+    - local: "/.github/workflows/testflinger/scripts"
       agent: "scripts"
 
   # Run commands on the Testflinger Agent
