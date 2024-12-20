@@ -1,6 +1,6 @@
 name: docker
 #title: Docker
-version: '27.4.0'
+version: '27.4.1'
 summary: Docker container runtime
 description: |
   Build and run container images with Docker.
@@ -165,7 +165,7 @@ parts:
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
-    source-tag: v27.4.0
+    source-tag: v27.4.1
     source-depth: 1
     override-build: |
       $CRAFT_STAGE/patches/patch.sh
@@ -230,7 +230,7 @@ parts:
     plugin: make
     source: https://github.com/opencontainers/runc.git
     # from https://github.com/moby/moby/blob/v27.4.0/Dockerfile#L290
-    source-tag: v1.2.2
+    source-tag: v1.2.3
     source-depth: 1
     override-build: |
       make BUILDTAGS='seccomp apparmor selinux' COMMIT=
@@ -306,7 +306,7 @@ parts:
     plugin: make
     build-snaps: *go
     source: https://github.com/docker/cli.git
-    source-tag: v27.4.0
+    source-tag: v27.3.1
     source-depth: 1
     override-build: |
       # docker build specific environment variables
