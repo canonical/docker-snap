@@ -9,11 +9,13 @@ ARCH_TRIPLET="${U_MACHINE}-${U_KERNEL,,}-${U_USERLAND,,}"
 
 NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
 
-if [ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ] ; then
-    NVIDIA_SUPPORT_CLASSIC="true"
-else
-    NVIDIA_SUPPORT_CLASSIC="false"
-fi
+NVIDIA_SUPPORT_CLASSIC="false"
+[ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ] && NVIDIA_SUPPORT_CLASSIC="true"
+
+NVIDIA_SUPPORT_CORE="false"
+snapctl is-connected graphics-core22 && NVIDIA_SUPPORT_CORE="true"
+snapctl is-connected gpu-2404 && NVIDIA_SUPPORT_CORE="true"
+
 
 device_wait() {
 
@@ -58,9 +60,21 @@ cdi_generate () {
     CDI_DEVICE_NAME_STRATEGY="${CDI_DEVICE_NAME_STRATEGY:-index}"
 
     # Default CDI libs search path and shell path for install on core systems #
-    CDI_LIB_SEARCH_PATH="${SNAP}/graphics/lib/${ARCH_TRIPLET}"
-    CDI_CONFIG_SEARCH_PATH="${SNAP}/graphics/share"
-    CDI_PATH="${PATH}:${SNAP}/graphics/bin"
+    # This can be different, depending on the Ubuntu Core version #
+    # UC22 #
+    if [ -d "${SNAP}/graphics/lib/${ARCH_TRIPLET}" ] ; then
+        CONTENT_PATH="${SNAP}/graphics"
+    fi
+    # UC24 #
+    if [ -n "${NVIDIA_DRIVER_ROOT}" ] ; then
+        CONTENT_PATH="${NVIDIA_DRIVER_ROOT}"
+    fi
+
+    # FIXME: if UC24, can we just rely on the wrapper env instead of these vars ?
+    CDI_LIB_SEARCH_PATH="${CONTENT_PATH}/lib/${ARCH_TRIPLET}"
+    CDI_CONFIG_SEARCH_PATH="${CONTENT_PATH}/share"
+    CDI_PATH="${PATH}:${CONTENT_PATH}/bin"
+
     # Otherwise, if on classic and nvidia driver is installed, set hostfs for the CDI libs search path and shell path #
     [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] && CDI_LIB_SEARCH_PATH="/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}"
     [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] && CDI_CONFIG_SEARCH_PATH="/var/lib/snapd/hostfs/usr/share"

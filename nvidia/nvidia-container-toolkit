@@ -10,13 +10,17 @@ set -eu
 NVIDIA_ENABLE="false"
 
 # Determine if we can enable NVIDIA support or not #
-snapctl is-connected graphics-core22 && NVIDIA_ENABLE="true"
+[ "${NVIDIA_SUPPORT_CORE}" == "true" ] && NVIDIA_ENABLE="true"
 [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] && NVIDIA_ENABLE="true"
 
 # Ensure nvidia support setup correctly, and only if hardware is preset and correct #
 if [ "${NVIDIA_ENABLE}" == "true" ] ; then
 
-    [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] && echo "Running on Classic system" || echo "Running on Ubuntu Core system"
+    [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] && echo "Running on Classic system"
+    [ "${NVIDIA_SUPPORT_CORE}" == "true" ] && echo "Running on Ubuntu Core system"
+
+    # FIXME: error here if both core and classic are detecgted ?
+    # [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" -a "${NVIDIA_SUPPORT_CORE}" == "true"  ]
 
     # Connection hooks are run early - copy the config file from $SNAP into $SNAP_DATA if it doesn't exist
     if [ ! -f "$SNAP_DATA/config/daemon.json" ]; then

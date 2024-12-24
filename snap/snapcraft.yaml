@@ -7,6 +7,7 @@ license: (Apache-2.0 AND MIT AND GPL-2.0)
 grade: stable
 confinement: strict
 
+# FIXME: do we need to switch to core24 and drop core22 nvidia support ?
 base: core22
 assumes:
   - snapd2.59.1
@@ -47,6 +48,10 @@ plugs:
     target: $SNAP/graphics
     # Currently, this is the only relevant provider, but cannot be default as not supported on all archs #
     #default-provider: nvidia-core22
+  gpu-2404:
+    interface: content
+    target: $SNAP/gpu-2404
+    default-provider: mesa-2404
 slots:
   config-ro:
     interface: content
@@ -77,6 +82,9 @@ apps:
       - removable-media
 
   dockerd:
+    # FIXME: check if this is required
+    #command-chain:
+    #  - bin/gpu-2404-wrapper
     command: bin/dockerd-wrapper
     daemon: simple
     plugs:
@@ -88,6 +96,7 @@ apps:
       - privileged
       - support
       - graphics-core22
+      - gpu-2404
     slots:
       - docker-daemon
 
@@ -99,10 +108,13 @@ apps:
       - home
 
   nvidia-container-toolkit:
+    command-chain:
+      - bin/gpu-2404-wrapper
     command: bin/nvidia-container-toolkit
     daemon: oneshot
     plugs:
       - graphics-core22
+      - gpu-2404
     before:
       - dockerd
 
@@ -261,6 +273,15 @@ parts:
     prime:
       - usr/bin/nvidia-container-cli*
       - usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/libnvidia-container*.so*
+
+  gpu-2404:
+    source: https://github.com/canonical/gpu-snap.git
+    plugin: dump
+    override-prime: |
+      craftctl default
+      ${CRAFT_PART_SRC}/bin/gpu-2404-cleanup mesa-2404
+    prime:
+      - bin/gpu-2404-wrapper
 
   tini:
     plugin: cmake
