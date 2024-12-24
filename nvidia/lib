@@ -92,7 +92,7 @@ nvidia_runtime_config () {
         echo "${RUNTIME_CONFIG_OVERRIDE}" > "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
     # Default - opinionated, but most viable option for now #
     else
-        # FIXME: CDI spec-dirs can be set is a list using `"${SNAP_DATA}/etc/cdi",/var/run/cdi`, once this is fixed: https://github.com/NVIDIA/nvidia-container-toolkit/issues/466
+        # FIXME: CDI spec-dirs can be set is a list using `"${SNAP_DATA}/etc/cdi":/var/run/cdi`, once this is fixed: https://github.com/NVIDIA/nvidia-container-toolkit/issues/466
         rm -f "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
         "${SNAP}/usr/bin/nvidia-ctk" config --in-place --set nvidia-container-runtime.mode=cdi --set nvidia-container-runtime.modes.cdi.spec-dirs="${SNAP_DATA}/etc/cdi" --config "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
     fi
