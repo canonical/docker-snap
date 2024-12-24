@@ -13,7 +13,6 @@ NVIDIA_SUPPORT_CLASSIC="false"
 [ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ] && NVIDIA_SUPPORT_CLASSIC="true"
 
 NVIDIA_SUPPORT_CORE="false"
-snapctl is-connected graphics-core22 && NVIDIA_SUPPORT_CORE="true"
 snapctl is-connected gpu-2404 && NVIDIA_SUPPORT_CORE="true"
 
 
@@ -60,14 +59,9 @@ cdi_generate () {
     CDI_DEVICE_NAME_STRATEGY="${CDI_DEVICE_NAME_STRATEGY:-index}"
 
     # Default CDI libs search path and shell path for install on core systems #
-    # This can be different, depending on the Ubuntu Core version #
-    # UC22 #
-    if [ -d "${SNAP}/graphics/lib/${ARCH_TRIPLET}" ] ; then
-        CONTENT_PATH="${SNAP}/graphics"
-    fi
-    # UC24 #
-    if [ -n "${NVIDIA_DRIVER_ROOT}" ] ; then
-        CONTENT_PATH="${NVIDIA_DRIVER_ROOT}"
+    CONTENT_PATH="/usr"
+    if [ -n "${NVIDIA_DRIVER_ROOT:-}" ] ; then
+        CONTENT_PATH="${NVIDIA_DRIVER_ROOT}/usr"
     fi
 
     # FIXME: if UC24, can we just rely on the wrapper env instead of these vars ?
