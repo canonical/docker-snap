@@ -7,8 +7,7 @@ license: (Apache-2.0 AND MIT AND GPL-2.0)
 grade: stable
 confinement: strict
 
-# FIXME: do we need to switch to core24 and drop core22 nvidia support ?
-base: core22
+base: core24
 assumes:
   - snapd2.59.1
 
@@ -43,11 +42,6 @@ plugs:
     interface: docker
   opengl:
   # For nvidia userspace libs support #
-  graphics-core22:
-    interface: content
-    target: $SNAP/graphics
-    # Currently, this is the only relevant provider, but cannot be default as not supported on all archs #
-    #default-provider: nvidia-core22
   gpu-2404:
     interface: content
     target: $SNAP/gpu-2404
@@ -82,9 +76,6 @@ apps:
       - removable-media
 
   dockerd:
-    # FIXME: check if this is required
-    #command-chain:
-    #  - bin/gpu-2404-wrapper
     command: bin/dockerd-wrapper
     daemon: simple
     plugs:
@@ -95,7 +86,6 @@ apps:
       - network-control
       - privileged
       - support
-      - graphics-core22
       - gpu-2404
     slots:
       - docker-daemon
@@ -113,7 +103,6 @@ apps:
     command: bin/nvidia-container-toolkit
     daemon: oneshot
     plugs:
-      - graphics-core22
       - gpu-2404
     before:
       - dockerd
@@ -245,6 +234,7 @@ parts:
     build-snaps: *go
     build-packages:
       - make
+      - libtirpc-dev
     organize:
       bin: usr/bin/
     stage:
