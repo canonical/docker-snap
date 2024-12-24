@@ -32,7 +32,7 @@ description: |
 license: (Apache-2.0 AND MIT AND GPL-2.0)
 grade: stable
 
-base: core22
+base: core24
 confinement: strict
 assumes:
   - snapd2.59.1
@@ -68,11 +68,10 @@ plugs:
     interface: docker
   opengl:
   # For nvidia userspace libs support #
-  graphics-core22:
+  gpu-2404:
     interface: content
-    target: $SNAP/graphics
-    # Currently, this is the only relevant provider, but cannot be default as not supported on all archs #
-    #default-provider: nvidia-core22
+    target: $SNAP/gpu-2404
+    default-provider: mesa-2404
 slots:
   config-ro:
     interface: content
@@ -113,7 +112,7 @@ apps:
       - network-control
       - privileged
       - support
-      - graphics-core22
+      - gpu-2404
     slots:
       - docker-daemon
 
@@ -125,10 +124,12 @@ apps:
       - home
 
   nvidia-container-toolkit:
+    command-chain:
+      - bin/gpu-2404-wrapper
     command: bin/nvidia-container-toolkit
     daemon: oneshot
     plugs:
-      - graphics-core22
+      - gpu-2404
     before:
       - dockerd
 
@@ -245,7 +246,7 @@ parts:
   nvidia-container-toolkit:
     plugin: go
     source: https://github.com/NVIDIA/nvidia-container-toolkit.git
-    source-tag: v1.15.0
+    source-tag: v1.17.3
     source-depth: 1
     override-pull: &arch-restrict |
       [ "${CRAFT_ARCH_BUILD_FOR}" != "amd64" ] && \
@@ -259,6 +260,7 @@ parts:
     build-snaps: *go
     build-packages:
       - make
+      - libtirpc-dev
     organize:
       bin: usr/bin/
     stage:
@@ -268,7 +270,7 @@ parts:
   libnvidia-container:
     plugin: make
     source: https://github.com/NVIDIA/libnvidia-container.git
-    source-tag: v1.15.0
+    source-tag: v1.17.3
     source-depth: 1
     override-pull: *arch-restrict
     override-build: *arch-restrict
@@ -287,6 +289,15 @@ parts:
     prime:
       - usr/bin/nvidia-container-cli*
       - usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/libnvidia-container*.so*
+
+  gpu-2404:
+    source: https://github.com/canonical/gpu-snap.git
+    plugin: dump
+    override-prime: |
+      craftctl default
+      ${CRAFT_PART_SRC}/bin/gpu-2404-cleanup mesa-2404
+    prime:
+      - bin/gpu-2404-wrapper
 
   tini:
     plugin: cmake
