@@ -21,13 +21,37 @@ validate_version() {
   fi
 }
 
+check_yq() {
+  if ! command -v yq &>/dev/null; then
+    echo -e "yq is not installed."
+    echo -e "Please run:"
+    echo -e "\tsudo snap install yq"
+    exit 1
+  fi
+}
+
+check_new_version() {
+  if [[ "$CURRENT" == "$LATEST" ]]; then
+    echo -e "Docker snap is already updated\n"
+    exit 0
+  fi
+}
+
 main() {
+  check_yq
+
+  # Define the path to the YAML file
+  yaml_file="snap/snapcraft.yaml"
+
+  CURRENT=$(yq e '.parts.engine.source-tag' "$yaml_file")
 
   fetch_latest
 
   echo "Latest TAG: $LATEST"
 
   validate_version
+
+  check_new_version
 
   SNAP_VERSION=${LATEST#v}
   echo -e "New snap version $SNAP_VERSION"
@@ -64,9 +88,6 @@ main() {
     echo "$var: ${!var}"
   done
 
-  # Define the path to the YAML file
-  yaml_file="snap/snapcraft.yaml"
-
   # Replace the `version:` field with the value of $SNAP_VERSION
   yq -i ".version = \"$SNAP_VERSION\"" "$yaml_file"
 
@@ -87,6 +108,9 @@ main() {
 
   # Replace `build-snaps` for `engine` with $GO_VERSION
   yq -i '.parts.engine."build-snaps"[0] |= sub("[0-9]+\.[0-9]+", "'"$GO_VERSION"'")' "$yaml_file"
+
+  # Replace the remaining comments
+  sed -i "s/$CURRENT/$LATEST/g" "$yaml_file"
 
   echo "YAML file updated successfully."
 
