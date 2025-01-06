@@ -43,10 +43,10 @@ jobs:
         with:
           name: docker_${{ github.run_id }}.snap
 
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-        with:
-          wait-timeout-minutes: 3
+      # - name: Setup upterm session
+      #   uses: lhotari/action-upterm@v1
+      #   with:
+      #     wait-timeout-minutes: 3
 
       - name: Prep
         run: |
@@ -59,9 +59,14 @@ jobs:
           sudo rm -rf /var/lib/docker /etc/docker /run/docker* /var/lib/containerd /run/containerd*
           sudo ip link delete docker0 || :
 
-          sudo apt update
-          sudo apt install -y snapd
-          sudo snap refresh
+          # sudo apt update
+          # sudo apt install -y snapd
+          # sudo snap refresh
+
+          # It seems that installing the deb version of snapd wasn't enought
+          # to have the snapd snap present (or at least active)
+          sudo snap install hello-world
+
           sudo snap refresh --channel beta snapd
           sudo snap list
 
