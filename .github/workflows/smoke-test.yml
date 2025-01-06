@@ -33,7 +33,7 @@ jobs:
 
   smoke-test:
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -59,16 +59,16 @@ jobs:
           sudo rm -rf /var/lib/docker /etc/docker /run/docker* /var/lib/containerd /run/containerd*
           sudo ip link delete docker0 || :
 
-          # sudo apt update
+          sudo apt update
           # sudo apt install -y snapd
-          # sudo snap refresh
+          sudo snap refresh
 
           # It seems that installing the deb version of snapd wasn't enought
           # to have the snapd snap present (or at least active)
           sudo snap install hello-world
           sudo snap list
 
-          # sudo snap refresh --channel beta snapd
+          sudo snap refresh --channel beta snapd
 
       - name: Install
         run: |
