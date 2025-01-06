@@ -89,6 +89,7 @@ jobs:
           sudo snap connect docker:network-control :network-control
           sudo snap connect docker:support :docker-support
           sudo snap connect docker:privileged :docker-support
+          sudo snap connect docker:log-observe
 
           sudo snap stop --disable docker.dockerd # for good measure
           sleep 1
