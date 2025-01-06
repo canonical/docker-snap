@@ -33,7 +33,7 @@ jobs:
 
   smoke-test:
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -68,7 +68,7 @@ jobs:
           sudo snap install hello-world
           sudo snap list
 
-          sudo snap refresh --channel beta snapd
+          # sudo snap refresh --channel beta snapd
 
       - name: Install
         run: |
@@ -89,6 +89,8 @@ jobs:
           sudo snap connect docker:network-control :network-control
           sudo snap connect docker:support :docker-support
           sudo snap connect docker:privileged :docker-support
+
+          # Trying to fix by connecting log-observe
           sudo snap connect docker:log-observe
 
           sudo snap stop --disable docker.dockerd # for good measure
