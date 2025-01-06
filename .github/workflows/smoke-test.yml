@@ -43,6 +43,11 @@ jobs:
         with:
           name: docker_${{ github.run_id }}.snap
 
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+        with:
+          wait-timeout-minutes: 3
+
       - name: Prep
         run: |
           # https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md
