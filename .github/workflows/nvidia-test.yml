@@ -42,7 +42,7 @@ jobs:
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger
           JOB_QUEUE: docker-nvidia
-          SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
+          SNAP_CHANNEL: ${{ inputs.publish == 'true' && 'latest/edge/runid-' + inputs.run_id || 'latest/edge' }}
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
