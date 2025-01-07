@@ -48,6 +48,21 @@ jobs:
       #   with:
       #     wait-timeout-minutes: 3
 
+      - name: Collect snap environment info
+        run: |
+
+          # System and snapd data
+          snap version
+
+          # Check how snapd is installed
+          sudo snap debug execution snap
+
+          # Check apparmor abi version
+          sudo snap debug execution apparmor
+
+          # Check avaible sandbox-features
+          sudo snap debug sandbox-features
+
       - name: Prep
         run: |
           # https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md
