@@ -48,6 +48,25 @@ jobs:
       #   with:
       #     wait-timeout-minutes: 3
 
+      - name: Prep
+        run: |
+          # https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md
+
+          # TODO figure out a better way to get Go and friends out of our path than dropping a nuke
+          sudo rm -rf /opt/hostedtoolcache/*
+
+          sudo apt-get purge --auto-remove -y 'docker.*' 'containerd.*' 'moby.*' 'runc.*'
+          sudo rm -rf /var/lib/docker /etc/docker /run/docker* /var/lib/containerd /run/containerd*
+          sudo ip link delete docker0 || :
+
+      - name: refresh snapd
+        run: |
+          # It seems that installing the deb version of snapd wasn't enought
+          # to have the snapd snap present (or at least active)
+          sudo snap install hello-world
+          sudo snap refresh snapd
+          sudo snap list
+
       - name: Collect snap environment info
         run: |
 
@@ -62,28 +81,6 @@ jobs:
 
           # Check avaible sandbox-features
           sudo snap debug sandbox-features
-
-      - name: Prep
-        run: |
-          # https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md
-
-          # TODO figure out a better way to get Go and friends out of our path than dropping a nuke
-          sudo rm -rf /opt/hostedtoolcache/*
-
-          sudo apt-get purge --auto-remove -y 'docker.*' 'containerd.*' 'moby.*' 'runc.*'
-          sudo rm -rf /var/lib/docker /etc/docker /run/docker* /var/lib/containerd /run/containerd*
-          sudo ip link delete docker0 || :
-
-          sudo apt update
-          # sudo apt install -y snapd
-          sudo snap refresh
-
-          # It seems that installing the deb version of snapd wasn't enought
-          # to have the snapd snap present (or at least active)
-          sudo snap install hello-world
-          sudo snap list
-
-          # sudo snap refresh --channel beta snapd
 
       - name: Install
         run: |
