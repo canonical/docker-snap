@@ -56,9 +56,6 @@ jobs:
 
       - name: refresh snapd
         run: |
-          # It seems that installing the deb version of snapd wasn't enought
-          # to have the snapd snap present (or at least active)
-          # sudo snap install hello-world
           sudo snap install snapd
           sudo snap refresh snapd
           sudo snap list
