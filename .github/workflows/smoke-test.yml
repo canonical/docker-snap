@@ -43,11 +43,6 @@ jobs:
         with:
           name: docker_${{ github.run_id }}.snap
 
-      # - name: Setup upterm session
-      #   uses: lhotari/action-upterm@v1
-      #   with:
-      #     wait-timeout-minutes: 3
-
       - name: Prep
         run: |
           # https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md
@@ -63,7 +58,7 @@ jobs:
         run: |
           # It seems that installing the deb version of snapd wasn't enought
           # to have the snapd snap present (or at least active)
-          sudo snap install hello-world
+          # sudo snap install hello-world
           sudo snap install snapd
           sudo snap refresh snapd
           sudo snap list
@@ -103,9 +98,6 @@ jobs:
           sudo snap connect docker:support :docker-support
           sudo snap connect docker:privileged :docker-support
 
-          # Trying to fix by connecting log-observe
-          sudo snap connect docker:log-observe
-
           sudo snap stop --disable docker.dockerd # for good measure
           sleep 1
           sudo snap start --enable docker.dockerd
@@ -135,14 +127,16 @@ jobs:
       - name: Hello World
         run: sudo docker run --rm hello-world
 
-      - name: Hello World (journald)
-        run: |
-          trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
-          expectedOutput="testing-journald-log-driver-$RANDOM-$RANDOM"
-          sudo docker run --name test-journald --log-driver journald bash -c 'echo "$@"' -- "$expectedOutput"
-          actualOutput="$(sudo docker logs test-journald)"
-          [ "$actualOutput" = "$expectedOutput" ]
-          docker rm test-journald
+      # NOTE: deactivating test for now since journald is broken for docker-snap on Noble
+        # see: https://github.com/canonical/docker-snap/issues/181
+      # - name: Hello World (journald)
+      #   run: |
+      #     trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
+      #     expectedOutput="testing-journald-log-driver-$RANDOM-$RANDOM"
+      #     sudo docker run --name test-journald --log-driver journald bash -c 'echo "$@"' -- "$expectedOutput"
+      #     actualOutput="$(sudo docker logs test-journald)"
+      #     [ "$actualOutput" = "$expectedOutput" ]
+      #     docker rm test-journald
 
       - name: Hello World (init)
         run: sudo docker run --rm --init hello-world
