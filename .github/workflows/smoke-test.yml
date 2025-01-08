@@ -68,16 +68,16 @@ jobs:
         run: |
 
           # System and snapd data
-          snap version
+          snap version || true
 
           # Check how snapd is installed
-          sudo snap debug execution snap
+          sudo snap debug execution snap || true
 
           # Check apparmor abi version
-          sudo snap debug execution apparmor
+          sudo snap debug execution apparmor || true
 
           # Check available sandbox-features
-          sudo snap debug sandbox-features
+          sudo snap debug sandbox-features || true
 
       - name: Install
         run: |
