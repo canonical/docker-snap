@@ -133,16 +133,18 @@ jobs:
       - name: Hello World
         run: sudo docker run --rm hello-world
 
-      # NOTE: deactivating test for now since journald is broken for docker-snap on Noble
+
+      - name: Hello World (journald)
+        # NOTE: Test temporarily disabled on Noble due to a known issue with journald on Noble systems affecting docker-snap.
         # see: https://github.com/canonical/docker-snap/issues/181
-      # - name: Hello World (journald)
-      #   run: |
-      #     trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
-      #     expectedOutput="testing-journald-log-driver-$RANDOM-$RANDOM"
-      #     sudo docker run --name test-journald --log-driver journald bash -c 'echo "$@"' -- "$expectedOutput"
-      #     actualOutput="$(sudo docker logs test-journald)"
-      #     [ "$actualOutput" = "$expectedOutput" ]
-      #     docker rm test-journald
+        if: ${{ matrix.os != 'ubuntu-24.04' }}
+        run: |
+          trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
+          expectedOutput="testing-journald-log-driver-$RANDOM-$RANDOM"
+          sudo docker run --name test-journald --log-driver journald bash -c 'echo "$@"' -- "$expectedOutput"
+          actualOutput="$(sudo docker logs test-journald)"
+          [ "$actualOutput" = "$expectedOutput" ]
+          docker rm test-journald
 
       - name: Hello World (init)
         run: sudo docker run --rm --init hello-world
