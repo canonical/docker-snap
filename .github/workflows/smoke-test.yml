@@ -133,6 +133,14 @@ jobs:
       - name: Hello World
         run: sudo docker run --rm hello-world
 
+      - name: Hello World (syslog)
+        run: |
+          trap 'echo -e "\nerror, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
+          expectedOutput="testing-syslog-log-driver-$RANDOM-$RANDOM"
+          sudo docker run --name test-syslog --log-driver syslog bash -c 'echo "$@"' -- "$expectedOutput"
+          actualOutput="$(sudo docker logs test-syslog)"
+          [ "$actualOutput" = "$expectedOutput" ]
+          docker rm test-syslog
 
       - name: Hello World (journald)
         # NOTE: Test temporarily disabled on Noble due to a known issue with journald on Noble systems affecting docker-snap.
