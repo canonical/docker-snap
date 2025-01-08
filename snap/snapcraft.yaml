@@ -2,6 +2,9 @@ name: docker
 #title: Docker
 version: '27.4.1'
 summary: Docker container runtime
+issues: https://github.com/canonical/docker-snap/issues
+source-code: https://github.com/canonical/docker-snap
+website: https://github.com/canonical/docker-snap
 description: |
   Build and run container images with Docker.
 
