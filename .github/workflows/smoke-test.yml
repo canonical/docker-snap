@@ -54,10 +54,10 @@ jobs:
           sudo rm -rf /var/lib/docker /etc/docker /run/docker* /var/lib/containerd /run/containerd*
           sudo ip link delete docker0 || :
 
-      - name: refresh snapd
+      # The image comes with a slightly outdated snapd Debian package
+      - name: Install snapd as a snap
         run: |
           sudo snap install snapd
-          sudo snap refresh snapd
           sudo snap list
 
       - name: Collect snap environment info
@@ -72,7 +72,7 @@ jobs:
           # Check apparmor abi version
           sudo snap debug execution apparmor
 
-          # Check avaible sandbox-features
+          # Check available sandbox-features
           sudo snap debug sandbox-features
 
       - name: Install
