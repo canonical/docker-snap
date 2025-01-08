@@ -21,12 +21,11 @@ Additional access is granted via [snap interfaces](https://snapcraft.io/docs/int
 Upon installation using the above command, the snap connects automatically to the following system interface slots:
 - [docker-support](https://snapcraft.io/docs/docker-support-interface)
 - [firewall-control](https://snapcraft.io/docs/firewall-control-interface)
-- [home](https://snapcraft.io/docs/home-interface)
+- [home](https://snapcraft.io/docs/home-interface) - only on classic/traditional distributions
 - [network](https://snapcraft.io/docs/network-interface)
 - [network-bind](https://snapcraft.io/docs/network-bind-interface)
 - [network-control](https://snapcraft.io/docs/network-control-interface)
 - [opengl](https://snapcraft.io/docs/opengl-interface)
-
 
 If you are using Ubuntu Core 16, connect the `docker:home` plug as it's not auto-connected by default:
 
@@ -182,6 +181,7 @@ sudo snap connect docker:support :docker-support
 sudo snap connect docker:firewall-control :firewall-control
 sudo snap connect docker:network-control :network-control
 sudo snap connect docker:docker-cli docker:docker-daemon
+sudo snap connect docker:home
 
 sudo snap disable docker
 sudo snap enable docker
