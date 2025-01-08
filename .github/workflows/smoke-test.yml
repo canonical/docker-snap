@@ -67,17 +67,22 @@ jobs:
       - name: Collect snap environment info
         run: |
 
+          # These commands shouldn't cause workflow failure
+          set +e
+
           # System and snapd data
-          snap version || true
+          snap version
 
           # Check how snapd is installed
-          sudo snap debug execution snap || true
+          sudo snap debug execution snap
 
           # Check apparmor abi version
-          sudo snap debug execution apparmor || true
+          sudo snap debug execution apparmor
 
           # Check available sandbox-features
-          sudo snap debug sandbox-features || true
+          sudo snap debug sandbox-features
+
+          set -e
 
       - name: Install
         run: |
