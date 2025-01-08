@@ -33,7 +33,11 @@ jobs:
 
   smoke-test:
     needs: build
-    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-22.04, ubuntu-20.04]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -54,11 +58,31 @@ jobs:
           sudo rm -rf /var/lib/docker /etc/docker /run/docker* /var/lib/containerd /run/containerd*
           sudo ip link delete docker0 || :
 
-          sudo apt update
-          sudo apt install -y snapd
-          sudo snap refresh
-          sudo snap refresh --channel beta snapd
+      # The image comes with a slightly outdated snapd Debian package
+      - name: Install snapd as a snap
+        run: |
+          sudo snap install snapd
           sudo snap list
+
+      - name: Collect snap environment info
+        run: |
+
+          # These commands shouldn't cause workflow failure
+          set +e
+
+          # System and snapd data
+          snap version
+
+          # Check how snapd is installed
+          sudo snap debug execution snap
+
+          # Check apparmor abi version
+          sudo snap debug execution apparmor
+
+          # Check available sandbox-features
+          sudo snap debug sandbox-features
+
+          set -e
 
       - name: Install
         run: |
@@ -109,7 +133,11 @@ jobs:
       - name: Hello World
         run: sudo docker run --rm hello-world
 
+
       - name: Hello World (journald)
+        # NOTE: Test temporarily disabled on Noble due to a known issue with journald on Noble systems affecting docker-snap.
+        # see: https://github.com/canonical/docker-snap/issues/181
+        if: ${{ matrix.os != 'ubuntu-24.04' }}
         run: |
           trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
           expectedOutput="testing-journald-log-driver-$RANDOM-$RANDOM"
