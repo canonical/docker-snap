@@ -45,7 +45,8 @@ plugs:
   gpu-2404:
     interface: content
     target: $SNAP/gpu-2404
-    default-provider: mesa-2404
+    # This is the only relevant provider, but leaving unspecified to prevent auto-installing of the providing snap #
+    # default-provider: mesa-2404
 slots:
   config-ro:
     interface: content
