@@ -15,8 +15,8 @@ body:
     attributes:
       label: Bug Description
       description: >
-        If applicable, add screenshots to help explain your
-        problem.
+        If applicable, add screenshots to help explain your problem.
+          Provide any additional information you may find useful here.
     validations:
       required: true
 
@@ -29,43 +29,20 @@ body:
     validations:
       required: true
 
-  - type: dropdown
-    attributes:
-      label: Snap channel
-      description: >
-        Which channel of the Docker snap are you using?
-        You can check this by running `snap list docker` under the `Tracking` column.
-      multiple: false
-      options:
-        - latest/stable
-        - latest/candidate
-        - latest/beta
-        - latest/edge
-        - core18/stable
-      default: 0
-    validations:
-      required: true
-
-  - type: input
-    id: revision
-    attributes:
-      label: Docker snap revision number
-      description: >
-        Which revision number of the Docker snap are you using?
-        You can check this by running `snap list docker` under the `Rev` column.
-      placeholder: "123"
-      validations:
-        required: true
-
   - type: textarea
     id: environment
     attributes:
-      label: Environment
+      label: Environment Information for Bug Reproduction
       description: >
-        We need to know a bit more about the context in which Docker failed.
-        Please paste here the output for the commands:
-        - `snap version`
-        - `cat /etc/os-release`
+        Kindly copy the commands below, run them in your terminal,
+        and share the results here.
+          ```bash
+            snap list docker; echo;
+            snap version; echo;
+            cat /etc/os-release; echo;
+            uname -orvm;
+          ```
+      render: shell
     validations:
       required: true
 
@@ -74,15 +51,6 @@ body:
     attributes:
       label: Relevant log output
       description: >
-        Please copy and paste any relevant log output. This will be
-        automatically formatted into code, so no need for backticks.
-      render: shell
+        Please copy and paste any relevant log output.
     validations:
       required: true
-
-  - type: textarea
-    id: additional-context
-    attributes:
-      label: Additional context
-      description: Provide any additional information you may find useful here.
-
