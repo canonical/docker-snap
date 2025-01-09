@@ -16,7 +16,7 @@ body:
       label: Bug Description
       description: >
         If applicable, add screenshots to help explain your problem.
-          Provide any additional information you may find useful here.
+        Provide any additional information you may find useful here.
     validations:
       required: true
 
