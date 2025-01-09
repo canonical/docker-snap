@@ -15,8 +15,8 @@ body:
     attributes:
       label: Bug Description
       description: >
-        If applicable, add screenshots to help explain your problem.
-        Provide any additional information you may find useful here.
+        If applicable, add screenshots to help explain your
+        problem. Provide any additional information you may find useful here.
     validations:
       required: true
 
@@ -38,6 +38,7 @@ body:
         and share the results here.
           ```bash
             snap list docker; echo;
+            snap connections docker; echo;
             snap version; echo;
             cat /etc/os-release; echo;
             uname -orvm;
