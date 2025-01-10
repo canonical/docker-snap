@@ -16,7 +16,7 @@ body:
       label: Bug Description
       description: >
         If applicable, add screenshots to help explain your
-        problem. Provide any additional information you may find useful here.
+        problem.
     validations:
       required: true
 
@@ -61,6 +61,6 @@ body:
     attributes:
       label: Relevant log output
       description: >
-        Please copy and paste any relevant log output.
+        Please copy and paste any relevant log output. Provide any additional information you may find useful here.
     validations:
       required: true
