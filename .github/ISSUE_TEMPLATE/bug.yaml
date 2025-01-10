@@ -34,7 +34,7 @@ body:
     attributes:
       label: Environment Information for Bug Reproduction
       description: >
-        Kindly copy the commands below, run them in your terminal,
+        Kindly copy **all** the commands below, run them in your terminal,
         and share the results here.
           ```bash
             echo -e "Docker snap description:\n"
