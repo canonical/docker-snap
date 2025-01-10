@@ -48,7 +48,7 @@ body:
             echo -e "\nOS release:"
             cat /etc/os-release
 
-            echo -e "\nKernel version and architecture:"
+            echo -e "\nKernel and architecture:"
             uname -rvm
           ```
       render: shell
