@@ -13,17 +13,16 @@ body:
   - type: textarea
     id: bug-description
     attributes:
-      label: Bug Description
+      label: Bug description
       description: >
-        If applicable, add screenshots to help explain your
-        problem.
+        If applicable, add screenshots to help explain your problem.
     validations:
       required: true
 
   - type: textarea
     id: reproduction
     attributes:
-      label: To Reproduce
+      label: To reproduce
       description: >
         Provide a step-by-step instruction of how to reproduce the behavior.
     validations:
@@ -32,24 +31,24 @@ body:
   - type: textarea
     id: environment
     attributes:
-      label: Environment Information for Bug Reproduction
+      label: Environment information for bug reproduction
       description: >
         Kindly copy **all** the commands below, run them in your terminal,
         and share the results here.
           ```bash
-            echo -e "\nDocker snap description:"
+            echo -e "\nDocker snap information:"
             snap list docker
 
             echo -e "\nPlug Connections:"
             snap connections docker
 
-            echo -e "\nsnapd information:"
+            echo -e "\nSnapd information:"
             snap version
 
             echo -e "\nOS release:"
             cat /etc/os-release
 
-            echo -e "\nKernel version:"
+            echo -e "\nKernel version and architecture:"
             uname -orvm
           ```
       render: shell
@@ -59,8 +58,8 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Relevant log output
+      label: Additional information
       description: >
-        Please copy and paste here any relevant log output. Also, provide any additional information you may find useful here.
+        Provide any additional information, including relevant logs.
     validations:
       required: true

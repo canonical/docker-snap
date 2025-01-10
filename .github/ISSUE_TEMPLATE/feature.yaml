@@ -14,8 +14,6 @@ body:
     id: enhancement-proposal-what
     attributes:
       label: What needs to get done
-      description: >
-        Describe what needs to get done
     validations:
       required: true
 
@@ -23,7 +21,5 @@ body:
     id: enhancement-proposal-why
     attributes:
       label: Why it needs to get done
-      description: >
-        Describe why it needs to get done
     validations:
       required: true
