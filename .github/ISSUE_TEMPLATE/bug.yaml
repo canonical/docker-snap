@@ -37,19 +37,19 @@ body:
         Kindly copy **all** the commands below, run them in your terminal,
         and share the results here.
           ```bash
-            echo -e "Docker snap description:\n"
+            echo -e "\nDocker snap description:"
             snap list docker
 
-            echo -e "Connections:\n"
+            echo -e "\nConnections:"
             snap connections docker
 
-            echo -e "snapd information:\n"
+            echo -e "\nsnapd information:"
             snap version
 
-            echo -e "OS release:\n"
+            echo -e "\nOS release:"
             cat /etc/os-release
 
-            echo -e "Kernel version:\n"
+            echo -e "\nKernel version:"
             uname -orvm
           ```
       render: shell
