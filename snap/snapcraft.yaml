@@ -47,6 +47,12 @@ plugs:
     target: $SNAP/gpu-2404
     # This is the only relevant provider, but leaving unspecified to prevent auto-installing of the providing snap #
     # default-provider: mesa-2404
+  graphics-core22:
+    interface: content
+    target: $SNAP/graphics
+    # Currently, this is the only relevant provider, but cannot be default as not supported on all archs #
+    #default-provider: nvidia-core22
+
 slots:
   config-ro:
     interface: content
@@ -88,6 +94,7 @@ apps:
       - privileged
       - support
       - gpu-2404
+      - graphics-core22
     slots:
       - docker-daemon
 
@@ -105,6 +112,7 @@ apps:
     daemon: oneshot
     plugs:
       - gpu-2404
+      - graphics-core22
     before:
       - dockerd
 
@@ -120,6 +128,7 @@ parts:
     organize:
       nvidia/lib: usr/share/nvidia-container-toolkit/lib
       nvidia/nvidia-container-toolkit: bin/
+      nvidia/nvidia-container-toolkit-connect-hook: bin/
       nvidia/gpu-2404-optional-wrapper: bin/
     stage:
       - bin/*

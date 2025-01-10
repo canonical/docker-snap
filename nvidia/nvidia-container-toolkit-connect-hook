@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -eux
+
+HOOK_LOG="${SNAP_COMMON}/hooks/${SNAP_REVISION}/$(basename "$0").log" && mkdir -p "${HOOK_LOG%/*}"
+exec &> >(tee -a "${HOOK_LOG}")
+
+PLUG_NAME="${0##*/connect-plug-}"
+
+. "${SNAP}/usr/share/nvidia-container-toolkit/lib"
+
+# Just exit if NVIDIA support is disabled #
+[ "${NVIDIA_SUPPORT_DISABLED}" != "true" ] || exit 0
+
+# Ensure nvidia support setup correctly #
+if snapctl is-connected "${PLUG_NAME}" ; then
+
+    # Ensure hardware present #
+    echo "NVIDIA libraries available"
+
+    # Ensure hardware present #
+    nvidia_hw_ensure
+
+    # Restart services to reflect any changes if required #
+    # If oneshot services are inactive they don't respond to restart, so stop/start #
+    snapctl stop "${SNAP_NAME}.nvidia-container-toolkit"
+    snapctl start --enable "${SNAP_NAME}.nvidia-container-toolkit"
+    snapctl restart "${SNAP_NAME}.dockerd"
+
+fi
