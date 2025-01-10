@@ -100,7 +100,7 @@ apps:
 
   nvidia-container-toolkit:
     command-chain:
-      - bin/gpu-2404-wrapper
+      - bin/gpu-2404-optional-wrapper
     command: bin/nvidia-container-toolkit
     daemon: oneshot
     plugs:
@@ -120,6 +120,7 @@ parts:
     organize:
       nvidia/lib: usr/share/nvidia-container-toolkit/lib
       nvidia/nvidia-container-toolkit: bin/
+      nvidia/gpu-2404-optional-wrapper: bin/
     stage:
       - bin/*
       - config/daemon.json
@@ -264,15 +265,6 @@ parts:
     prime:
       - usr/bin/nvidia-container-cli*
       - usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/libnvidia-container*.so*
-
-  gpu-2404:
-    source: https://github.com/canonical/gpu-snap.git
-    plugin: dump
-    override-prime: |
-      craftctl default
-      ${CRAFT_PART_SRC}/bin/gpu-2404-cleanup mesa-2404
-    prime:
-      - bin/gpu-2404-wrapper
 
   tini:
     plugin: cmake

@@ -1,0 +1,11 @@
+#!/bin/bash
+# Fork of wrapper at https://github.com/canonical/gpu-snap #
+# The provider-wrapper is required on core systems, not classic system #
+
+if ! snapctl is-connected gpu-2404 ; then
+    echo "Skipping gpu-2404 setup for nvidia, as gpu-2404 is not connected"
+    echo "If you want nvidia support, please refer to https://github.com/canonical/docker-snap for more information"
+    exit 0
+fi
+
+exec "${SNAP}/gpu-2404/bin/gpu-2404-provider-wrapper" "$@"

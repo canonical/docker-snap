@@ -22,7 +22,7 @@ if snapctl is-connected gpu-2404 ; then
     # Restart services to reflect any changes if required #
     # If oneshot services are inactive they don't respond to restart, so stop/start #
     snapctl stop "${SNAP_NAME}.nvidia-container-toolkit"
-    snapctl start "${SNAP_NAME}.nvidia-container-toolkit"
+    snapctl start --enable "${SNAP_NAME}.nvidia-container-toolkit"
     snapctl restart "${SNAP_NAME}.dockerd"
 
 fi
