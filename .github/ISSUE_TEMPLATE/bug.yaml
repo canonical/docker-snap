@@ -40,7 +40,7 @@ body:
             echo -e "\nDocker snap description:"
             snap list docker
 
-            echo -e "\nConnections:"
+            echo -e "\nPlug Connections:"
             snap connections docker
 
             echo -e "\nsnapd information:"
