@@ -49,7 +49,7 @@ body:
             cat /etc/os-release
 
             echo -e "\nKernel version and architecture:"
-            uname -orvm
+            uname -rvm
           ```
       render: shell
     validations:
