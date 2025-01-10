@@ -37,11 +37,20 @@ body:
         Kindly copy the commands below, run them in your terminal,
         and share the results here.
           ```bash
-            snap list docker; echo;
-            snap connections docker; echo;
-            snap version; echo;
-            cat /etc/os-release; echo;
-            uname -orvm;
+            echo -e "Docker snap description:\n"
+            snap list docker
+
+            echo -e "Connections:\n"
+            snap connections docker
+
+            echo -e "snapd information:\n"
+            snap version
+
+            echo -e "OS release:\n"
+            cat /etc/os-release
+
+            echo -e "Kernel version:\n"
+            uname -orvm
           ```
       render: shell
     validations:
