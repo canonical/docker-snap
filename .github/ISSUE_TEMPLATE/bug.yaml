@@ -24,7 +24,7 @@ body:
     attributes:
       label: To reproduce
       description: >
-        Provide a step-by-step instruction of how to reproduce the behavior.
+        Provide a step-by-step instruction on how to reproduce the behavior.
     validations:
       required: true
 
