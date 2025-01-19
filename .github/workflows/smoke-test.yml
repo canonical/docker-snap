@@ -98,7 +98,7 @@ jobs:
 
       - name: Install
         run: |
-          sudo snap install --dangerous ./docker_${{ github.run_id }}.snap
+          sudo snap install --dangerous ./docker_${{ github.run_id}}_${{ env.arch }}.snap
 
           # it will immediately be failing to start, so let's head that off as quickly as we can
           sudo snap stop --disable docker.dockerd
