@@ -27,12 +27,12 @@ jobs:
         uses: snapcore/action-build@v1
         id: snapcraft
         with:
-          snapcraft-args: snap --output docker_${{ github.run_id}}_${{ env.runner_arch }}.snap
+          snapcraft-args: snap --output docker_${{ github.run_id}}_${{ github.runner_arch }}.snap
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: docker_${{ github.run_id}}.snap
+          name: docker_${{ github.run_id}}_${{ github.runner_arch }}.snap
           path: ${{ steps.snapcraft.outputs.snap }}
 
   smoke-test:
@@ -49,7 +49,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: docker_${{ github.run_id}}_${{ env.runner_arch }}.snap
+          name: docker_${{ github.run_id}}_${{ github.runner_arch }}.snap
 
       - name: Prep
         run: |
