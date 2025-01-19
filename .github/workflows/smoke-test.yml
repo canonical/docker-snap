@@ -23,16 +23,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Get architecture
+        id: arch
+        run: echo "arch=$(uname -m)" >> $GITHUB_ENV
+
       - name: Build
         uses: snapcore/action-build@v1
         id: snapcraft
         with:
-          snapcraft-args: snap --output docker_${{ github.run_id}}_${{ github.runner_arch }}.snap
+          snapcraft-args: snap --output docker_${{ github.run_id}}_${{ env.arch }}.snap
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: docker_${{ github.run_id}}_${{ github.runner_arch }}.snap
+          name: docker_${{ github.run_id}}_${{ env.arch }}.snap
           path: ${{ steps.snapcraft.outputs.snap }}
 
   smoke-test:
@@ -46,10 +50,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Get architecture
+        id: arch
+        run: echo "arch=$(uname -m)" >> $GITHUB_ENV
+
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: docker_${{ github.run_id}}_${{ github.runner_arch }}.snap
+          name: docker_${{ github.run_id}}_${{ env.arch }}.snap
 
       - name: Prep
         run: |
