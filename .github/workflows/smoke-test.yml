@@ -157,7 +157,7 @@ jobs:
       - name: Hello World (journald)
         # NOTE: Test temporarily disabled on Noble due to a known issue with journald on Noble systems affecting docker-snap.
         # see: https://github.com/canonical/docker-snap/issues/181
-        if: ${{ matrix.os != 'ubuntu-24.04' }}
+        if: ${{ !contains('ubuntu-24.04,ubuntu-24.04-arm', matrix.os) }}
         run: |
           trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
           expectedOutput="testing-journald-log-driver-$RANDOM-$RANDOM"
