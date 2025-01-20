@@ -11,13 +11,6 @@ on:
         description: 'Run id number'
         required: true
         type: number
-      os_release:
-        description: 'Os release'
-        required: true
-        type: choice
-        options:
-          - core22-latest
-          - noble
       publish:
         description: 'Publish to Store'
         default: true
@@ -47,7 +40,6 @@ jobs:
         if: ${{ always() && !failure() && !cancelled() }}
         runs-on: [self-hosted, testflinger]
         env:
-          OS_RELEASE: ${{ inputs.os_release }}
           TESTFLINGER_DIR: .github/workflows/testflinger
           JOB_QUEUE: docker-nvidia
           SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
@@ -57,23 +49,36 @@ jobs:
 
             - name: Create Testflinger job queue
               run: |
-                envsubst '$OS_RELEASE' \
-                  < $TESTFLINGER_DIR/nvidia-job.yaml \
-                  > $TESTFLINGER_DIR/nvidia-job.temp
 
-                envsubst '$JOB_QUEUE' \
-                  < $TESTFLINGER_DIR/nvidia-job.yaml \
-                  > $TESTFLINGER_DIR/nvidia-job.temp
+                targetOS=("noble", "core22-latest")
+
+                for OS_RELEASE in ${targetOS[@]}; do
+
+                  envsubst '$OS_RELEASE' \
+                    < $TESTFLINGER_DIR/nvidia-job.yaml \
+                    > $TESTFLINGER_DIR/nvidia-job-"$OS_RELEASE".temp
+
+                  envsubst '$JOB_QUEUE' \
+                    < $TESTFLINGER_DIR/nvidia-job.yaml \
+                    > $TESTFLINGER_DIR/nvidia-job-"$OS_RELEASE".temp
+
+                  mv $TESTFLINGER_DIR/nvidia-job-"$OS_RELEASE".temp $TESTFLINGER_DIR/nvidia-job-"$OS_RELEASE".yaml
+                done
 
                 envsubst '$SNAP_CHANNEL' \
                   < $TESTFLINGER_DIR/scripts/setup.sh \
                   > $TESTFLINGER_DIR/scripts/setup.temp
 
-                mv $TESTFLINGER_DIR/nvidia-job.temp $TESTFLINGER_DIR/nvidia-job.yaml
                 mv $TESTFLINGER_DIR/scripts/setup.temp $TESTFLINGER_DIR/scripts/setup.sh
 
-            - name: Submit Testflinger job
+            - name: Submit Testflinger job for Noble
               uses: canonical/testflinger/.github/actions/submit@main
               with:
                 poll: true
-                job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job.yaml
+                job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job-noble.yaml
+
+            - name: Submit Testflinger job for Ubuntu Core 22
+              uses: canonical/testflinger/.github/actions/submit@main
+              with:
+                poll: true
+                job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job-core22-latest.yaml
