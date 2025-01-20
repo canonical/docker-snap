@@ -11,6 +11,13 @@ on:
         description: 'Run id number'
         required: true
         type: number
+      os_release:
+        description: 'Os release'
+        required: true
+        type: choice
+        options:
+          - core22-latest
+          - noble
       publish:
         description: 'Publish to Store'
         default: true
@@ -36,15 +43,11 @@ jobs:
                 release: latest/edge/runid-${{ inputs.run_id }}
 
     test:
-        strategy:
-          fail-fast: false
-          matrix:
-            os: [ noble, core22-latest]
         needs: publish
         if: ${{ always() && !failure() && !cancelled() }}
         runs-on: [self-hosted, testflinger]
         env:
-          OS_RELEASE: ${{ matrix.os }}
+          OS_RELEASE: ${{ inputs.os_release }}
           TESTFLINGER_DIR: .github/workflows/testflinger
           JOB_QUEUE: docker-nvidia
           SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
