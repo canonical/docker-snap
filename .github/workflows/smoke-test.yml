@@ -3,7 +3,11 @@ name: Smoke Test
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**/*.md'
   pull_request:
+    paths-ignore:
+      - '**/*.md'
   # Manual trigger
   workflow_dispatch:
 
