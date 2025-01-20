@@ -4,7 +4,7 @@ job_queue: $JOB_QUEUE
 global_timeout: 3600
 output_timeout: 1800
 provision_data:
-    distro: "noble"
+    distro: $OS_RELEASE
 test_data:
 
   # Copy files from the GH runner to the Testflinger Agent
