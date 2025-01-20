@@ -14,7 +14,15 @@ defaults:
 jobs:
 
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - arch: amd64
+            os: ubuntu-latest
+          - arch: arm64
+            os: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner.os }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,12 +31,12 @@ jobs:
         uses: snapcore/action-build@v1
         id: snapcraft
         with:
-          snapcraft-args: snap --output docker_${{ github.run_id}}.snap
+          snapcraft-args: snap --output docker_${{ github.run_id }}_${{ matrix.runner.arch }}.snap
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: docker_${{ github.run_id}}.snap
+          name: docker_${{ github.run_id}}_${{ matrix.runner.arch }}.snap
           path: ${{ steps.snapcraft.outputs.snap }}
 
   smoke-test:
@@ -36,8 +44,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, ubuntu-22.04, ubuntu-20.04]
-    runs-on: ${{ matrix.os }}
+        runner:
+          - arch: amd64
+            os: ubuntu-24.04
+          - arch: amd64
+            os: ubuntu-22.04
+          - arch: amd64
+            os: ubuntu-20.04
+          - arch: arm64
+            os: ubuntu-24.04-arm
+          - arch: arm64
+            os: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runner.os }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,7 +63,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: docker_${{ github.run_id }}.snap
+          name: docker_${{ github.run_id}}_${{ matrix.runner.arch }}.snap
 
       - name: Prep
         run: |
@@ -86,7 +104,7 @@ jobs:
 
       - name: Install
         run: |
-          sudo snap install --dangerous ./docker_${{ github.run_id }}.snap
+          sudo snap install --dangerous ./docker_${{ github.run_id}}_${{ matrix.runner.arch }}.snap
 
           # it will immediately be failing to start, so let's head that off as quickly as we can
           sudo snap stop --disable docker.dockerd
@@ -145,7 +163,7 @@ jobs:
       - name: Hello World (journald)
         # NOTE: Test temporarily disabled on Noble due to a known issue with journald on Noble systems affecting docker-snap.
         # see: https://github.com/canonical/docker-snap/issues/181
-        if: ${{ matrix.os != 'ubuntu-24.04' }}
+        if: ${{ !contains('ubuntu-24.04,ubuntu-24.04-arm', matrix.runner.os) }}
         run: |
           trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
           expectedOutput="testing-journald-log-driver-$RANDOM-$RANDOM"

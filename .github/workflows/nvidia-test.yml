@@ -25,14 +25,14 @@ jobs:
               uses: dawidd6/action-download-artifact@v7
               with:
                 run_id: ${{ inputs.run_id }}
-                name: docker_${{ inputs.run_id }}.snap
+                name: docker_${{ inputs.run_id }}_amd64.snap
 
             - name: Publish to Store
               uses: snapcore/action-publish@v1
               env:
                 SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
               with:
-                snap: docker_${{ inputs.run_id }}.snap
+                snap: docker_${{ inputs.run_id }}_amd64.snap
                 release: latest/edge/runid-${{ inputs.run_id }}
 
     test:
