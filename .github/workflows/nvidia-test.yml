@@ -67,7 +67,7 @@ jobs:
 
                 mv $TESTFLINGER_DIR/scripts/setup.temp $TESTFLINGER_DIR/scripts/setup.sh
 
-            - name: Submit Testflinger job for Noble
+            - name: Submit Testflinger job for Ubuntu 24.04 (Noble)
               uses: canonical/testflinger/.github/actions/submit@main
               with:
                 poll: true
