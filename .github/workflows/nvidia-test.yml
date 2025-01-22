@@ -50,19 +50,15 @@ jobs:
             - name: Create Testflinger job queue
               run: |
 
-                targetOS=("noble" "core22-latest")
+                targetDistros=("noble" "core22-latest")
 
-                for OS_RELEASE in ${targetOS[@]}; do
+                for DISTRO in ${targetDistros[@]}; do
 
-                  envsubst '$OS_RELEASE' \
+                  envsubst '$JOB_QUEUE $DISTRO' \
                     < $TESTFLINGER_DIR/nvidia-job.yaml \
-                    > $TESTFLINGER_DIR/nvidia-job-"$OS_RELEASE".temp
+                    > $TESTFLINGER_DIR/nvidia-job-"$DISTRO".temp
 
-                  envsubst '$JOB_QUEUE' \
-                    < $TESTFLINGER_DIR/nvidia-job.yaml \
-                    > $TESTFLINGER_DIR/nvidia-job-"$OS_RELEASE".temp
-
-                  mv $TESTFLINGER_DIR/nvidia-job-"$OS_RELEASE".temp $TESTFLINGER_DIR/nvidia-job-"$OS_RELEASE".yaml
+                  mv $TESTFLINGER_DIR/nvidia-job-"$DISTRO".temp $TESTFLINGER_DIR/nvidia-job-"$DISTRO".yaml
                 done
 
                 envsubst '$SNAP_CHANNEL' \
