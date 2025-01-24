@@ -49,7 +49,6 @@ jobs:
 
             - name: Create Testflinger job queue
               run: |
-                set -x
 
                 targetDistros=("noble" "core22-latest")
 
@@ -58,8 +57,6 @@ jobs:
                   envsubst '$JOB_QUEUE $DISTRO' \
                     < $TESTFLINGER_DIR/nvidia-job.yaml \
                     > $TESTFLINGER_DIR/nvidia-job-"$DISTRO".temp
-
-                  cat $TESTFLINGER_DIR/nvidia-job-"$DISTRO".temp
 
                   mv $TESTFLINGER_DIR/nvidia-job-"$DISTRO".temp $TESTFLINGER_DIR/nvidia-job-"$DISTRO".yaml
                 done
