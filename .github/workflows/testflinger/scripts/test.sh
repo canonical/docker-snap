@@ -8,7 +8,7 @@ smi_test() {
   if [[ $ID == "ubuntu" ]]; then
     sudo docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin" ubuntu nvidia-smi || exit 1
   elif [[ $ID == "ubuntu-core" ]]; then
-    sudo docker run --rm --runtime nvidia --gpus all -it ubuntu bash -c "/snap/docker/*/graphics/bin/nvidia-smi" || exit 1
+    sudo docker run --rm --runtime nvidia --gpus all ubuntu bash -c "/snap/docker/*/graphics/bin/nvidia-smi" || exit 1
   else
     echo "Unexpected operating system ID: $ID"
     exit 1
