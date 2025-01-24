@@ -53,6 +53,7 @@ jobs:
                 targetDistros=("noble" "core22-latest")
 
                 for DISTRO in ${targetDistros[@]}; do
+                  export DISTRO
 
                   envsubst '$JOB_QUEUE $DISTRO' \
                     < $TESTFLINGER_DIR/nvidia-job.yaml \
