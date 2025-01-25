@@ -4,7 +4,7 @@ job_queue: $JOB_QUEUE
 global_timeout: 3600
 output_timeout: 1800
 provision_data:
-    distro: "noble"
+  distro: $DISTRO
 test_data:
 
   # Copy files from the GH runner to the Testflinger Agent
@@ -22,15 +22,21 @@ test_data:
 
     SCRIPTS=./attachments/test/scripts
 
-    echo "Testing: DEVICE_IP = $DEVICE_IP"
-    # Setup the environment on the target device
+    # On Ubuntu Core, kernel, core, snapd snaps get refreshed right after first boot,
+    # causing unexpected errors and triggering a reboot
+    while ! ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/check-snap-changes.sh)"; do
+      echo "Wait for ssh server and/or snap changes..."
+      sleep 30
+    done
+
     ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/setup.sh)"
 
     # Reboot the device in background to avoid breaking the SSH connection prematurely
     ssh ubuntu@$DEVICE_IP "(sleep 3 && sudo reboot) &"
 
-    echo "Wait for the device to boot and start its SSH server"
-    $SCRIPTS/wait_for_port.sh $DEVICE_IP 22
-
-    # Run the tests
+    while ! ssh ubuntu@$DEVICE_IP "sudo docker version"; do
+      echo "Wait for ssh server and/or Docker daemon..."
+      sleep 30
+    done
+    
     ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/test.sh)"

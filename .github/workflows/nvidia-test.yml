@@ -49,19 +49,33 @@ jobs:
 
             - name: Create Testflinger job queue
               run: |
-                envsubst '$JOB_QUEUE' \
-                  < $TESTFLINGER_DIR/nvidia-job.yaml \
-                  > $TESTFLINGER_DIR/nvidia-job.temp
+
+                targetDistros=("noble" "core22-latest")
+
+                for DISTRO in ${targetDistros[@]}; do
+                  export DISTRO
+
+                  envsubst '$JOB_QUEUE $DISTRO' \
+                    < $TESTFLINGER_DIR/nvidia-job.yaml \
+                    > $TESTFLINGER_DIR/nvidia-job-"$DISTRO".temp
+
+                  mv $TESTFLINGER_DIR/nvidia-job-"$DISTRO".temp $TESTFLINGER_DIR/nvidia-job-"$DISTRO".yaml
+                done
 
                 envsubst '$SNAP_CHANNEL' \
                   < $TESTFLINGER_DIR/scripts/setup.sh \
                   > $TESTFLINGER_DIR/scripts/setup.temp
 
-                mv $TESTFLINGER_DIR/nvidia-job.temp $TESTFLINGER_DIR/nvidia-job.yaml
                 mv $TESTFLINGER_DIR/scripts/setup.temp $TESTFLINGER_DIR/scripts/setup.sh
 
-            - name: Submit Testflinger job
+            - name: Submit Testflinger job for Ubuntu 24.04 (Noble)
               uses: canonical/testflinger/.github/actions/submit@main
               with:
                 poll: true
-                job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job.yaml
+                job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job-noble.yaml
+
+            - name: Submit Testflinger job for Ubuntu Core 22
+              uses: canonical/testflinger/.github/actions/submit@main
+              with:
+                poll: true
+                job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job-core22-latest.yaml

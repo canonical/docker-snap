@@ -19,7 +19,7 @@ install_docker() {
   sudo snap install docker --channel="$DOCKER_SNAP_CHANNEL"
 
   # check the installation
-  docker --version || exit 1
+  sudo docker --version || exit 1
 }
 
 setup_classic() {

@@ -6,14 +6,17 @@ The tests run on devices within Canonical's test farm.
 ## Run locally
 Running the tests locally is only possible if your machine has access to the Testflinger server.
 
-Export the following variables:
+Export the needed variables, for example:
 ```bash
-export JOB_QUEUE=<queue> SNAP_CHANNEL=<channel>
+export JOB_QUEUE=docker-nvidia SNAP_CHANNEL=latest/edge DISTRO=noble
 ```
+Tested distros:
+- `noble`
+- `core22-latest`
 
 Then, modify the files:
 ```bash
-envsubst '$JOB_QUEUE' < nvidia-job.yaml > temp-job.yaml
+envsubst '$JOB_QUEUE $DISTRO' < nvidia-job.yaml > temp-job.yaml
 
 envsubst '$SNAP_CHANNEL' < scripts/setup.sh > scripts/temp-setup.sh
 
