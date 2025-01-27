@@ -1,5 +1,5 @@
 name: docker
-version: '27.5.0'
+version: '27.5.1'
 summary: Docker container runtime
 description: Refer to https://snapcraft.io/docker
 license: (Apache-2.0 AND MIT AND GPL-2.0)
@@ -139,7 +139,7 @@ parts:
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
-    source-tag: v27.5.0
+    source-tag: v27.5.1
     source-depth: 1
     override-build: |
       $CRAFT_STAGE/patches/patch.sh
@@ -162,7 +162,7 @@ parts:
       install -T bundles/dynbinary-daemon/dockerd "$CRAFT_PART_INSTALL/bin/dockerd"
       # install docker-proxy previously provided by libnetwork part
       install -T bundles/dynbinary-daemon/docker-proxy "$CRAFT_PART_INSTALL/bin/docker-proxy"
-    # https://github.com/moby/moby/blob/v27.5.0/Dockerfile#L3 (Docker-supported Go version for Engine)
+    # https://github.com/moby/moby/blob/v27.5.1/Dockerfile#L3 (Docker-supported Go version for Engine)
     build-snaps: &go ['go/1.22/stable']
     # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
     after: [wrapper-scripts]
@@ -186,7 +186,7 @@ parts:
   containerd:
     plugin: make
     source: https://github.com/containerd/containerd.git
-    # from https://github.com/moby/moby/blob/v27.5.0/Dockerfile#L199
+    # from https://github.com/moby/moby/blob/v27.5.1/Dockerfile#L199
     source-tag: v1.7.25
     source-depth: 1
     override-build: |
@@ -203,7 +203,7 @@ parts:
   runc:
     plugin: make
     source: https://github.com/opencontainers/runc.git
-    # from https://github.com/moby/moby/blob/v27.5.0/Dockerfile#L290
+    # from https://github.com/moby/moby/blob/v27.5.1/Dockerfile#L290
     source-tag: v1.2.4
     source-depth: 1
     override-build: |
@@ -266,7 +266,7 @@ parts:
     plugin: cmake
     source: https://github.com/krallin/tini.git
     source-type: git
-    # from https://github.com/moby/moby/blob/v27.5.0/Dockerfile#L325
+    # from https://github.com/moby/moby/blob/v27.5.1/Dockerfile#L325
     source-tag: v0.19.0
     source-depth: 1
     organize:
@@ -280,7 +280,7 @@ parts:
     plugin: make
     build-snaps: *go
     source: https://github.com/docker/cli.git
-    source-tag: v27.3.1
+    source-tag: v27.5.1
     source-depth: 1
     override-build: |
       # docker build specific environment variables
@@ -307,8 +307,8 @@ parts:
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
-    # https://github.com/moby/moby/blob/v27.5.0/Dockerfile#L15
-    source-tag: v0.18.0
+    # https://github.com/moby/moby/blob/v27.5.1/Dockerfile#L15
+    source-tag: v0.20.0
     source-depth: 1
     override-build: |
       export DESTDIR="$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
@@ -322,8 +322,8 @@ parts:
     plugin: make
     source: https://github.com/docker/compose.git
     # https://github.com/docker/docker-ce-packaging/blob/master/common.mk // reference URL
-    # https://github.com/moby/moby/blob/v27.5.0/Dockerfile#L16 // Fetch from
-    source-tag: v2.30.3
+    # https://github.com/moby/moby/blob/v27.5.1/Dockerfile#L16 // Fetch from
+    source-tag: v2.32.4
     source-depth: 1
     override-build: |
       make build
