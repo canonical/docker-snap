@@ -110,7 +110,7 @@ main() {
   yq -i '.parts.engine."build-snaps"[0] |= sub("[0-9]+\.[0-9]+", "'"$GO_VERSION"'")' "$yaml_file"
 
   # Replace the remaining comments
-  sed -i "s/$CURRENT/$LATEST/g" "$yaml_file"
+  sed -i "s/moby\/blob\/$CURRENT/moby\/blob\/$LATEST/g" "$yaml_file"
 
   echo "YAML file updated successfully."
 
