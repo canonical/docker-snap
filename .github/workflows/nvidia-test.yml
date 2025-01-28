@@ -45,9 +45,6 @@ jobs:
           TESTFLINGER_DIR: .github/workflows/testflinger
           JOB_QUEUE: docker-nvidia
           SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
-        # This is to continue testing on all distros and getting the status,
-        # even if one fails
-        continue-on-error: true
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -83,6 +80,7 @@ jobs:
                 job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job-noble.yaml
 
             - name: Test Ubuntu Core 22
+              if: success() || failure()
               uses: canonical/testflinger/.github/actions/submit@main
               with:
                 poll: true
