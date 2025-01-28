@@ -21,14 +21,14 @@ jobs:
         if: ${{ inputs.publish == true }}
         runs-on: ubuntu-latest
         steps:
-            # Download the snap artifact from a previous build job
-            - name: Download snap artifact
+            # Download snap artifact from a previous smoke-test/build GitHub Workflow run
+            - name: 
               uses: dawidd6/action-download-artifact@v8
               with:
                 run_id: ${{ inputs.run_id }}
                 name: docker_${{ inputs.run_id }}_amd64.snap
-
-            # Publish the snap to Store, so it can be installed on the test devices
+            
+            # Publish snap to Store so it can be installed on the test devices
             - name: Publish snap to Store
               uses: snapcore/action-publish@v1
               env:
@@ -50,6 +50,8 @@ jobs:
               uses: actions/checkout@v4
 
             # Create Testflinger job for each test case
+            # Do this instead of a matrix strategy to avoid running jobs in parallel,
+            # because there is only one runner capable of running the tests.
             - name: Create Testflinger jobs
               run: |
 
