@@ -73,6 +73,7 @@ jobs:
               with:
                 poll: true
                 job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job-noble.yaml
+              continue-on-error: true
 
             - name: Submit Testflinger job for Ubuntu Core 22
               uses: canonical/testflinger/.github/actions/submit@main
