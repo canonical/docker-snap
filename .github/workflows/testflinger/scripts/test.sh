@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 
 # Test nvidia-smi
 smi_test() {
@@ -20,6 +20,8 @@ vector_add_test() {
   sudo docker run --rm --runtime=nvidia --gpus all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda10.2 || exit 1
 }
 
+set -x
 smi_test
 
 vector_add_test
+set +x

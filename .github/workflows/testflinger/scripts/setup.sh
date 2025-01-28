@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 
 apt_update() {
   # ignore errors, some nodes fail to access the repos
@@ -18,8 +18,8 @@ install_docker() {
   # install docker-snap
   sudo snap install docker --channel="$DOCKER_SNAP_CHANNEL"
 
-  # check the installation
-  sudo docker --version || exit 1
+  # check the auto-connections
+  sudo snap connections docker
 }
 
 setup_classic() {
@@ -68,6 +68,11 @@ setup() {
   fi
 }
 
+# Don't refresh while testing
+sudo snap refresh --hold=3h
+
+set -x
 setup
+set +x
 
 echo "A reboot is required!"
