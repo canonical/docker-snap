@@ -21,13 +21,15 @@ jobs:
         if: ${{ inputs.publish == true }}
         runs-on: ubuntu-latest
         steps:
-            - name: Get the artifact
+            # Download the snap artifact from a previous build job
+            - name: Download snap artifact
               uses: dawidd6/action-download-artifact@v8
               with:
                 run_id: ${{ inputs.run_id }}
                 name: docker_${{ inputs.run_id }}_amd64.snap
 
-            - name: Publish to Store
+            # Publish the snap to Store, so it can be installed on the test devices
+            - name: Publish snap to Store
               uses: snapcore/action-publish@v1
               env:
                 SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
@@ -47,7 +49,8 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            - name: Create Testflinger job queue
+            # Create Testflinger job for each test case
+            - name: Create Testflinger jobs
               run: |
 
                 targetDistros=("noble" "core22-latest")
@@ -68,14 +71,14 @@ jobs:
 
                 mv $TESTFLINGER_DIR/scripts/setup.temp $TESTFLINGER_DIR/scripts/setup.sh
 
-            - name: Submit Testflinger job for Ubuntu 24.04 (Noble)
+            - name: Test Ubuntu 24.04 (Noble)
               uses: canonical/testflinger/.github/actions/submit@main
               with:
                 poll: true
                 job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job-noble.yaml
               continue-on-error: true
 
-            - name: Submit Testflinger job for Ubuntu Core 22
+            - name: Test Ubuntu Core 22
               uses: canonical/testflinger/.github/actions/submit@main
               with:
                 poll: true
