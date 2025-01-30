@@ -5,6 +5,8 @@ set -e
 smi_test() {
   . /etc/os-release
 
+  snap logs -n 100 docker.nvidia-container-toolkit
+
   if [[ $ID == "ubuntu" ]]; then
     sudo docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin" ubuntu nvidia-smi || exit 1
   elif [[ $ID == "ubuntu-core" ]]; then
