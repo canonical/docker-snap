@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 
 apt_update() {
   # ignore errors, some nodes fail to access the repos
   set +e
-  sudo apt-get update
+  sudo apt -qq update
   set -e
 }
 
@@ -18,8 +18,8 @@ install_docker() {
   # install docker-snap
   sudo snap install docker --channel="$DOCKER_SNAP_CHANNEL"
 
-  # check the installation
-  sudo docker --version || exit 1
+  # check the auto-connections
+  sudo snap connections docker
 }
 
 setup_classic() {
@@ -33,9 +33,9 @@ setup_classic() {
   sudo dpkg -i cuda-keyring_1.1-1_all.deb
 
   apt_update
-  sudo apt-get -y install cuda-toolkit-12-5
-  sudo apt-get install -y nvidia-driver-555-open
-  sudo apt-get install -y cuda-drivers-555
+  sudo apt -qqy install cuda-toolkit-12-8
+  sudo apt -qqy install nvidia-driver-555-open
+  sudo apt -qqy install cuda-drivers-555
 
   curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg &&
     curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list |
@@ -43,7 +43,7 @@ setup_classic() {
       sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
   apt_update
-  sudo apt-get install -y nvidia-container-toolkit
+  sudo apt -qqy install nvidia-container-toolkit
 }
 
 setup_core() {
@@ -68,6 +68,11 @@ setup() {
   fi
 }
 
+# Don't refresh while testing
+sudo snap refresh --hold=3h
+
+set -x
 setup
+set +x
 
 echo "A reboot is required!"
