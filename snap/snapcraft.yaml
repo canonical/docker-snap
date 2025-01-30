@@ -32,7 +32,6 @@ environment:
 plugs:
   home:
     read: all
-  removable-media:
   support:
     interface: docker-support
   privileged:
@@ -88,6 +87,7 @@ apps:
       - privileged
       - support
       - graphics-core22
+      - removable-media
     slots:
       - docker-daemon
 
