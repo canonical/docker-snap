@@ -43,7 +43,7 @@ device_wait() {
 
 # Check if hardware is present - just exit if not #
 nvidia_hw_ensure() {
-    lspci -d 10de: | grep -q 'NVIDIA Corporation' || exit 0
+    lspci -d 10de: | grep -q 'NVIDIA Corporation' || exit_inf "NVIDIA hardware not found"
     echo "NVIDIA hardware detected: $(lspci -d 10de:)"
 }
 
@@ -117,4 +117,9 @@ setup_fail () {
 # Info #
 setup_info () {
     echo "Conainter Toolkit setup complete"
+}
+
+exit_inf () {
+    echo "INFO: ${1}"
+    exit 0
 }

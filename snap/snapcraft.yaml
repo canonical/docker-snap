@@ -107,6 +107,7 @@ apps:
 
   nvidia-container-toolkit:
     command-chain:
+      - bin/system-detection
       - bin/gpu-2404-optional-wrapper
     command: bin/nvidia-container-toolkit
     daemon: oneshot
@@ -129,6 +130,7 @@ parts:
       nvidia/lib: usr/share/nvidia-container-toolkit/lib
       nvidia/nvidia-container-toolkit: bin/
       nvidia/nvidia-container-toolkit-connect-hook: bin/
+      nvidia/system-detection: bin/
       nvidia/gpu-2404-optional-wrapper: bin/
     stage:
       - bin/*
