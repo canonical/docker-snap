@@ -7,33 +7,12 @@ on:
   # Manual trigger
   workflow_dispatch:
     inputs:
-      run_id:
-        description: 'Run id number'
+      pr_num:
+        description: 'Pull Request number'
         required: true
         type: number
-      publish:
-        description: 'Publish to Store'
-        default: true
-        type: boolean
 
 jobs:
-    publish:
-        if: ${{ inputs.publish == true }}
-        runs-on: ubuntu-latest
-        steps:
-            - name: Get the artifact
-              uses: dawidd6/action-download-artifact@v8
-              with:
-                run_id: ${{ inputs.run_id }}
-                name: docker_${{ inputs.run_id }}_amd64.snap
-
-            - name: Publish to Store
-              uses: snapcore/action-publish@v1
-              env:
-                SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
-              with:
-                snap: docker_${{ inputs.run_id }}_amd64.snap
-                release: latest/edge/runid-${{ inputs.run_id }}
 
     test:
         needs: publish
@@ -42,7 +21,7 @@ jobs:
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger
           JOB_QUEUE: docker-nvidia
-          SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
+          SNAP_CHANNEL: latest/edge/pr-${{ inputs.pr_num }}
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
