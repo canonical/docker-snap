@@ -2,9 +2,10 @@ name: Publish
 
 on:
   workflow_run:
-    workflows: [ "Smoke Test" ]  # Trigger after "Smoke Test" workflow
+    # Trigger after "Smoke Test" workflow
+    workflows: [ "Smoke Test" ]
     types:
-      - completed  # Run after workflow completes
+      - completed
 
 jobs:
     publish:
@@ -27,12 +28,12 @@ jobs:
               uses: dawidd6/action-download-artifact@v8
               with:
                 run_id: ${{ github.event.workflow_run.id }}
-                name: docker_${{ inputs.run_id }}_amd64.snap
+                name: docker_${{ github.event.workflow_run.id }}_amd64.snap
 
             - name: Publish to Store
               uses: snapcore/action-publish@v1
               env:
                 SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
               with:
-                snap: docker_${{ inputs.run_id }}_amd64.snap
-                release: latest/edge/pr--${{ inputs.run_id }}
+                snap: docker_${{ github.event.workflow_run.id }}_amd64.snap
+                release: latest/edge/pr-${{ env.PR_NUMBER }}
