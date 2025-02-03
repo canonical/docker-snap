@@ -227,13 +227,13 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: docker_${{ github.event.workflow_run.id }}_amd64.snap
+          name: docker_${{ github.run_id}}_amd64.snap
 
       - name: Publish to Store
         uses: snapcore/action-publish@v1
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
         with:
-          snap: docker_${{ github.event.workflow_run.id }}_amd64.snap
+          snap: docker_${{ github.run_id}}_amd64.snap
           release: latest/edge/pr-${{ github.event.pull_request.number }}
 
