@@ -81,4 +81,7 @@ fi
 if [ $test_from_channel -eq 1 ] ; then
 	export SNAP_CHANNEL=$channel
 fi
+
+echo "===== INFO: Running spread tests ..."
 spread $spread_opts
+echo "===== INFO: Finished spread tests ..."
