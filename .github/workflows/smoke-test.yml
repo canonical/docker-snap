@@ -217,3 +217,23 @@ jobs:
           sudo DOCKER_BUILDKIT=1 docker build --pull -t tianon/gosleep https://github.com/tianon/gosleep.git
           sudo docker run --rm tianon/gosleep gosleep --help
           sudo docker image rm tianon/gosleep
+
+  publish:
+    needs: smoke-test
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker_${{ github.event.workflow_run.id }}_amd64.snap
+
+      - name: Publish to Store
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
+        with:
+          snap: docker_${{ github.event.workflow_run.id }}_amd64.snap
+          release: latest/edge/pr-${{ github.event.pull_request.number }}
+
