@@ -9,7 +9,7 @@ on:
     inputs:
       pr_num:
         # TODO: This needs to be PR number
-        description: 'Run id number'
+        description: 'PR Number'
         required: true
         type: number
 
