@@ -5,7 +5,7 @@
 This repository contains the source for the `docker` snap package.  The package provides a distribution of Docker Engine along with the Nvidia toolkit for Ubuntu Core and other snap-compatible systems.  The Docker Engine is built from an upstream release tag with some patches to fit the snap format and is available on `armhf`, `arm64`, `amd64`, `i386`, and `ppc64el` architectures.  The rest of this page describes installation, usage, and development.
 
 > [!NOTE]
-> [Docker's official documentation](https://docs.docker.com) does not discuss the `docker` snap package. For questions regarding `docker` snap usage, please consider [starting a discussion](https://github.com/canonical/docker-snap/discussions)
+> [Docker's official documentation](https://docs.docker.com) does not discuss the `docker` snap package. For questions regarding the snap usage, refer to the [discussions](https://github.com/canonical/docker-snap/discussions).
 
 ## Installation
 
