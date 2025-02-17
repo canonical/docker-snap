@@ -32,6 +32,7 @@ environment:
 plugs:
   home:
     read: all
+  removable-media:
   support:
     interface: docker-support
   privileged:
@@ -39,6 +40,8 @@ plugs:
     privileged-containers: true
   docker-cli:
     interface: docker
+  opengl:
+  # For nvidia userspace libs support #
   graphics-core22:
     interface: content
     target: $SNAP/graphics
@@ -72,8 +75,6 @@ apps:
       - network
       - home
       - removable-media
-      # For nvidia userspace libs support #
-      - opengl
 
   dockerd:
     command: bin/dockerd-wrapper
@@ -87,9 +88,6 @@ apps:
       - privileged
       - support
       - graphics-core22
-      - removable-media
-      # For nvidia userspace libs support #
-      - opengl
     slots:
       - docker-daemon
 
@@ -99,18 +97,12 @@ apps:
       - docker-cli
       - network
       - home
-      - removable-media
-      # For nvidia userspace libs support #
-      - opengl
 
   nvidia-container-toolkit:
     command: bin/nvidia-container-toolkit
     daemon: oneshot
     plugs:
       - graphics-core22
-      - removable-media
-      # For nvidia userspace libs support #
-      - opengl
     before:
       - dockerd
 
