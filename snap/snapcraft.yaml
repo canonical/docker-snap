@@ -97,12 +97,14 @@ apps:
       - docker-cli
       - network
       - home
+      - removable-media
 
   nvidia-container-toolkit:
     command: bin/nvidia-container-toolkit
     daemon: oneshot
     plugs:
       - graphics-core22
+      - removable-media
     before:
       - dockerd
 
