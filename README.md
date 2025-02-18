@@ -61,6 +61,32 @@ sudo snap enable docker
 
 Docker should function normally, with the following caveats:
 
+> [!IMPORTANT]  
+> In the `docker` snap, the default location for the [data-root](https://docs.docker.com/engine/daemon/#daemon-data-directory) directory is `$SNAP_COMMON/var-lib-docker`, which maps to `/var/snap/docker/common/var-lib-docker` based on the [snap data locations](https://snapcraft.io/docs/data-locations#heading--system).  
+>  
+> You may want to change this because if the snap is removed, all Docker-related data (images, containers, volumes) will be deleted.  
+>  
+> To modify the default location, use [snap configuration options](https://snapcraft.io/docs/configuration-in-snaps):  
+>  
+> **Get the current value:**  
+> ```shell
+> sudo snap get docker data-dir
+> ```  
+>  
+> **Set a new location:**  
+> ```shell
+> sudo snap set docker data-dir=<new-directory>
+> ```
+> Make sure to use a location that the snap has access, which is:
+> - Inside the $HOME directory;
+> - On a removable driver inside of `/media`, `/run/media` or `/mnt` (needs [removable-media interface](https://snapcraft.io/docs/removable-media-interface) connected).
+>
+> Then disable and re-enable the snap:
+> ```shell
+> sudo snap disable docker
+> sudo snap enable docker
+> ```
+
 * All files that `docker` needs access to should live within your `$HOME` folder.
 
   * If you are using Ubuntu Core 16, you'll need to work within a subfolder of `$HOME` that is readable by root; see [#8](https://github.com/docker/docker-snap/issues/8).
