@@ -41,47 +41,39 @@ jobs:
         needs: publish
         if: ${{ always() && !failure() && !cancelled() }}
         runs-on: [self-hosted, testflinger]
+        strategy:
+          # fail-fast: false
+          matrix:
+            distro: 
+              - noble
+              - core22-latest
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger
-          JOB_QUEUE: docker-nvidia
-          SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            # Create Testflinger job for each test case
-            # Do this instead of a matrix strategy to avoid running jobs in parallel,
-            # because there is only one runner capable of running the tests.
-            - name: Create Testflinger jobs
+            - name: Create Testflinger job
+              env:
+                JOB_QUEUE: docker-nvidia
+                SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
+                DISTRO: ${{ matrix.distro }}
               run: |
 
-                targetDistros=("noble" "core22-latest")
+                which sponge || true
 
-                for DISTRO in ${targetDistros[@]}; do
-                  export DISTRO
-
-                  envsubst '$JOB_QUEUE $DISTRO' \
-                    < $TESTFLINGER_DIR/nvidia-job.yaml \
-                    > $TESTFLINGER_DIR/nvidia-job-"$DISTRO".temp
-
-                  mv $TESTFLINGER_DIR/nvidia-job-"$DISTRO".temp $TESTFLINGER_DIR/nvidia-job-"$DISTRO".yaml
-                done
-
+                envsubst '$JOB_QUEUE $DISTRO' \
+                  < $TESTFLINGER_DIR/nvidia-job.yaml \
+                  > $TESTFLINGER_DIR/nvidia-job.temp
+                mv $TESTFLINGER_DIR/nvidia-job.temp $TESTFLINGER_DIR/nvidia-job.yaml
+                
                 envsubst '$SNAP_CHANNEL' \
                   < $TESTFLINGER_DIR/scripts/setup.sh \
                   > $TESTFLINGER_DIR/scripts/setup.temp
-
                 mv $TESTFLINGER_DIR/scripts/setup.temp $TESTFLINGER_DIR/scripts/setup.sh
 
-            - name: Test Ubuntu 24.04 (Noble)
+            - name: Run tests
               uses: canonical/testflinger/.github/actions/submit@main
               with:
                 poll: true
-                job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job-noble.yaml
-
-            - name: Test Ubuntu Core 22
-              if: success() || failure()
-              uses: canonical/testflinger/.github/actions/submit@main
-              with:
-                poll: true
-                job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job-core22-latest.yaml
+                job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job.yaml
