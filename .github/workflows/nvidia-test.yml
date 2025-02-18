@@ -51,14 +51,17 @@ jobs:
               - core22-latest
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger
+          SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
         steps:
+            - name: Event data
+              run: "echo ::notice::Snap channel: $SNAP_CHANNEL"
+
             - name: Checkout code
               uses: actions/checkout@v4
 
             - name: Create Testflinger job
               env:
                 JOB_QUEUE: docker-nvidia
-                SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
                 DISTRO: ${{ matrix.distro }}
               run: |
 
