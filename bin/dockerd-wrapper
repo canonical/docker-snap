@@ -66,6 +66,12 @@ workaround_apparmor_profile_reload
 DATA_DIR="$(snapctl get data-dir)"
 data_dir="${DATA_DIR:-$DEFAULT_DATA_DIR}"
 
+# Avoiding the following error: 
+# msg="cleanup working directory in namespace" 
+# error="open <dir>/containerd/daemon/io.containerd.runtime.v2.task/moby: no such file or directory"
+# namespace=moby
+mkdir -p "$data_dir"/containerd/daemon/io.containerd.runtime.v2.task/moby
+
 exec dockerd \
 	--group "$default_socket_group" \
 	--exec-root="$run_dir" \
