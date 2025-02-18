@@ -15,12 +15,12 @@ test_data:
   # Run commands on the Testflinger Agent
   test_cmds: |
     #!/usr/bin/env bash
-    set -ex
-
-    # List the attached files
-    find attachments/test
+    set -e
 
     SCRIPTS=./attachments/test/scripts
+
+    echo "List attached files"
+    find $SCRIPTS
 
     # On Ubuntu Core, kernel, core, snapd snaps get refreshed right after first boot,
     # causing unexpected errors and triggering a reboot
@@ -29,9 +29,13 @@ test_data:
       sleep 30
     done
 
+    echo "Testing device with IP: $DEVICE_IP"
+
+    echo "Setup the environment on the target device"
     ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/setup.sh)"
 
     # Reboot the device in background to avoid breaking the SSH connection prematurely
+    echo "Rebooting the device"
     ssh ubuntu@$DEVICE_IP "(sleep 3 && sudo reboot) &"
 
     while ! ssh ubuntu@$DEVICE_IP "sudo docker version"; do
@@ -39,4 +43,5 @@ test_data:
       sleep 30
     done
     
+    echo "Run tests"
     ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/test.sh)"
