@@ -27,7 +27,7 @@ setup_classic() {
   UBUNTU_VERSION="${VERSION_ID//./}"
 
   apt_update
-  sudo apt-get install -y curl
+  sudo apt -qqy install -y curl
 
   wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu$UBUNTU_VERSION/x86_64/cuda-keyring_1.1-1_all.deb
   sudo dpkg -i cuda-keyring_1.1-1_all.deb
