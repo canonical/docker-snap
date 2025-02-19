@@ -33,6 +33,36 @@ If you are using Ubuntu Core 16, connect the `docker:home` plug as it's not auto
 sudo snap connect docker:home
 ```
 
+### Changing the data root directory
+
+In the `docker` snap, the default location for the [data-root](https://docs.docker.com/engine/daemon/#daemon-data-directory) directory is `$SNAP_COMMON/var-lib-docker`, which maps to `/var/snap/docker/common/var-lib-docker` based on the [snap data locations](https://snapcraft.io/docs/data-locations#heading--system).
+
+> [!WARNING]
+> By default, SnapD removes the snap's data locations and creates [snapshots](https://snapcraft.io/docs/snapshots) that serve as backup. 
+> Changing the root directory to a different path results in loss of snapshot functionalities, leaving you responsible for the management of those files.  
+  
+To modify the default location, use [snap configuration options](https://snapcraft.io/docs/configuration-in-snaps):  
+  
+**Get the current value:**  
+```shell
+sudo snap get docker data-root
+```  
+  
+**Set a new location:**  
+```shell
+sudo snap set docker data-root=<new-directory>
+```
+Make sure to use a location that the snap has access, which is:
+- Inside the `$HOME` directory;
+- On a removable drive, via the [removable-media interface](https://snapcraft.io/docs/removable-media-interface) interface:  
+  - The removable drive must be mounted as root; otherwise, the `dockerd` service will fail with the error:  
+    `could not create or set daemon root permissions: <dir>: chown <dir>: operation not permitted`
+
+Then restart the dockerd service:
+```shell
+sudo snap restart docker.dockerd
+```
+
 ### Running Docker as normal user
 
 By default, Docker is only accessible with root privileges (`sudo`). If you want to use docker as a regular user, you need to add your user to the `docker` group. This isn't possible on Ubuntu Core because it disallows the addition of users to system groups [[1](https://forum.snapcraft.io/t/adding-users-to-system-groups-on-ubuntu-core/20109), [2](https://github.com/snapcore/core20/issues/72)].
@@ -60,33 +90,6 @@ sudo snap enable docker
 ## Usage
 
 Docker should function normally, with the following caveats:
-
-> [!IMPORTANT]  
-> In the `docker` snap, the default location for the [data-root](https://docs.docker.com/engine/daemon/#daemon-data-directory) directory is `$SNAP_COMMON/var-lib-docker`, which maps to `/var/snap/docker/common/var-lib-docker` based on the [snap data locations](https://snapcraft.io/docs/data-locations#heading--system).  
->  
-> You may want to change this because if the snap is removed, all Docker-related data (images, containers, volumes) will be deleted.  
->  
-> To modify the default location, use [snap configuration options](https://snapcraft.io/docs/configuration-in-snaps):  
->  
-> **Get the current value:**  
-> ```shell
-> sudo snap get docker data-root
-> ```  
->  
-> **Set a new location:**  
-> ```shell
-> sudo snap set docker data-root=<new-directory>
-> ```
-> Make sure to use a location that the snap has access, which is:
-> - Inside the $HOME directory;
-> - On a removable drive inside `/media`, `/run/media`, or `/mnt` (requires the [removable-media interface](https://snapcraft.io/docs/removable-media-interface) to be connected)  
->   - The removable drive must be mounted as root; otherwise, the `dockerd` service will fail with the error:  
->     `could not create or set daemon root permissions: <dir>: chown <dir>: operation not permitted`
->
-> Then restart the dockerd service:
-> ```shell
-> sudo snap restart docker.dockerd
-> ```
 
 * All files that `docker` needs access to should live within your `$HOME` folder.
 
