@@ -70,12 +70,12 @@ Docker should function normally, with the following caveats:
 >  
 > **Get the current value:**  
 > ```shell
-> sudo snap get docker data-dir
+> sudo snap get docker data-root
 > ```  
 >  
 > **Set a new location:**  
 > ```shell
-> sudo snap set docker data-dir=<new-directory>
+> sudo snap set docker data-root=<new-directory>
 > ```
 > Make sure to use a location that the snap has access, which is:
 > - Inside the $HOME directory;
