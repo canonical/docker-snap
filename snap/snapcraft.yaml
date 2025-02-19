@@ -33,7 +33,6 @@ environment:
 plugs:
   home:
     read: all
-  removable-media:
   support:
     interface: docker-support
   privileged:
@@ -81,6 +80,7 @@ apps:
     command: bin/dockerd-wrapper
     daemon: simple
     plugs:
+      - removable-media
       - firewall-control
       - home
       - log-observe
@@ -95,6 +95,7 @@ apps:
   compose:
     command: usr/libexec/docker/cli-plugins/docker-compose
     plugs:
+      - removable-media
       - docker-cli
       - network
       - home
