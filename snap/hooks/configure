@@ -7,6 +7,13 @@ exec &> >(tee -a "${HOOK_LOG}")
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
+# Change the data-root
+data_root="$(snapctl get data-root)"
+if [ -z "$data_root" ] ; then
+    # If the user unset the data-root, set it to the default
+    snapctl set data-root="${DEFAULT_DATA_ROOT}"
+fi
+
 # Flag to trigger service restart if any condition requires it #
 SVC_RESTART=false
 
