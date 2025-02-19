@@ -64,9 +64,6 @@ workaround_lp1606510
 workaround_apparmor_profile_reload
 
 data_root="$(snapctl get data-root)"
-data_root="${data_root:-$DEFAULT_DATA_ROOT}"
-# Feedback for the user in case the data-root is set to the default
-snapctl set data-root="$data_root"
 
 exec dockerd \
 	--group "$default_socket_group" \
