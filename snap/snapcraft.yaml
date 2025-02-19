@@ -20,7 +20,7 @@ layout:
     symlink: $SNAP/usr/libexec/docker/cli-plugins
 
 environment:
-  DEFAULT_DATA_DIR: "$SNAP_COMMON/var-lib-docker"
+  DEFAULT_DATA_ROOT: "$SNAP_COMMON/var-lib-docker"
   GIT_EXEC_PATH: "$SNAP/usr/lib/git-core"
   GIT_TEMPLATE_DIR: "$SNAP/usr/share/git-core/templates"
   # For nvidia support #
