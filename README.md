@@ -80,10 +80,9 @@ Docker should function normally, with the following caveats:
 > Make sure to use a location that the snap has access, which is:
 > - Inside the $HOME directory;
 >
-> Then disable and re-enable the snap:
+> Then restart the dockerd service:
 > ```shell
-> sudo snap disable docker
-> sudo snap enable docker
+> sudo snap restart docker.dockerd
 > ```
 
 * All files that `docker` needs access to should live within your `$HOME` folder.
