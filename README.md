@@ -79,7 +79,6 @@ Docker should function normally, with the following caveats:
 > ```
 > Make sure to use a location that the snap has access, which is:
 > - Inside the $HOME directory;
-> - On a removable driver inside of `/media`, `/run/media` or `/mnt` (needs [removable-media interface](https://snapcraft.io/docs/removable-media-interface) connected).
 >
 > Then disable and re-enable the snap:
 > ```shell
