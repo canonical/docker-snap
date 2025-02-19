@@ -23,7 +23,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             # Download snap artifact from a previous smoke-test/build GitHub Workflow run
-            - name: 
+            - name: Download snap artifact
               uses: dawidd6/action-download-artifact@v8
               with:
                 run_id: ${{ inputs.run_id }}
