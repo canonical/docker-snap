@@ -54,9 +54,7 @@ sudo snap set docker data-root=<new-directory>
 ```
 Make sure to use a location that the snap has access, which is:
 - Inside the `$HOME` directory;
-- On a removable drive, via the [removable-media interface](https://snapcraft.io/docs/removable-media-interface) interface:  
-  - The removable drive must be mounted as root; otherwise, the `dockerd` service will fail with the error:  
-    `could not create or set daemon root permissions: <dir>: chown <dir>: operation not permitted`
+- Within a snap-writable area, as described in the [data locations documentation](https://snapcraft.io/docs/data-locations).
 
 Then restart the dockerd service:
 ```shell
