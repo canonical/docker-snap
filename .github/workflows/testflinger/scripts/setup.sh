@@ -8,23 +8,27 @@ apt_update() {
   set -e
 }
 
-install_docker() {
+install_docker() (
   # SNAP_CHANNEL may be set by the caller, or replaced in CI
   DOCKER_SNAP_CHANNEL=$SNAP_CHANNEL
   if [[ -z "$DOCKER_SNAP_CHANNEL" ]]; then
     DOCKER_SNAP_CHANNEL="latest/edge"
   fi
 
+  set -x
+
   # install docker-snap
   sudo snap install docker --channel="$DOCKER_SNAP_CHANNEL"
 
   # check the auto-connections
   sudo snap connections docker
-}
+)
 
-setup_classic() {
+setup_classic() (
   . /etc/os-release
   UBUNTU_VERSION="${VERSION_ID//./}"
+
+  set -x
 
   apt_update
   sudo apt-get -qqy install -y curl
@@ -44,12 +48,13 @@ setup_classic() {
 
   apt_update
   sudo apt-get -qqy install nvidia-container-toolkit
-}
+)
 
-setup_core() {
+setup_core() (
+  set -x
   sudo snap install nvidia-core22
   sudo snap install nvidia-assemble --channel 22/stable
-}
+)
 
 setup() {
   . /etc/os-release
@@ -71,8 +76,6 @@ setup() {
 # Don't refresh while testing
 sudo snap refresh --hold=3h
 
-set -x
 setup
-set +x
 
 echo "A reboot is required!"
