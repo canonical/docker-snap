@@ -4,7 +4,7 @@ set -e
 apt_update() {
   # ignore errors, some nodes fail to access the repos
   set +e
-  sudo apt -qq update
+  sudo apt-get -qq update
   set -e
 }
 
@@ -27,15 +27,15 @@ setup_classic() {
   UBUNTU_VERSION="${VERSION_ID//./}"
 
   apt_update
-  sudo apt -qqy install -y curl
+  sudo apt-get -qqy install -y curl
 
   wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu$UBUNTU_VERSION/x86_64/cuda-keyring_1.1-1_all.deb
   sudo dpkg -i cuda-keyring_1.1-1_all.deb
 
   apt_update
-  sudo apt -qqy install cuda-toolkit-12-8
-  sudo apt -qqy install nvidia-driver-555-open
-  sudo apt -qqy install cuda-drivers-555
+  sudo apt-get -qqy install cuda-toolkit-12-8
+  sudo apt-get -qqy install nvidia-driver-555-open
+  sudo apt-get -qqy install cuda-drivers-555
 
   curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg &&
     curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list |
@@ -43,7 +43,7 @@ setup_classic() {
       sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
   apt_update
-  sudo apt -qqy install nvidia-container-toolkit
+  sudo apt-get -qqy install nvidia-container-toolkit
 }
 
 setup_core() {
