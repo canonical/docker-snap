@@ -37,20 +37,17 @@ dir="$(mktemp -d)"
 upper="$(mktemp -d)"
 lower="$(mktemp -d)"
 work="$(mktemp -d)"
-extra_fs_params=""
 
 # inside our snap, we can't "modprobe" for whatever reason (probably no access to the .ko files)
 # so this forces the kernel itself to "modprobe" for these filesystems so that the modules we need are available to Docker
 trap "force_umount --no-mtab '$dir'; rm -rf '$dir'" EXIT
 # try mounting a few FS types to force the kernel to try loading modules
-for t in aufs overlay zfs; do
-	if [ "$t" = "overlay" ]; then
-  		extra_fs_params=$(echo -olowerdir="$lower",upperdir="$upper",workdir="$work")
-	fi
-	yolo mount --no-mtab -t "$t" /dev/null "$extra_fs_params" "$dir" 
-	force_umount --no-mtab "$dir"
-	extra_fs_params=""
-done
+yolo mount --no-mtab -t overlay /dev/null -olowerdir="$lower",upperdir="$upper",workdir="$work" "$dir" 
+force_umount --no-mtab "$dir"
+yolo mount --no-mtab -t aufs /dev/null "$extra_fs_params" "$dir" 
+force_umount --no-mtab "$dir"
+yolo mount --no-mtab -t zfs /dev/null "$extra_fs_params" "$dir" 
+force_umount --no-mtab "$dir"
 
 rm -rf "$dir" "$upper" "$lower" "$work"
 trap - EXIT
