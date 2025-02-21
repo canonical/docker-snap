@@ -1,41 +1,45 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 
 apt_update() {
   # ignore errors, some nodes fail to access the repos
   set +e
-  sudo apt-get update
+  sudo apt-get -qq update
   set -e
 }
 
-install_docker() {
+install_docker() (
   # SNAP_CHANNEL may be set by the caller, or replaced in CI
   DOCKER_SNAP_CHANNEL=$SNAP_CHANNEL
   if [[ -z "$DOCKER_SNAP_CHANNEL" ]]; then
     DOCKER_SNAP_CHANNEL="latest/edge"
   fi
 
+  set -x
+
   # install docker-snap
   sudo snap install docker --channel="$DOCKER_SNAP_CHANNEL"
 
-  # check the installation
-  sudo docker --version || exit 1
-}
+  # check the auto-connections
+  sudo snap connections docker
+)
 
-setup_classic() {
+setup_classic() (
   . /etc/os-release
   UBUNTU_VERSION="${VERSION_ID//./}"
 
+  set -x
+
   apt_update
-  sudo apt-get install -y curl
+  sudo apt-get -qqy install -y curl
 
   wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu$UBUNTU_VERSION/x86_64/cuda-keyring_1.1-1_all.deb
   sudo dpkg -i cuda-keyring_1.1-1_all.deb
 
   apt_update
-  sudo apt-get -y install cuda-toolkit-12-5
-  sudo apt-get install -y nvidia-driver-555-open
-  sudo apt-get install -y cuda-drivers-555
+  sudo apt-get -qqy install cuda-toolkit-12-8
+  sudo apt-get -qqy install nvidia-driver-555-open
+  sudo apt-get -qqy install cuda-drivers-555
 
   curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg &&
     curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list |
@@ -43,13 +47,14 @@ setup_classic() {
       sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
   apt_update
-  sudo apt-get install -y nvidia-container-toolkit
-}
+  sudo apt-get -qqy install nvidia-container-toolkit
+)
 
-setup_core() {
+setup_core() (
+  set -x
   sudo snap install nvidia-core22
   sudo snap install nvidia-assemble --channel 22/stable
-}
+)
 
 setup() {
   . /etc/os-release
@@ -67,6 +72,9 @@ setup() {
     exit 1
   fi
 }
+
+# Don't refresh while testing
+sudo snap refresh --hold=3h
 
 setup
 

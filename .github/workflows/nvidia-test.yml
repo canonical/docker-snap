@@ -1,9 +1,6 @@
 name: Nvidia Graphics Tests
 
 on:
-  # Uncomment this trigger only during workflow development
-  # pull_request:
-  #   branches: [ main ]
   # Manual trigger
   workflow_dispatch:
     inputs:
@@ -15,19 +12,25 @@ on:
         description: 'Publish to Store'
         default: true
         type: boolean
+      fail_fast:
+        description: 'Stop after first distro failure'
+        default: false
+        type: boolean
 
 jobs:
     publish:
         if: ${{ inputs.publish == true }}
         runs-on: ubuntu-latest
         steps:
-            - name: Get the artifact
+            # Download snap artifact from a previous smoke-test/build GitHub Workflow run
+            - name: Download snap artifact
               uses: dawidd6/action-download-artifact@v8
               with:
                 run_id: ${{ inputs.run_id }}
                 name: docker_${{ inputs.run_id }}_amd64.snap
-
-            - name: Publish to Store
+            
+            # Publish snap to Store so it can be installed on the test devices
+            - name: Publish snap to Store
               uses: snapcore/action-publish@v1
               env:
                 SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
@@ -37,45 +40,45 @@ jobs:
 
     test:
         needs: publish
+        # Run also when previous job has been skipped (publish not required)
         if: ${{ always() && !failure() && !cancelled() }}
         runs-on: [self-hosted, testflinger]
+        strategy:
+          fail-fast: ${{ inputs.fail_fast }}
+          matrix:
+            distro: 
+              - noble
+              - core22-latest
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger
-          JOB_QUEUE: docker-nvidia
           SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
         steps:
+            - name: Event data
+              run: "echo ::notice::Snap channel: $SNAP_CHANNEL"
+
             - name: Checkout code
               uses: actions/checkout@v4
 
-            - name: Create Testflinger job queue
+            - name: Create Testflinger job
+              env:
+                JOB_QUEUE: docker-nvidia
+                DISTRO: ${{ matrix.distro }}
               run: |
 
-                targetDistros=("noble" "core22-latest")
-
-                for DISTRO in ${targetDistros[@]}; do
-                  export DISTRO
-
-                  envsubst '$JOB_QUEUE $DISTRO' \
-                    < $TESTFLINGER_DIR/nvidia-job.yaml \
-                    > $TESTFLINGER_DIR/nvidia-job-"$DISTRO".temp
-
-                  mv $TESTFLINGER_DIR/nvidia-job-"$DISTRO".temp $TESTFLINGER_DIR/nvidia-job-"$DISTRO".yaml
-                done
-
+                # Prepare job
+                envsubst '$JOB_QUEUE $DISTRO' \
+                  < $TESTFLINGER_DIR/nvidia-job.yaml \
+                  > $TESTFLINGER_DIR/nvidia-job.temp
+                mv $TESTFLINGER_DIR/nvidia-job.temp $TESTFLINGER_DIR/nvidia-job.yaml
+                
+                # Prepare setup script
                 envsubst '$SNAP_CHANNEL' \
                   < $TESTFLINGER_DIR/scripts/setup.sh \
                   > $TESTFLINGER_DIR/scripts/setup.temp
-
                 mv $TESTFLINGER_DIR/scripts/setup.temp $TESTFLINGER_DIR/scripts/setup.sh
 
-            - name: Submit Testflinger job for Ubuntu 24.04 (Noble)
+            - name: Run tests
               uses: canonical/testflinger/.github/actions/submit@main
               with:
                 poll: true
-                job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job-noble.yaml
-
-            - name: Submit Testflinger job for Ubuntu Core 22
-              uses: canonical/testflinger/.github/actions/submit@main
-              with:
-                poll: true
-                job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job-core22-latest.yaml
+                job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job.yaml
