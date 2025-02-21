@@ -33,7 +33,7 @@ force_umount() {
 }
 
 dir="$(mktemp -d)"
-# overlay needs a writable upperdir, lowerdir, workdir and a merged mountpoint
+# overlayfs: https://docs.kernel.org/filesystems/overlayfs.html#directories
 upper="$(mktemp -d)"
 lower="$(mktemp -d)"
 work="$(mktemp -d)"
