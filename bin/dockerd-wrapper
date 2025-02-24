@@ -44,9 +44,9 @@ trap "force_umount --no-mtab '$dir'; rm -rf '$dir'" EXIT
 # try mounting a few FS types to force the kernel to try loading modules
 yolo mount --no-mtab -t overlay /dev/null -olowerdir="$lower",upperdir="$upper",workdir="$work" "$dir" 
 force_umount --no-mtab "$dir"
-yolo mount --no-mtab -t aufs /dev/null "$extra_fs_params" "$dir" 
+yolo mount --no-mtab -t aufs /dev/null "$dir" 
 force_umount --no-mtab "$dir"
-yolo mount --no-mtab -t zfs /dev/null "$extra_fs_params" "$dir" 
+yolo mount --no-mtab -t zfs /dev/null "$dir" 
 force_umount --no-mtab "$dir"
 
 rm -rf "$dir" "$upper" "$lower" "$work"
