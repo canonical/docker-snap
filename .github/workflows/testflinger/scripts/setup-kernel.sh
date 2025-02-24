@@ -4,6 +4,11 @@ set -e
 core24() {
   set -x
   sudo snap refresh pc-kernel --channel=24/edge/nvidia-components-sdp
+  set +x
+
+  echo "Rebooting the device after a few seconds ..."
+  # Reboot the device in the background to avoid breaking the SSH connection prematurely
+  (sleep 3 && sudo reboot) &
 }
 
 install_kernel() {
@@ -20,5 +25,3 @@ install_kernel() {
 }
 
 install_kernel
-
-echo "A reboot is required!"
