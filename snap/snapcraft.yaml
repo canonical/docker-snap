@@ -20,6 +20,7 @@ layout:
     symlink: $SNAP/usr/libexec/docker/cli-plugins
 
 environment:
+  DEFAULT_DATA_ROOT: "$SNAP_COMMON/var-lib-docker"
   GIT_EXEC_PATH: "$SNAP/usr/lib/git-core"
   GIT_TEMPLATE_DIR: "$SNAP/usr/share/git-core/templates"
   # For nvidia support #
@@ -32,7 +33,6 @@ environment:
 plugs:
   home:
     read: all
-  removable-media:
   support:
     interface: docker-support
   privileged:
@@ -80,6 +80,7 @@ apps:
     command: bin/dockerd-wrapper
     daemon: simple
     plugs:
+      - removable-media
       - firewall-control
       - home
       - log-observe
@@ -94,6 +95,7 @@ apps:
   compose:
     command: usr/libexec/docker/cli-plugins/docker-compose
     plugs:
+      - removable-media
       - docker-cli
       - network
       - home

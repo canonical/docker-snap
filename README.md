@@ -33,6 +33,34 @@ If you are using Ubuntu Core 16, connect the `docker:home` plug as it's not auto
 sudo snap connect docker:home
 ```
 
+### Changing the data root directory
+
+In the `docker` snap, the default location for the [data-root](https://docs.docker.com/engine/daemon/#daemon-data-directory) directory is `$SNAP_COMMON/var-lib-docker`, which maps to `/var/snap/docker/common/var-lib-docker` based on the [snap data locations](https://snapcraft.io/docs/data-locations#heading--system).
+
+> [!WARNING]
+> By default, SnapD removes the snap's data locations and creates [snapshots](https://snapcraft.io/docs/snapshots) that serve as backup. 
+> Changing the root directory to a different path results in loss of snapshot functionalities, leaving you responsible for the management of those files.  
+  
+To modify the default location, use [snap configuration options](https://snapcraft.io/docs/configuration-in-snaps):  
+  
+**Get the current value:**  
+```shell
+sudo snap get docker data-root
+```  
+  
+**Set a new location:**  
+```shell
+sudo snap set docker data-root=<new-directory>
+```
+Make sure to use a location that the snap has access to, which is:
+- Inside the `$HOME` directory;
+- Within a snap-writable area, as described in the [data locations documentation](https://snapcraft.io/docs/data-locations).
+
+Then restart the dockerd service:
+```shell
+sudo snap restart docker.dockerd
+```
+
 ### Running Docker as normal user
 
 By default, Docker is only accessible with root privileges (`sudo`). If you want to use docker as a regular user, you need to add your user to the `docker` group. This isn't possible on Ubuntu Core because it disallows the addition of users to system groups [[1](https://forum.snapcraft.io/t/adding-users-to-system-groups-on-ubuntu-core/20109), [2](https://github.com/snapcore/core20/issues/72)].
