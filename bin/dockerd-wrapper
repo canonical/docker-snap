@@ -33,15 +33,23 @@ force_umount() {
 }
 
 dir="$(mktemp -d)"
-trap "force_umount --no-mtab '$dir'; rm -rf '$dir'" EXIT
-# try mounting a few FS types to force the kernel to try loading modules
-for t in aufs overlay zfs; do
-	yolo mount --no-mtab -t "$t" /dev/null "$dir"
-	force_umount --no-mtab "$dir"
-done
+# overlayfs: https://docs.kernel.org/filesystems/overlayfs.html#directories
+upper="$(mktemp -d)"
+lower="$(mktemp -d)"
+work="$(mktemp -d)"
+
 # inside our snap, we can't "modprobe" for whatever reason (probably no access to the .ko files)
 # so this forces the kernel itself to "modprobe" for these filesystems so that the modules we need are available to Docker
-rm -rf "$dir"
+trap "force_umount --no-mtab '$dir'; rm -rf '$dir'" EXIT
+# try mounting a few FS types to force the kernel to try loading modules
+yolo mount --no-mtab -t overlay /dev/null -olowerdir="$lower",upperdir="$upper",workdir="$work" "$dir" 
+force_umount --no-mtab "$dir"
+yolo mount --no-mtab -t aufs /dev/null "$dir" 
+force_umount --no-mtab "$dir"
+yolo mount --no-mtab -t zfs /dev/null "$dir" 
+force_umount --no-mtab "$dir"
+
+rm -rf "$dir" "$upper" "$lower" "$work"
 trap - EXIT
 
 # modify XDG_RUNTIME_DIR to be a snap writable dir underneath $SNAP_COMMON 
