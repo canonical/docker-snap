@@ -7,10 +7,9 @@ exec &> >(tee -a "${HOOK_LOG}")
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
-# Change the data-root
+# If the user unset the data-root, set it to the default
 data_root="$(snapctl get data-root)"
 if [ -z "$data_root" ] ; then
-    # If the user unset the data-root, set it to the default
     snapctl set data-root="${DEFAULT_DATA_ROOT}"
 fi
 
