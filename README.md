@@ -52,7 +52,7 @@ sudo snap get docker data-root
 ```shell
 sudo snap set docker data-root=<new-directory>
 ```
-Make sure to use a location that the snap has access, which is:
+Make sure to use a location that the snap has access to, which is:
 - Inside the `$HOME` directory;
 - Within a snap-writable area, as described in the [data locations documentation](https://snapcraft.io/docs/data-locations).
 
