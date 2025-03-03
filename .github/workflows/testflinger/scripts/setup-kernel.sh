@@ -3,7 +3,7 @@ set -e
 
 core24() {
   set -x
-  sudo snap refresh pc-kernel --channel=24/edge/nvidia-components-sdp
+  sudo snap refresh pc-kernel --channel=24/edge/nvidia-components-dev
   set +x
 
   echo "Rebooting the device after a few seconds ..."
