@@ -22,25 +22,30 @@ test_data:
     echo "List attached files"
     find $SCRIPTS
 
-    # On Ubuntu Core, kernel, core, snapd snaps get refreshed right after first boot,
+    echo "Testing device with IP: $DEVICE_IP"
+
+    # Don't refresh automatically
+    ssh ubuntu@$DEVICE_IP "sudo snap refresh --hold=3h --no-wait"
+    
+    # On UC22, the kernel, core, snapd snaps get refreshed right after first boot,
     # causing unexpected errors and triggering a reboot
+    # On UC24, the auto refresh starts after a delay while testing
+    echo "Force refresh snaps for consistency"
+    ssh ubuntu@$DEVICE_IP "sudo snap refresh --no-wait"
+
+    # Refresh of some system snaps stops SnapD and schedules a reboot
     while ! ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/check-snap-changes.sh)"; do
-      echo "Wait for ssh server and/or snap changes..."
+      echo "Waiting for ssh server and snap changes ..."
       sleep 30
     done
-
-    # Don't refresh while testing
-    ssh ubuntu@$DEVICE_IP "sudo snap refresh --hold=3h"
 
     echo "Set up the right kernel"
     ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/setup-kernel.sh)"
 
     while ! ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/check-snap-changes.sh)"; do
-      echo "Wait for ssh server and/or snap changes..."
+      echo "Waiting for ssh server and snap changes ..."
       sleep 30
     done
-
-    echo "Testing device with IP: $DEVICE_IP"
 
     echo "Setup the environment on the target device"
     ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/setup.sh)"
@@ -50,7 +55,7 @@ test_data:
     ssh ubuntu@$DEVICE_IP "(sleep 3 && sudo reboot) &"
 
     while ! ssh ubuntu@$DEVICE_IP "sudo docker version"; do
-      echo "Wait for ssh server and/or Docker daemon..."
+      echo "Waiting for ssh server and Docker daemon ..."
       sleep 30
     done
     
