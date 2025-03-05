@@ -325,7 +325,7 @@ parts:
     source: https://github.com/docker/compose.git
     # https://github.com/docker/docker-ce-packaging/blob/master/common.mk // reference URL
     # https://github.com/moby/moby/blob/v28.0.1/Dockerfile#L16 // Fetch from
-    source-tag: v2.33.1
+    source-tag: v2.33.1 # Ahead of Moby because of https://github.com/canonical/docker-snap/issues/251
     source-depth: 1
     override-build: |
       make build
