@@ -63,17 +63,18 @@ sudo snap restart docker.dockerd
 
 ### Docker Snap Aliases
 
-[Snap aliases](https://snapcraft.io/docs/commands-and-aliases) are part of snap ecosystem.
-When installing Docker from the [store](https://snapcraft.io/) the alias `docker-compose` gets automatically set pointing to `docker.compose`.
+[Snap aliases](https://snapcraft.io/docs/commands-and-aliases) are part of the Snap ecosystem.  
+When installing Docker from the [Snap Store](https://snapcraft.io/), the alias `docker-compose` is automatically created, pointing to `docker.compose`.  
 
-That can be checked running:
+You can verify this by running:  
 
 ```console
 $ snap aliases docker
 Command         Alias           Notes
 docker.compose  docker-compose  -
-```
+```  
 
+Although the [migration to Compose V2](https://docs.docker.com/compose/releases/migrate/) deprecates the `docker-compose` command in favor of `docker compose`, the alias still exists for backward compatibility.
 
 ### Running Docker as normal user
 
