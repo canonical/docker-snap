@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # install jq
-apt update && apt install jq snapd -y
+apt update -qq && apt install jq snapd -y
 
 # make the docker group
 addgroup --system docker
