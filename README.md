@@ -61,6 +61,20 @@ Then restart the dockerd service:
 sudo snap restart docker.dockerd
 ```
 
+### Docker Snap Aliases
+
+[Snap aliases](https://snapcraft.io/docs/commands-and-aliases) are part of snap ecosystem.
+When installing Docker from the [store](https://snapcraft.io/) the alias `docker-compose` gets automatically set pointing to `docker.compose`.
+
+That can be checked running:
+
+```console
+$ snap aliases docker
+Command         Alias           Notes
+docker.compose  docker-compose  -
+```
+
+
 ### Running Docker as normal user
 
 By default, Docker is only accessible with root privileges (`sudo`). If you want to use docker as a regular user, you need to add your user to the `docker` group. This isn't possible on Ubuntu Core because it disallows the addition of users to system groups [[1](https://forum.snapcraft.io/t/adding-users-to-system-groups-on-ubuntu-core/20109), [2](https://github.com/snapcore/core20/issues/72)].
