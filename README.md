@@ -33,6 +33,9 @@ If you are using Ubuntu Core 16, connect the `docker:home` plug as it's not auto
 sudo snap connect docker:home
 ```
 
+The `docker-compose` [alias](https://snapcraft.io/docs/commands-and-aliases) was set automatically for Compose V1 and remains for backwards-compatiblity.
+The recommended command-line syntax since Compose V2 is `docker compose` as described on the [Docker's official documentation](https://docs.docker.com/compose/releases/migrate/).
+
 ### Changing the data root directory
 
 In the `docker` snap, the default location for the [data-root](https://docs.docker.com/engine/daemon/#daemon-data-directory) directory is `$SNAP_COMMON/var-lib-docker`, which maps to `/var/snap/docker/common/var-lib-docker` based on the [snap data locations](https://snapcraft.io/docs/data-locations#heading--system).
@@ -60,21 +63,6 @@ Then restart the dockerd service:
 ```shell
 sudo snap restart docker.dockerd
 ```
-
-### Docker Snap Aliases
-
-[Snap aliases](https://snapcraft.io/docs/commands-and-aliases) are part of the Snap ecosystem.  
-When installing Docker from the [Snap Store](https://snapcraft.io/), the alias `docker-compose` is automatically created, pointing to `docker.compose`.  
-
-You can verify this by running:  
-
-```console
-$ snap aliases docker
-Command         Alias           Notes
-docker.compose  docker-compose  -
-```  
-
-Although the [migration to Compose V2](https://docs.docker.com/compose/releases/migrate/) deprecates the `docker-compose` command in favor of `docker compose`, the alias still exists for backward compatibility.
 
 ### Running Docker as normal user
 
