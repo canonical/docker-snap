@@ -34,7 +34,7 @@ sudo snap connect docker:home
 ```
 
 The `docker-compose` [alias](https://snapcraft.io/docs/commands-and-aliases) was set automatically for Compose V1 and remains for backwards-compatiblity.
-The recommended command-line syntax since Compose V2 is `docker compose` as described on the [Docker's official documentation](https://docs.docker.com/compose/releases/migrate/).
+The recommended command-line syntax since Compose V2 is `docker compose` as described [here](https://docs.docker.com/compose/releases/migrate/).
 
 ### Changing the data root directory
 
