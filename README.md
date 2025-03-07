@@ -33,6 +33,9 @@ If you are using Ubuntu Core 16, connect the `docker:home` plug as it's not auto
 sudo snap connect docker:home
 ```
 
+The `docker-compose` [alias](https://snapcraft.io/docs/commands-and-aliases) was set automatically for Compose V1 and remains for backwards-compatiblity.
+The recommended command-line syntax since Compose V2 is `docker compose` as described [here](https://docs.docker.com/compose/releases/migrate/).
+
 ### Changing the data root directory
 
 In the `docker` snap, the default location for the [data-root](https://docs.docker.com/engine/daemon/#daemon-data-directory) directory is `$SNAP_COMMON/var-lib-docker`, which maps to `/var/snap/docker/common/var-lib-docker` based on the [snap data locations](https://snapcraft.io/docs/data-locations#heading--system).
