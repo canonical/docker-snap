@@ -93,11 +93,11 @@ Docker should function normally, with the following caveats:
 
   * If you are using Ubuntu Core 16, you'll need to work within a subfolder of `$HOME` that is readable by root; see [#8](https://github.com/docker/docker-snap/issues/8).
 
-  * If you need `docker` to interact with removable media (external storage drives) for use in containers, volumes, images, or any other Docker-related operations, you must connect the [removable-media interface](https://snapcraft.io/docs/removable-media-interface) to the snap:  
+* If you need `docker` to interact with removable media (external storage drives) for use in containers, volumes, images, or any other Docker-related operations, you must connect the [removable-media interface](https://snapcraft.io/docs/removable-media-interface) to the snap:  
 
-    ```shell
-    sudo snap connect docker:removable-media
-    ```
+  ```shell
+  sudo snap connect docker:removable-media
+  ```
 
 * Additional certificates used by the Docker daemon to authenticate with registries need to be located in `/var/snap/docker/common/etc/certs.d` instead of `/etc/docker/certs.d`.
 
