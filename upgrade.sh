@@ -2,6 +2,11 @@
 
 set -eux
 
+# yq preserving blank lines
+yq_p() {
+  yq "$1" "$2" | diff -wB "$2" - | patch "$2" -
+}
+
 fetch_latest() {
   # Fetch latest version from Github releases API
   LATEST=$(curl -s "https://api.github.com/repos/moby/moby/releases?per_page=1" | jq -r '.[0].tag_name')
@@ -89,7 +94,7 @@ main() {
   done
 
   # Replace the `version:` field with the value of $SNAP_VERSION
-  yq -i ".version = \"$SNAP_VERSION\"" "$yaml_file"
+  yq_p ".version = \"$SNAP_VERSION\"" "$yaml_file"
 
   # Replace fields in YAML using a loop
   declare -A yaml_updates=(
@@ -103,11 +108,11 @@ main() {
   )
 
   for part in "${!yaml_updates[@]}"; do
-    yq -i ".parts.${part} = \"${yaml_updates[$part]}\"" "$yaml_file"
+    yq_p ".parts.${part} = \"${yaml_updates[$part]}\"" "$yaml_file"
   done
 
   # Replace `build-snaps` for `engine` with $GO_VERSION
-  yq -i '.parts.engine."build-snaps"[0] |= sub("[0-9]+\.[0-9]+", "'"$GO_VERSION"'")' "$yaml_file"
+  yq_p '.parts.engine."build-snaps"[0] |= sub("[0-9]+\.[0-9]+", "'"$GO_VERSION"'")' "$yaml_file"
 
   # Replace the remaining comments
   sed -i "s/moby\/blob\/$CURRENT/moby\/blob\/$LATEST/g" "$yaml_file"
