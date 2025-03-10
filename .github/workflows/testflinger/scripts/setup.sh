@@ -50,32 +50,42 @@ setup_classic() (
   sudo apt-get -qqy install nvidia-container-toolkit
 )
 
-setup_core() (
+setup_core22() (
   set -x
   sudo snap install nvidia-core22
   sudo snap install nvidia-assemble --channel 22/stable
 )
 
-setup() {
-  . /etc/os-release
-
-  install_docker
-
-  if [[ $ID == "ubuntu" ]]; then
-    setup_classic
-
-  elif [[ $ID == "ubuntu-core" ]]; then
-    setup_core
-
-  else
-    echo "Unexpected operating system ID: $ID"
-    exit 1
-  fi
+setup_core24() {
+  set -x
+  # Install kernel components. 
+  sudo snap install pc-kernel+nvidia-550-ko
+  sudo snap install pc-kernel+nvidia-550-user
+  
+  sudo snap install mesa-2404
 }
 
-# Don't refresh while testing
-sudo snap refresh --hold=3h
+install_dependencies() {
+  . /etc/os-release
 
-setup
+  case "$ID-$VERSION_ID" in
+    ubuntu-24.04)
+      setup_classic
+      ;;
+    ubuntu-core-22)
+      setup_core22
+      ;;
+    ubuntu-core-24)
+      setup_core24
+      ;;
+    *)
+      echo "Unsupported OS / version: $ID $VERSION_ID"
+      exit 1
+      ;;
+  esac
+}
+
+install_dependencies
+install_docker
 
 echo "A reboot is required!"
