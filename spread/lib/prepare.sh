@@ -4,7 +4,7 @@
 if [ -n "$SNAP_CHANNEL" ] ; then
 	# Don't reinstall if we have it installed already
 	if ! snap list | grep docker ; then
-		snap install --$SNAP_CHANNEL docker
+		snap install docker --channel=$SNAP_CHANNEL
         snap connect docker:home :home
 	fi
 else
