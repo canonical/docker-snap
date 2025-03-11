@@ -56,14 +56,14 @@ setup_core22() (
   sudo snap install nvidia-assemble --channel 22/stable
 )
 
-setup_core24() {
+setup_core24() (
   set -x
   # Install kernel components. 
   sudo snap install pc-kernel+nvidia-550-ko
   sudo snap install pc-kernel+nvidia-550-user
   
   sudo snap install mesa-2404
-}
+)
 
 install_dependencies() {
   . /etc/os-release
