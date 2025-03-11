@@ -1,9 +1,12 @@
-#!/bin/bash -eu
+#!/bin/bash -e
 
 temp_job=nvidia-job.yaml.tmp
 temp_setup=setup.sh.tmp
 
-echo "Inputs: $JOB_QUEUE $DISTRO $SNAP_CHANNEL"
+# Inputs
+echo "Job queue: $JOB_QUEUE"
+echo "Distro: $DISTRO"
+echo "Snap channel: $SNAP_CHANNEL"
 
 # Replace env vars with inputs
 envsubst '$JOB_QUEUE $DISTRO' < nvidia-job.yaml > $temp_job

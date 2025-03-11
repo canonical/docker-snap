@@ -6,15 +6,23 @@ smi_test() (
   . /etc/os-release
 
   set -x
-  
-  if [[ $ID == "ubuntu" ]]; then
-    sudo docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin" ubuntu nvidia-smi || true
-  elif [[ $ID == "ubuntu-core" ]]; then
-    sudo docker run --rm --runtime nvidia --gpus all ubuntu bash -c "/snap/docker/*/graphics/bin/nvidia-smi" || true
-  else
-    echo "Unexpected operating system ID: $ID"
-    exit 1
-  fi
+
+  case "$ID-$VERSION_ID" in
+    ubuntu-24.04)
+      sudo docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin" ubuntu nvidia-smi || true
+      ;;
+    ubuntu-core-22)
+      sudo docker run --rm --runtime nvidia --gpus all ubuntu bash -c "/snap/docker/*/graphics/bin/nvidia-smi" || true
+      ;;
+    ubuntu-core-24)
+      # Run nvidia-smi from the kernel snap
+      LD_LIBRARY_PATH=/var/snap/pc-kernel/common/kernel-gpu-2404/usr/lib/x86_64-linux-gnu/ /var/snap/pc-kernel/common/kernel-gpu-2404/usr/bin/nvidia-smi || true
+      ;;
+    *)
+      echo "Unsupported OS / version: $ID $VERSION_ID"
+      exit 1
+      ;;
+  esac
 )
 
 # Test a vector addition sample workload
