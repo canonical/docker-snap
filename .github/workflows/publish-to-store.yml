@@ -1,4 +1,4 @@
-name: Publish
+name: Publish To Snap Store
 
 on:
   # Uncomment this trigger only during workflow development
