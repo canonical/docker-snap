@@ -184,8 +184,8 @@ jobs:
       - name: Stop container
         run: |
           trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
-          sudo docker run --rm --name test -e POSTGRES_PASSWORD=pass -d postgres
-          sleep 30
+          docker run --rm -d --name test bash bash -c 'cleanup(){ sleep 60; }; trap cleanup SIGTERM SIGINT SIGHUP SIGQUIT; while true; do sleep 1; done'
+          sleep 5
           sudo docker stop test
 
       - name: Docker Build
