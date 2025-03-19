@@ -49,6 +49,11 @@ jobs:
                 run_id: ${{ needs.find-run-id.outputs.run_id }}
                 name: docker_${{ needs.find-run-id.outputs.run_id }}_amd64.snap
 
+            - name: Event data
+              env:
+                SNAP_CHANNEL: ${{ needs.find-run-id.outputs.run_id }}
+              run: "echo ::notice::Published Channel: $SNAP_CHANNEL"
+
             - name: Publish to Store
               uses: snapcore/action-publish@v1
               env:
