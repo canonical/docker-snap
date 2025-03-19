@@ -55,4 +55,4 @@ jobs:
                 SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
               with:
                 snap: docker_${{ needs.find-run-id.outputs.run_id }}_amd64.snap
-                release: latest/edge/pr-${{ inputs.pr_num }}
+                release: latest/edge/runid-${{ needs.find-run-id.outputs.run_id }}
