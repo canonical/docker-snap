@@ -9,7 +9,7 @@ on:
         default: false
         type: boolean
       run_id:
-        description: 'Channel'
+        description: 'Run ID'
         required: true
         type: string
 
