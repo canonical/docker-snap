@@ -1,18 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-workaround_apparmor_profile_reload() {
-	local aa_profile_reloaded="$SNAP_COMMON/profile_reloaded"
-	# https://github.com/docker/docker-snap/issues/4
-	if [ ! -f "$aa_profile_reloaded" ]; then
-		local aa_count
-		if aa_count="$(grep -c 'docker-default (enforce)' /sys/kernel/security/apparmor/profiles)" && [ -n "$aa_count" ] && [ "$aa_count" -ge 1 ]; then
-			export DOCKER_AA_RELOAD=1
-			touch "$aa_profile_reloaded"
-		fi
-	fi
-}
-
 default_socket_group='docker'
 workaround_lp1606510() {
 	# ensure there's at least one member in the group.
@@ -68,8 +56,6 @@ run_dir="/run/snap.$SNAP_INSTANCE_NAME"
 mkdir -p "$run_dir"
 
 workaround_lp1606510
-
-workaround_apparmor_profile_reload
 
 data_root="$(snapctl get data-root)"
 
