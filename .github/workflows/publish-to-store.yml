@@ -1,0 +1,65 @@
+name: Publish
+
+on:
+  # Uncomment this trigger only during workflow development
+  # pull_request:
+  #   branches: [ main ]
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      pr_num:
+        # TODO: This needs to be PR number
+        description: 'PR Number'
+        required: true
+        type: number
+
+jobs:
+  find-run-id:
+    runs-on: ubuntu-latest
+    outputs:
+      run_id: ${{ steps.get-run-id.outputs.run_id }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: "${{ github.repository }}"
+      PR_NUMBER: "${{ inputs.pr_num }}"
+    steps:
+      - name: Get last workflow run ID for PR
+        id: get-run-id
+        run: |
+
+          # Fetch the latest workflow run for the given PR
+          RUN_ID=$(gh api \
+            "repos/$REPO/actions/runs?event=pull_request&status=success"
+            --jq ".workflow_runs[] | \
+            select(.pull_requests[].number == $PR_NUMBER) | .id" | head -n1)
+
+          if [ -z "$RUN_ID" ]; then
+            echo "No successful workflow run found for PR \#$PR_NUMBER"
+            exit 1
+          fi
+
+          echo "Found run_id: $RUN_ID"
+          echo "run_id=$RUN_ID" >> $GITHUB_ENV
+
+  publish:
+    needs: find-run-id
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the artifact
+        uses: dawidd6/action-download-artifact@v8
+        with:
+          run_id: ${{ needs.find-run-id.outputs.run_id }}
+          name: docker_${{ needs.find-run-id.outputs.run_id }}_amd64.snap
+
+      - name: Event data
+        env:
+          SNAP_CHANNEL: ${{ needs.find-run-id.outputs.run_id }}
+        run: "echo ::notice::Published Channel: $SNAP_CHANNEL"
+
+      - name: Publish to Store
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
+        with:
+          snap: docker_${{ needs.find-run-id.outputs.run_id }}_amd64.snap
+          release: latest/edge/runid-${{ needs.find-run-id.outputs.run_id }}
