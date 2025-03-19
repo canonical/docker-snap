@@ -32,7 +32,7 @@ jobs:
               --jq ".workflow_runs[] | select(.pull_requests[].number == $PR_NUMBER) | .id" | head -n1)
 
             if [ -z "$RUN_ID" ]; then
-              echo "No successful workflow run found for PR #$PR_NUMBER"
+              echo "No successful workflow run found for PR \#$PR_NUMBER"
               exit 1
             fi
 
