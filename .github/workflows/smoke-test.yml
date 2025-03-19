@@ -179,6 +179,15 @@ jobs:
       - name: Hello World (init)
         run: sudo docker run --rm --init hello-world
 
+      # NOTE: regression test for aa default profile reload issue 
+      # see: https://github.com/canonical/docker-snap/issues/36
+      - name: Stop container
+        run: |
+          trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
+          sudo docker run --rm --name test -e POSTGRES_PASSWORD=pass -d postgres
+          sleep 30
+          sudo docker stop test
+
       - name: Docker Build
         run: |
           sudo docker build --pull -t debian-hello - <<'EOF'
