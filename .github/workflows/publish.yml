@@ -21,7 +21,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         REPO: "${{ github.repository }}"
-        PR_NUMBER: "${{ inputs.pr_number }}"
+        PR_NUMBER: "${{ inputs.pr_num }}"
       steps:
         - name: Get last workflow run ID for PR
           id: get-run-id
