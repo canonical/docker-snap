@@ -7,7 +7,7 @@ license: (Apache-2.0 AND MIT AND GPL-2.0)
 grade: stable
 confinement: strict
 
-base: core22
+base: core24
 assumes:
   - snapd2.59.1
 
@@ -42,11 +42,17 @@ plugs:
     interface: docker
   opengl:
   # For nvidia userspace libs support #
+  gpu-2404:
+    interface: content
+    target: $SNAP/gpu-2404
+    # This is the only relevant provider, but leaving unspecified to prevent auto-installing of the providing snap #
+    # default-provider: mesa-2404
   graphics-core22:
     interface: content
     target: $SNAP/graphics
     # Currently, this is the only relevant provider, but cannot be default as not supported on all archs #
     #default-provider: nvidia-core22
+
 slots:
   config-ro:
     interface: content
@@ -88,6 +94,7 @@ apps:
       - network-control
       - privileged
       - support
+      - gpu-2404
       - graphics-core22
     slots:
       - docker-daemon
@@ -101,9 +108,13 @@ apps:
       - home
 
   nvidia-container-toolkit:
+    command-chain:
+      - bin/system-detection
+      - bin/gpu-2404-optional-wrapper
     command: bin/nvidia-container-toolkit
     daemon: oneshot
     plugs:
+      - gpu-2404
       - graphics-core22
     before:
       - dockerd
@@ -120,6 +131,9 @@ parts:
     organize:
       nvidia/lib: usr/share/nvidia-container-toolkit/lib
       nvidia/nvidia-container-toolkit: bin/
+      nvidia/nvidia-container-toolkit-connect-hook: bin/
+      nvidia/system-detection: bin/
+      nvidia/gpu-2404-optional-wrapper: bin/
     stage:
       - bin/*
       - config/daemon.json
@@ -221,7 +235,7 @@ parts:
   nvidia-container-toolkit:
     plugin: go
     source: https://github.com/NVIDIA/nvidia-container-toolkit.git
-    source-tag: v1.15.0
+    source-tag: v1.17.3
     source-depth: 1
     override-pull: &arch-restrict |
       [ "${CRAFT_ARCH_BUILD_FOR}" != "amd64" ] && \
@@ -235,6 +249,7 @@ parts:
     build-snaps: *go
     build-packages:
       - make
+      - libtirpc-dev
     organize:
       bin: usr/bin/
     stage:
@@ -244,7 +259,7 @@ parts:
   libnvidia-container:
     plugin: make
     source: https://github.com/NVIDIA/libnvidia-container.git
-    source-tag: v1.15.0
+    source-tag: v1.17.3
     source-depth: 1
     override-pull: *arch-restrict
     override-build: *arch-restrict
