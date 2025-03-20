@@ -182,7 +182,7 @@ jobs:
       # NOTE: regression test for aa default profile reload issue 
       # see: https://github.com/canonical/docker-snap/issues/36
       - name: Stop container
-        timeout-minutes: 3
+        timeout-minutes: 1
         run: |
           trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
           docker run --rm -d --name test bash bash -c 'cleanup(){ sleep 60; }; trap cleanup SIGTERM SIGINT SIGHUP SIGQUIT; while true; do sleep 1; done'
