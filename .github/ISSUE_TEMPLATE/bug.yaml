@@ -44,14 +44,18 @@ body:
 
             echo -e "\nSnapd information:"
             snap version
+
+            echo -e "\nSnapd snap pkg information:"
             snap list snapd
-            apt list snapd
+
+            echo -e "\nSnapd deb pkg information:"
+            apt list snapd 2>/dev/null | grep snapd
 
             echo -e "\nAppArmor ABI version:"
             apparmor_parser --version
 
             echo -e "\nAppArmor deb pkg version:"
-            apt list apparmor
+            apt list apparmor 2>/dev/null | grep apparmor
 
             echo -e "\nOS release:"
             cat /etc/os-release
