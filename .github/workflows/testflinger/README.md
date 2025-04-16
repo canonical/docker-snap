@@ -15,9 +15,9 @@ Set the input variables and execute the script from the same directory:
 ```bash
 JOB_QUEUE=docker-nvidia SNAP_CHANNEL=latest/edge DISTRO=noble ./run.sh
 ```
-The above replaces the inputs in the scripts and submits the Testflinger job.
+The command above replaces the inputs in the scripts and submits the Testflinger job.
 
-Set the `--dryrun` flag to generate the scripts without submitting the job.
+To generate the scripts without submitting the job, set the `--dryrun` flag.
 This is useful if you plan to make manual modifications to the job.
 
 ## Run via Github Workflow
