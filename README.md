@@ -169,16 +169,11 @@ or
 docker run --rm --runtime nvidia --env NVIDIA_VISIBLE_DEVICES=all {cuda-container-image-name}
 ```
 
-If your container image already has appropriate environment variables set, may be able to just specify the nvidia runtime with no additional args required.
+If your container image already has appropriate environment variables set, you may be able to just specify the nvidia runtime with no additional args required.
 
-Please refer to [this guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html) for mode detail regarding environment variables that can be used.
-
-*NOTE*: library path and discovery is automatically handled, but binary paths are not, so if you wish to test using something like the `nvidia-smi` binary passed into the container from the host, you could either specify the full path or set the PATH environment variable.
-
-e.g.
-
+You may run `nvidia-smi` to validate the environment set up from a temporary container:
 ```
-docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin" ubuntu nvidia-smi
+docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
 ```
 
 ## Development
