@@ -108,9 +108,6 @@ apps:
     before:
       - dockerd
 
-  help:
-    command: bin/help
-
 parts:
   wrapper-scripts:
     plugin: dump
