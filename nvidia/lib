@@ -61,10 +61,14 @@ cdi_generate () {
 
     # Default CDI libs search path and shell path for install on core systems #
     CONTENT_PATH="/usr"
-    # UC24 #
-    [ -n "${NVIDIA_DRIVER_ROOT:-}" ] && CONTENT_PATH="${NVIDIA_DRIVER_ROOT}/usr"
-    # UC22 #
-    [ -d "${SNAP}/graphics/lib/${ARCH_TRIPLET}" ] && CONTENT_PATH="${SNAP}/graphics"
+    
+    if [ -n "${NVIDIA_DRIVER_ROOT:-}" ]; then # UC24
+        # NVIDIA_DRIVER_ROOT comes from the pc-kernel snap, through mesa-2404
+        CONTENT_PATH="${NVIDIA_DRIVER_ROOT}/usr"
+    elif [ -d "${SNAP}/graphics/lib/${ARCH_TRIPLET}" ]; then # UC22
+        CONTENT_PATH="${SNAP}/graphics"
+    fi
+    echo "CONTENT_PATH=${CONTENT_PATH}"
 
     # FIXME: if UC24, can we just rely on the wrapper env instead of these vars ?
     CDI_LIB_SEARCH_PATH="${CONTENT_PATH}/lib/${ARCH_TRIPLET}"
