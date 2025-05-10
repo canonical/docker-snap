@@ -12,7 +12,7 @@ execute: |
 
     # host machine
     os=$(sudo docker info | grep  "Operating System" | awk -F ': ' '{print $2}')
-    [ "$os" = "Ubuntu Core 16" ] || exit 1
+    [ "$os" = "Ubuntu Core 22" ] || exit 1
 
     # storage backend driver
     driver=$(sudo docker info | grep  "Storage Driver" | awk -F ': ' '{print $2}')
