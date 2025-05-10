@@ -1,2 +1,2 @@
 #!/bin/bash
-exec "${SNAP}/bin/nvidia-container-toolkit-connect-hook"
+. "${SNAP}/bin/nvidia-container-toolkit-connect-hook"

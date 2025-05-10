@@ -10,17 +10,14 @@ if [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] ; then
 fi
 
 if [ "${NVIDIA_SUPPORT_CORE}" == "true" ] ; then
+    if snapctl is-connected gpu-2404; then
+        exec "${SNAP}/gpu-2404/bin/gpu-2404-provider-wrapper" "$@"
+    fi
+
     # Core 22 does not require this wrapper #
     if snapctl is-connected graphics-core22  ; then
         exec "$@"
     fi
 
-    # Anthing else requires it #
-    if ! snapctl is-connected gpu-2404 ; then
-        echo "Skipping gpu-2404 setup for nvidia, as gpu-2404 is not connected"
-        echo "If you want nvidia support, please refer to https://github.com/canonical/docker-snap for more information"
-        exit 0
-    fi
+    exit_inf "GPU user-space content provider not connected."
 fi
-
-exec "${SNAP}/gpu-2404/bin/gpu-2404-provider-wrapper" "$@"
