@@ -58,9 +58,11 @@ setup_core22() (
 
 setup_core24() (
   set -x
+  snap components pc-kernel
+
   # Install kernel components. 
-  sudo snap install pc-kernel+nvidia-550-ko
-  sudo snap install pc-kernel+nvidia-550-user
+  sudo snap install pc-kernel+nvidia-550-erd-ko
+  sudo snap install pc-kernel+nvidia-550-erd-user
   
   sudo snap install mesa-2404
 )

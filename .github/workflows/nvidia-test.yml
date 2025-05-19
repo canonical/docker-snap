@@ -49,8 +49,7 @@ jobs:
             distro: 
               - noble
               - core22-latest
-              # Skip, pending https://github.com/canonical/docker-snap/pull/260
-              # - core24-latest
+              - core24-latest
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger
           SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
