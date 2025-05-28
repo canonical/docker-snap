@@ -229,7 +229,8 @@ parts:
     override-build: *arch-restrict
     override-stage: *arch-restrict
     override-prime: *arch-restrict
-    build-snaps: *go
+    build-snaps:
+      - go/1.23/stable
     build-packages:
       - make
     organize:
