@@ -218,7 +218,7 @@ parts:
   nvidia-container-toolkit:
     plugin: go
     source: https://github.com/NVIDIA/nvidia-container-toolkit.git
-    source-tag: v1.15.0
+    source-tag: v1.17.7
     source-depth: 1
     override-pull: &arch-restrict |
       [ "${CRAFT_ARCH_BUILD_FOR}" != "amd64" ] && \
@@ -241,7 +241,7 @@ parts:
   libnvidia-container:
     plugin: make
     source: https://github.com/NVIDIA/libnvidia-container.git
-    source-tag: v1.15.0
+    source-tag: v1.17.7
     source-depth: 1
     override-pull: *arch-restrict
     override-build: *arch-restrict
