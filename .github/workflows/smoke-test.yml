@@ -205,8 +205,7 @@ jobs:
         # see: https://github.com/canonical/docker-snap/issues/281
       - name: Pull image that write to /snap
         run: |
-          # This image consists only on two directories: `/potato-salad` and `/snap`
-          sudo docker pull ghcr.io/locnnil/drc:pts
+          sudo docker pull ghcr.io/canonical/snapcraft:7_core22
 
       - name: Docker Build (git)
         run: |
