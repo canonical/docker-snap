@@ -1,0 +1,33 @@
+From 7e4f329c35fc5861d09559fa53cf274af3ed013b Mon Sep 17 00:00:00 2001
+From: Lincoln Wallace <lincoln.wallace@canonical.com>
+Date: Wed, 11 Jun 2025 23:13:40 -0300
+Subject: [PATCH] use realchroot fallback func
+
+Signed-off-by: Lincoln Wallace <lincoln.wallace@canonical.com>
+---
+ .../go-archive/internal/mounttree/switchroot_linux.go    | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/vendor/github.com/moby/go-archive/internal/mounttree/switchroot_linux.go b/vendor/github.com/moby/go-archive/internal/mounttree/switchroot_linux.go
+index 31a8e0ed7a..c4cda9cbfe 100644
+--- a/vendor/github.com/moby/go-archive/internal/mounttree/switchroot_linux.go
++++ b/vendor/github.com/moby/go-archive/internal/mounttree/switchroot_linux.go
+@@ -23,6 +23,15 @@ func SwitchRoot(path string) error {
+ 		}
+ 	}
+ 
++	// See: https://github.com/canonical/docker-snap/issues/281
++	// During the container extraction layers, if any image has
++	// or creates the `/snap` directory, due to the pivot_root(2)
++	// syscall, the aa profile `snap.docker.dockerd` end up being
++	// activated on the 'new' root environment.
++	if os.Getenv("SNAP") != "" {
++		return realChroot(path)
++	}
++
+ 	// setup oldRoot for pivot_root
+ 	pivotDir, err := os.MkdirTemp(path, ".pivot_root")
+ 	if err != nil {
+-- 
+2.43.0
+
