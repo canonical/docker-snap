@@ -1,5 +1,5 @@
 name: docker
-version: '28.1.1'
+version: '28.1.1+1'
 summary: Docker container runtime
 description: Refer to https://snapcraft.io/docker
 license: (Apache-2.0 AND MIT AND GPL-2.0)
