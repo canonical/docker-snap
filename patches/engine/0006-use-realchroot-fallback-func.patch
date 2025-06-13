@@ -15,12 +15,15 @@ index 31a8e0ed7a..c4cda9cbfe 100644
 @@ -23,6 +23,15 @@ func SwitchRoot(path string) error {
  		}
  	}
- 
+
++	// This patch forces the use of the chroot(2) instead of pivot_root(2).
++	//
++	// During a docker pull, AppArmor denies operations related to the creation
++	// of /snap directory in an image layer.
++	// This is resulted by the pivot_root(2) syscall perfomed durnig
++	// the extraction of the image layer, confusing AppArmor to enforce
++	// the rules of snap.docker.dockerd profile on the wrong root environment.
 +	// See: https://github.com/canonical/docker-snap/issues/281
-+	// During the container extraction layers, if any image has
-+	// or creates the `/snap` directory, due to the pivot_root(2)
-+	// syscall, the aa profile `snap.docker.dockerd` end up being
-+	// activated on the 'new' root environment.
 +	if os.Getenv("SNAP") != "" {
 +		return realChroot(path)
 +	}
