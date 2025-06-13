@@ -1,26 +1,26 @@
-From 7e4f329c35fc5861d09559fa53cf274af3ed013b Mon Sep 17 00:00:00 2001
+From d9a1c998cc58f2b3f4566a9b67f1646b69a55139 Mon Sep 17 00:00:00 2001
 From: Lincoln Wallace <lincoln.wallace@canonical.com>
-Date: Wed, 11 Jun 2025 23:13:40 -0300
+Date: Fri, 13 Jun 2025 11:50:42 -0300
 Subject: [PATCH] use realchroot fallback func
 
 Signed-off-by: Lincoln Wallace <lincoln.wallace@canonical.com>
 ---
- .../go-archive/internal/mounttree/switchroot_linux.go    | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ .../internal/mounttree/switchroot_linux.go           | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
 diff --git a/vendor/github.com/moby/go-archive/internal/mounttree/switchroot_linux.go b/vendor/github.com/moby/go-archive/internal/mounttree/switchroot_linux.go
-index 31a8e0ed7a..c4cda9cbfe 100644
+index 31a8e0ed7a..aa175bb4ef 100644
 --- a/vendor/github.com/moby/go-archive/internal/mounttree/switchroot_linux.go
 +++ b/vendor/github.com/moby/go-archive/internal/mounttree/switchroot_linux.go
-@@ -23,6 +23,15 @@ func SwitchRoot(path string) error {
+@@ -23,6 +23,18 @@ func SwitchRoot(path string) error {
  		}
  	}
-
+ 
 +	// This patch forces the use of the chroot(2) instead of pivot_root(2).
 +	//
 +	// During a docker pull, AppArmor denies operations related to the creation
-+	// of /snap directory in an image layer.
-+	// This is resulted by the pivot_root(2) syscall perfomed durnig
++	// of a /snap directory in an image layer.
++	// This is caused by the pivot_root(2) syscall performed during
 +	// the extraction of the image layer, confusing AppArmor to enforce
 +	// the rules of snap.docker.dockerd profile on the wrong root environment.
 +	// See: https://github.com/canonical/docker-snap/issues/281
