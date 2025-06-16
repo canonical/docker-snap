@@ -12,9 +12,7 @@ NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
 NVIDIA_SUPPORT_CLASSIC="false"
 [ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ] && NVIDIA_SUPPORT_CLASSIC="true"
 
-if snapctl is-connected gpu-2404; then
-    NVIDIA_SUPPORT_CORE="true"
-elif snapctl is-connected graphics-core22; then
+if snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22; then
     NVIDIA_SUPPORT_CORE="true"
 else
     NVIDIA_SUPPORT_CORE="false"
