@@ -13,7 +13,7 @@ NVIDIA_SUPPORT_CLASSIC="false"
 NVIDIA_SUPPORT_CORE="false"
 
 if [ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ]; then
-  NVIDIA_SUPPORT_CLASSIC="true"
+    NVIDIA_SUPPORT_CLASSIC="true"
 elif snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22; then
     NVIDIA_SUPPORT_CORE="true"
 else
