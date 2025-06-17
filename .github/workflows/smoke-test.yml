@@ -53,8 +53,6 @@ jobs:
             os: ubuntu-24.04
           - arch: amd64
             os: ubuntu-22.04
-          - arch: amd64
-            os: ubuntu-20.04
           - arch: arm64
             os: ubuntu-24.04-arm
           - arch: arm64
@@ -201,6 +199,13 @@ jobs:
           EOF
           sudo docker run --rm debian-hello
           sudo docker image rm debian-hello
+
+        # NOTE: regression test for check patch that forces
+        # use of chroot(2) syscall instaed of pivot_root(2)
+        # see: https://github.com/canonical/docker-snap/issues/281
+      - name: Pull image that write to /snap
+        run: |
+          sudo docker pull ghcr.io/canonical/snapcraft:7_core22
 
       - name: Docker Build (git)
         run: |

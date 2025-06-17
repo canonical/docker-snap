@@ -36,14 +36,14 @@ body:
         Kindly copy **all** the commands below, run them in your terminal,
         and share the results here.
           ```bash
-            echo -e "\nDocker snap information:"
-            snap list docker
+            echo -e "\nSnap information:"
+            snap list docker snapd
 
             echo -e "\nPlug Connections:"
             snap connections docker
 
-            echo -e "\nSnapd information:"
-            snap version
+            echo -e "\nAppArmor version:"
+            apparmor_parser --version
 
             echo -e "\nOS release:"
             cat /etc/os-release

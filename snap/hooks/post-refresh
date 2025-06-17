@@ -18,7 +18,7 @@ fi
 
 # nvidia-conatiner-tooolkit requires either core or classic support #
 # If either are present, enable the service, else disable the service #
-if [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" -o "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] ; then
+if [[ "$NVIDIA_SUPPORT_CLASSIC" == "true" || "$NVIDIA_SUPPORT_CORE" == "true" ]]; then
     snapctl start --enable "${SNAP_NAME}.nvidia-container-toolkit"
 else
     snapctl stop --disable "${SNAP_NAME}.nvidia-container-toolkit"

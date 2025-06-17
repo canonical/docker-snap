@@ -12,9 +12,11 @@ NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
 NVIDIA_SUPPORT_CLASSIC="false"
 [ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ] && NVIDIA_SUPPORT_CLASSIC="true"
 
-NVIDIA_SUPPORT_CORE="false"
-snapctl is-connected gpu-2404 && NVIDIA_SUPPORT_CORE="true"
-snapctl is-connected graphics-core22 && NVIDIA_SUPPORT_CORE="true"
+if snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22; then
+    NVIDIA_SUPPORT_CORE="true"
+else
+    NVIDIA_SUPPORT_CORE="false"
+fi
 
 
 device_wait() {
@@ -82,7 +84,18 @@ cdi_generate () {
         CDI_PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin"
     fi
 
-    XDG_DATA_DIRS="${XDG_DATA_DIRS:-}:${CDI_CONFIG_SEARCH_PATH}" LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${CDI_LIB_SEARCH_PATH}" PATH="${CDI_PATH}" "${SNAP}/usr/bin/nvidia-ctk" cdi generate --nvidia-ctk-path "${SNAP}/usr/bin/nvidia-ctk" --library-search-path "${CDI_LIB_SEARCH_PATH}" --device-name-strategy "${CDI_DEVICE_NAME_STRATEGY}" --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
+    # Generate the CDI spec
+    XDG_DATA_DIRS="${XDG_DATA_DIRS:-}:${CDI_CONFIG_SEARCH_PATH}" LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${CDI_LIB_SEARCH_PATH}" PATH="${CDI_PATH}" \
+     "${SNAP}/usr/bin/nvidia-ctk" cdi generate \
+     --nvidia-ctk-path "${SNAP}/usr/bin/nvidia-ctk" \
+     --library-search-path "${CDI_LIB_SEARCH_PATH}" \
+     --device-name-strategy "${CDI_DEVICE_NAME_STRATEGY}" \
+     --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
+
+    if [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] ; then
+        # Replace container path for binaries such as nvidia-smi to make them discoverable from the default PATH
+        sed -i "s|containerPath: /var/lib/snapd/hostfs/usr/bin|containerPath: /usr/bin|g" "${SNAP_DATA}/etc/cdi/nvidia.yaml"
+    fi
 }
 
 # Create the nvidia runtime config, either snap default or custom #

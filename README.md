@@ -169,16 +169,11 @@ or
 docker run --rm --runtime nvidia --env NVIDIA_VISIBLE_DEVICES=all {cuda-container-image-name}
 ```
 
-If your container image already has appropriate environment variables set, may be able to just specify the nvidia runtime with no additional args required.
+If your container image already has appropriate environment variables set, you may be able to just specify the nvidia runtime with no additional args required.
 
-Please refer to [this guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html) for mode detail regarding environment variables that can be used.
-
-*NOTE*: library path and discovery is automatically handled, but binary paths are not, so if you wish to test using something like the `nvidia-smi` binary passed into the container from the host, you could either specify the full path or set the PATH environment variable.
-
-e.g.
-
+You may run `nvidia-smi` to validate the environment set up from a temporary container:
 ```
-docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin" ubuntu nvidia-smi
+docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
 ```
 
 ## Development
@@ -230,3 +225,35 @@ The snap has various tests in place:
 - [Automated smoke testing via a Github workflow](.github/workflows/smoke-test.yml)
 - [Nvidia testing via Testflinger](.github/workflows/testflinger/README.md)
 - [Spread tests](spread.md)
+- [Checkbox tests](#checkbox)
+
+### Checkbox
+The Docker snap can be tested via [Checkbox](https://canonical-checkbox.readthedocs-hosted.com/en/stable/index.html).
+The checkbox project includes various Docker tests as part of a [dedicated provider](https://github.com/canonical/checkbox/tree/main/providers/docker).
+
+To run these tests against the Docker snap, install a revision of the snap:
+```shell
+sudo snap install docker --edge  
+```
+
+Then install a checkbox runtime and frontend:
+```shell
+sudo snap install checkbox22
+sudo snap install checkbox --channel 22.04/stable --classic
+```
+
+Finally, run `checkbox.checkbox-cli`, press `f` and filter Docker plans:
+```
+ Select test plan
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│    ( ) Automated tests of Docker functionality for EdgeX Foundry             │
+│    (X) Fully automated QA tests for Docker containers                        │
+│    ( ) Manual QA tests for Docker containers                                 │
+│    ( ) QA tests for Docker containers                                        │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+ Press <Enter> to continue                                             (H) Help
+```
+Select `Fully automated QA tests for Docker containers` and continue to run the tests.
