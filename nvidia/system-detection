@@ -3,6 +3,17 @@
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
+report_msg="Please consider reporting this issue at: https://github.com/canonical/docker-snap/issues"
+if [[ "${NVIDIA_SUPPORT_CLASSIC}" == "true" && "${NVIDIA_SUPPORT_CLASSIC}" == "true" ]]; then
+  exit_inf "Detected support for both classic and core systems. ${report_msg}"
+else if [[ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ]]; then
+  echo "Running on Classic system"
+else if  [[ "${NVIDIA_SUPPORT_CORE}" == "true" ]]; then
+  echo "Running on Ubuntu Core system"
+else
+  exit_inf "Unable to determine the system type. ${report_msg}"
+fi
+
 # Just exit if NVIDIA support is disabled #
 [ "${NVIDIA_SUPPORT_DISABLED}" != "true" ] || exit_inf "NVIDIA support disabled by user"
 
