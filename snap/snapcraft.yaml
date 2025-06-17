@@ -294,7 +294,7 @@ parts:
     plugin: make
     build-snaps: *go
     source: https://github.com/docker/cli.git
-    source-tag: v28.2.0-rc.2
+    source-tag: v28.2.2
     source-depth: 1
     override-build: |
       # docker build specific environment variables
