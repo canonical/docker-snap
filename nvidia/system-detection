@@ -15,7 +15,7 @@ else if snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22; t
     export NVIDIA_SUPPORT_CORE="true"
     echo "Running on Ubuntu Core system"
 else
-    exit_inf "Unable to determine the system type. Please consider reporting this issue at: https://github.com/canonical/docker-snap/issues"
+    exit_inf "No NVIDIA support detected. For NVIDIA support, please refer to https://github.com/canonical/docker-snap"
 fi
 
 # Just exit if NVIDIA support is disabled #
