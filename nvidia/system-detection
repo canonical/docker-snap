@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -u
 # Detect if nvidia support enabled, and available, for a system type #
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
