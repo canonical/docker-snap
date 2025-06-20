@@ -9,6 +9,7 @@ exec &> >(tee -a "${HOOK_LOG}")
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
+NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
 # Just exit if NVIDIA support is disabled #
 [ "${NVIDIA_SUPPORT_DISABLED}" != "true" ] || exit 0
 
