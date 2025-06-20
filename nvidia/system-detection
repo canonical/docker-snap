@@ -21,8 +21,4 @@ fi
 # Just exit if NVIDIA support is disabled #
 [ "${NVIDIA_SUPPORT_DISABLED}" != "true" ] || exit_inf "NVIDIA support disabled by user"
 
-if [[ "${NVIDIA_SUPPORT_CORE}" != "true" && "${NVIDIA_SUPPORT_CLASSIC}" != "true" ]]; then
-  exit_inf "No NVIDIA support detected. For NVIDIA support, please refer to https://github.com/canonical/docker-snap"
-fi
-
 exec "$@"
