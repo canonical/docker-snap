@@ -9,7 +9,7 @@ export NVIDIA_SUPPORT_CLASSIC="false"
 if [ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ]; then
     export NVIDIA_SUPPORT_CLASSIC="true"
     echo "Running on Classic system"
-else if snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22; then
+elif snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22; then
     export NVIDIA_SUPPORT_CORE="true"
     echo "Running on Ubuntu Core system"
 else
