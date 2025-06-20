@@ -3,8 +3,6 @@
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
-NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
-
 export NVIDIA_SUPPORT_CORE="false"
 export NVIDIA_SUPPORT_CLASSIC="false"
 
@@ -18,6 +16,7 @@ else
     exit_inf "No NVIDIA support detected. For NVIDIA support, please refer to https://github.com/canonical/docker-snap"
 fi
 
+NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
 # Just exit if NVIDIA support is disabled #
 [ "${NVIDIA_SUPPORT_DISABLED}" != "true" ] || exit_inf "NVIDIA support disabled by user"
 
