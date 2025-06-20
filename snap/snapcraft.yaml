@@ -110,7 +110,6 @@ apps:
   nvidia-container-toolkit:
     command-chain:
       - bin/system-detection
-      - bin/gpu-2404-optional-wrapper
     command: bin/nvidia-container-toolkit
     daemon: oneshot
     plugs:
