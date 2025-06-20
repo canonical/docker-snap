@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -u
 # Fork of wrapper at https://github.com/canonical/gpu-snap #
 # The provider-wrapper is required on core systems, not classic system #
 
