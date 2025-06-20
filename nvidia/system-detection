@@ -3,15 +3,19 @@
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
-report_msg="Please consider reporting this issue at: https://github.com/canonical/docker-snap/issues"
-if [[ "${NVIDIA_SUPPORT_CLASSIC}" == "true" && "${NVIDIA_SUPPORT_CLASSIC}" == "true" ]]; then
-  exit_inf "Detected support for both classic and core systems. ${report_msg}"
-else if [[ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ]]; then
-  echo "Running on Classic system"
-else if  [[ "${NVIDIA_SUPPORT_CORE}" == "true" ]]; then
-  echo "Running on Ubuntu Core system"
+NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
+
+export NVIDIA_SUPPORT_CORE="false"
+export NVIDIA_SUPPORT_CLASSIC="false"
+
+if [ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ]; then
+    export NVIDIA_SUPPORT_CLASSIC="true"
+    echo "Running on Classic system"
+else if snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22; then
+    export NVIDIA_SUPPORT_CORE="true"
+    echo "Running on Ubuntu Core system"
 else
-  exit_inf "Unable to determine the system type. ${report_msg}"
+    exit_inf "Unable to determine the system type. Please consider reporting this issue at: https://github.com/canonical/docker-snap/issues"
 fi
 
 # Just exit if NVIDIA support is disabled #
