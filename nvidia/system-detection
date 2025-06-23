@@ -20,6 +20,11 @@ else
     exit_inf "No NVIDIA support detected. For NVIDIA support, please refer to https://github.com/canonical/docker-snap"
 fi
 
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    # return at this point if the script is being sourced
+    return
+fi
+
 ## Running gpu-2404 wrapper for Core systems only ##
 
 # Classic does not require this wrapper #
