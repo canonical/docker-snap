@@ -13,7 +13,7 @@ nvidia_support_disabled() {
 }
 
 nvidia_support_core() {
-    if snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22; then true; else false; fi
+    snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22
 }
 
 nvidia_support_classic() {
