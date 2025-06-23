@@ -15,7 +15,13 @@ if [ ! -f "$SNAP_DATA/config/daemon.json" ]; then
 fi
 
 ## Only required in post-refresh ##
-
+NVIDIA_SUPPORT_CORE="false"
+NVIDIA_SUPPORT_CLASSIC="false"
+if [ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ]; then
+    NVIDIA_SUPPORT_CLASSIC="true"
+elif snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22; then
+    NVIDIA_SUPPORT_CORE="true"
+fi
 # nvidia-conatiner-tooolkit requires either core or classic support #
 # If either are present, enable the service, else disable the service #
 if [[ "$NVIDIA_SUPPORT_CLASSIC" == "true" || "$NVIDIA_SUPPORT_CORE" == "true" ]]; then
