@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # This script implements the connect hook for snap's graphics plugs
+. "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
 set -eux
 
@@ -9,9 +10,10 @@ exec &> >(tee -a "${HOOK_LOG}")
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
-NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
 # Just exit if NVIDIA support is disabled #
-[ "${NVIDIA_SUPPORT_DISABLED}" != "true" ] || exit 0
+if nvidia_support_disabled; then
+    exit 0
+fi
 
 # Ensure hardware present #
 nvidia_hw_ensure

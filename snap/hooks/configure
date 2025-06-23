@@ -16,8 +16,7 @@ fi
 # Flag to trigger service restart if any condition requires it #
 SVC_RESTART=false
 
-NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
-if [ "${NVIDIA_SUPPORT_DISABLED}" == "true" ] ; then
+if nvidia_support_disabled; then
 
     # Remove nvidia runtime config, if it exists #
     jq -r 'del(.runtimes.nvidia)' "${SNAP_DATA}/config/daemon.json" > "${SNAP_DATA}/config/daemon.json.new"
