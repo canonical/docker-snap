@@ -9,7 +9,6 @@ U_USERLAND="${U_OS%%/*}"
 ARCH_TRIPLET="${U_MACHINE}-${U_KERNEL,,}-${U_USERLAND,,}"
 
 nvidia_support_disabled() {
-    # If the user has set nvidia-support.disabled to true, we disable support #
     [ "$(snapctl get nvidia-support.disabled)" == "true" ]
 }
 
