@@ -1,3 +1,4 @@
+#!/bin/bash
 # nvidia toolkit related setup funtions #
 
 U_MACHINE="$(uname -m)"
@@ -7,17 +8,18 @@ U_USERLAND="${U_OS%%/*}"
 
 ARCH_TRIPLET="${U_MACHINE}-${U_KERNEL,,}-${U_USERLAND,,}"
 
-NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
+nvidia_support_disabled() {
+    [ "$(snapctl get nvidia-support.disabled)" == "true" ]
+}
 
-NVIDIA_SUPPORT_CLASSIC="false"
-[ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ] && NVIDIA_SUPPORT_CLASSIC="true"
+nvidia_support_core() {
+    snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22
+}
 
-if snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22; then
-    NVIDIA_SUPPORT_CORE="true"
-else
-    NVIDIA_SUPPORT_CORE="false"
-fi
-
+nvidia_support_classic() {
+    # If the directory exists, we assume classic support is enabled then this returns true #
+    [ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ]
+}
 
 device_wait() {
 
@@ -78,7 +80,7 @@ cdi_generate () {
     CDI_PATH="${PATH}:${CONTENT_PATH}/bin"
 
     # Otherwise, if on classic and nvidia driver is installed, set hostfs for the CDI libs search path and shell path #
-    if [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ]; then
+    if nvidia_support_classic; then
         CDI_LIB_SEARCH_PATH="/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}"
         CDI_CONFIG_SEARCH_PATH="/var/lib/snapd/hostfs/usr/share"
         CDI_PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin"
@@ -92,7 +94,7 @@ cdi_generate () {
      --device-name-strategy "${CDI_DEVICE_NAME_STRATEGY}" \
      --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
 
-    if [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] ; then
+    if nvidia_support_classic; then
         # Replace container path for binaries such as nvidia-smi to make them discoverable from the default PATH
         sed -i "s|containerPath: /var/lib/snapd/hostfs/usr/bin|containerPath: /usr/bin|g" "${SNAP_DATA}/etc/cdi/nvidia.yaml"
     fi

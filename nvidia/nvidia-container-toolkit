@@ -4,16 +4,10 @@ set -eu
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
-[ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] && echo "Running on Classic system"
-[ "${NVIDIA_SUPPORT_CORE}" == "true" ] && echo "Running on Ubuntu Core system"
-
-# FIXME: error here if both core and classic are detecgted ?
-# [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" -a "${NVIDIA_SUPPORT_CORE}" == "true"  ]
-
 # Connection hooks are run early - copy the config file from $SNAP into $SNAP_DATA if it doesn't exist
 if [ ! -f "$SNAP_DATA/config/daemon.json" ]; then
-    mkdir -p "$SNAP_DATA/config"
-    cp "$SNAP/config/daemon.json" "$SNAP_DATA/config/daemon.json"
+  mkdir -p "$SNAP_DATA/config"
+  cp "$SNAP/config/daemon.json" "$SNAP_DATA/config/daemon.json"
 fi
 
 # Ensure hardware present #
