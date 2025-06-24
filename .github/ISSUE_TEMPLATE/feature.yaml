@@ -1,6 +1,6 @@
 name: Task
 description: File an enhancement proposal
-labels: "Enhancement"
+labels: "enhancement"
 body:
   - type: markdown
     attributes:

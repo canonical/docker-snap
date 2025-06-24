@@ -53,8 +53,6 @@ jobs:
             os: ubuntu-24.04
           - arch: amd64
             os: ubuntu-22.04
-          - arch: amd64
-            os: ubuntu-20.04
           - arch: arm64
             os: ubuntu-24.04-arm
           - arch: arm64
@@ -179,6 +177,16 @@ jobs:
       - name: Hello World (init)
         run: sudo docker run --rm --init hello-world
 
+      # NOTE: regression test for aa default profile reload issue 
+      # see: https://github.com/canonical/docker-snap/issues/36
+      - name: Stop container
+        timeout-minutes: 1
+        run: |
+          trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
+          docker run --rm -d --name test bash bash -c 'cleanup(){ sleep 60; }; trap cleanup SIGTERM SIGINT SIGHUP SIGQUIT; while true; do sleep 1; done'
+          sleep 5
+          sudo docker stop test
+
       - name: Docker Build
         run: |
           sudo docker build --pull -t debian-hello - <<'EOF'
@@ -191,6 +199,13 @@ jobs:
           EOF
           sudo docker run --rm debian-hello
           sudo docker image rm debian-hello
+
+        # NOTE: regression test for check patch that forces
+        # use of chroot(2) syscall instaed of pivot_root(2)
+        # see: https://github.com/canonical/docker-snap/issues/281
+      - name: Pull image that write to /snap
+        run: |
+          sudo docker pull ghcr.io/canonical/snapcraft:7_core22
 
       - name: Docker Build (git)
         run: |

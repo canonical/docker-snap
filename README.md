@@ -2,10 +2,10 @@
 
 # Docker Snap
 
-This repository contains the source for the `docker` snap package.  The package provides a distribution of Docker Engine along with the Nvidia toolkit for Ubuntu Core and other snap-compatible systems.  The Docker Engine is built from an upstream release tag with some patches to fit the snap format and is available on `armhf`, `arm64`, `amd64`, `i386`, and `ppc64el` architectures.  The rest of this page describes installation, usage, and development.
+This repository contains the source for the `docker` snap package.  The package provides a distribution of Docker Engine along with the Nvidia toolkit for Ubuntu Core and other snap-compatible systems.  The Docker Engine is built from an upstream release tag with some patches to fit the snap format and is available on `armhf`, `arm64`, `amd64`, `i386`, `ppc64el`, `riscv64` and `s390x` architectures.  The rest of this page describes installation, usage, and development.
 
 > [!NOTE]
-> [Docker's official documentation](https://docs.docker.com) does not discuss the `docker` snap package.
+> [Docker's official documentation](https://docs.docker.com) does not discuss the `docker` snap package. For questions regarding the snap usage, refer to the [discussions](https://github.com/canonical/docker-snap/discussions).
 
 ## Installation
 
@@ -31,6 +31,37 @@ If you are using Ubuntu Core 16, connect the `docker:home` plug as it's not auto
 
 ```shell
 sudo snap connect docker:home
+```
+
+The `docker-compose` [alias](https://snapcraft.io/docs/commands-and-aliases) was set automatically for Compose V1 and remains for backwards-compatiblity.
+The recommended command-line syntax since Compose V2 is `docker compose` as described [here](https://docs.docker.com/compose/releases/migrate/).
+
+### Changing the data root directory
+
+In the `docker` snap, the default location for the [data-root](https://docs.docker.com/engine/daemon/#daemon-data-directory) directory is `$SNAP_COMMON/var-lib-docker`, which maps to `/var/snap/docker/common/var-lib-docker` based on the [snap data locations](https://snapcraft.io/docs/data-locations#heading--system).
+
+> [!WARNING]
+> By default, SnapD removes the snap's data locations and creates [snapshots](https://snapcraft.io/docs/snapshots) that serve as backup. 
+> Changing the root directory to a different path results in loss of snapshot functionalities, leaving you responsible for the management of those files.  
+  
+To modify the default location, use [snap configuration options](https://snapcraft.io/docs/configuration-in-snaps):  
+  
+**Get the current value:**  
+```shell
+sudo snap get docker data-root
+```  
+  
+**Set a new location:**  
+```shell
+sudo snap set docker data-root=<new-directory>
+```
+Make sure to use a location that the snap has access to, which is:
+- Inside the `$HOME` directory;
+- Within a snap-writable area, as described in the [data locations documentation](https://snapcraft.io/docs/data-locations).
+
+Then restart the dockerd service:
+```shell
+sudo snap restart docker.dockerd
 ```
 
 ### Running Docker as normal user
@@ -64,6 +95,12 @@ Docker should function normally, with the following caveats:
 * All files that `docker` needs access to should live within your `$HOME` folder.
 
   * If you are using Ubuntu Core 16, you'll need to work within a subfolder of `$HOME` that is readable by root; see [#8](https://github.com/docker/docker-snap/issues/8).
+
+* If you need `docker` to interact with removable media (external storage drives) for use in containers, volumes, images, or any other Docker-related operations, you must connect the [removable-media interface](https://snapcraft.io/docs/removable-media-interface) to the snap:  
+
+  ```shell
+  sudo snap connect docker:removable-media
+  ```
 
 * Additional certificates used by the Docker daemon to authenticate with registries need to be located in `/var/snap/docker/common/etc/certs.d` instead of `/etc/docker/certs.d`.
 
@@ -132,16 +169,11 @@ or
 docker run --rm --runtime nvidia --env NVIDIA_VISIBLE_DEVICES=all {cuda-container-image-name}
 ```
 
-If your container image already has appropriate environment variables set, may be able to just specify the nvidia runtime with no additional args required.
+If your container image already has appropriate environment variables set, you may be able to just specify the nvidia runtime with no additional args required.
 
-Please refer to [this guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html) for mode detail regarding environment variables that can be used.
-
-*NOTE*: library path and discovery is automatically handled, but binary paths are not, so if you wish to test using something like the `nvidia-smi` binary passed into the container from the host, you could either specify the full path or set the PATH environment variable.
-
-e.g.
-
+You may run `nvidia-smi` to validate the environment set up from a temporary container:
 ```
-docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin" ubuntu nvidia-smi
+docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
 ```
 
 ## Development
@@ -193,3 +225,35 @@ The snap has various tests in place:
 - [Automated smoke testing via a Github workflow](.github/workflows/smoke-test.yml)
 - [Nvidia testing via Testflinger](.github/workflows/testflinger/README.md)
 - [Spread tests](spread.md)
+- [Checkbox tests](#checkbox)
+
+### Checkbox
+The Docker snap can be tested via [Checkbox](https://canonical-checkbox.readthedocs-hosted.com/en/stable/index.html).
+The checkbox project includes various Docker tests as part of a [dedicated provider](https://github.com/canonical/checkbox/tree/main/providers/docker).
+
+To run these tests against the Docker snap, install a revision of the snap:
+```shell
+sudo snap install docker --edge  
+```
+
+Then install a checkbox runtime and frontend:
+```shell
+sudo snap install checkbox22
+sudo snap install checkbox --channel 22.04/stable --classic
+```
+
+Finally, run `checkbox.checkbox-cli`, press `f` and filter Docker plans:
+```
+ Select test plan
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│    ( ) Automated tests of Docker functionality for EdgeX Foundry             │
+│    (X) Fully automated QA tests for Docker containers                        │
+│    ( ) Manual QA tests for Docker containers                                 │
+│    ( ) QA tests for Docker containers                                        │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+ Press <Enter> to continue                                             (H) Help
+```
+Select `Fully automated QA tests for Docker containers` and continue to run the tests.

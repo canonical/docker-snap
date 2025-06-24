@@ -6,26 +6,26 @@ The tests run on devices within Canonical's test farm.
 ## Run locally
 Running the tests locally is only possible if your machine has access to the Testflinger server.
 
-Export the needed variables, for example:
-```bash
-export JOB_QUEUE=docker-nvidia SNAP_CHANNEL=latest/edge DISTRO=noble
-```
 Tested distros:
 - `noble`
 - `core22-latest`
+- `core24-latest`
 
-Then, modify the files:
+Set the input variables and execute the script from the same directory:
 ```bash
-envsubst '$JOB_QUEUE $DISTRO' < nvidia-job.yaml > temp-job.yaml
-
-envsubst '$SNAP_CHANNEL' < scripts/setup.sh > scripts/temp-setup.sh
-
-sed -i "s|setup.sh|temp-setup.sh|" temp-job.yaml
-
-sed -i "s|.github/workflows/testflinger/||" temp-job.yaml
+JOB_QUEUE=docker-nvidia SNAP_CHANNEL=latest/edge DISTRO=noble ./run.sh
 ```
+The command above replaces the inputs in the scripts and submits the Testflinger job.
 
-Finally, submit the job:
-```bash
-testflinger submit --poll temp-job.yaml
-```
+To generate the scripts without submitting the job, set the `--dryrun` flag.
+This is useful if you plan to make manual modifications to the job.
+
+## Run via Github Workflow
+
+The Testflinger job is used in the [nvidia-test.yml](../nvidia-test.yml) Github Workflow.
+This workflow can only be run manually.
+
+The workflow takes a Docker snap build artifact generated via a previous [smoke-test.yml](../smoke-test.yml) workflow run, publishes it to the Snap Store under a branch, and then uses that branch to run the tests.
+
+To run the Github workflow, go to the [workflow page](https://github.com/canonical/docker-snap/actions/workflows/nvidia-test.yml) on Github, open the `Run workflow` menu, and provide the necessary inputs.
+The `Publish to Store` option should only be set if the artifact hasn't been uploaded to the Store.

@@ -4,6 +4,13 @@ set -eu
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
+# Since the install hook is also the post-refresh hook, we need to check if the data-root is set
+# and set it to default if it's not set
+data_root="$(snapctl get data-root)"
+if [ -z "$data_root" ] ; then
+    snapctl set data-root="${DEFAULT_DATA_ROOT}"
+fi
+
 # ensure the layouts dir for /etc/{stuff} exists
 mkdir -p "$SNAP_DATA/etc/docker"
 mkdir -p "$SNAP_DATA/config"
