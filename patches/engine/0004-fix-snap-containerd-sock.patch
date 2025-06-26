@@ -1,20 +1,20 @@
-From 43391b1fd32fab1791ad3a6c11b496ff63a5060d Mon Sep 17 00:00:00 2001
+From 14498fbf7f299641bf576cec3c19884b509aeded Mon Sep 17 00:00:00 2001
 From: Lincoln Wallace <lincoln.wallace@canonical.com>
-Date: Tue, 25 Feb 2025 16:26:58 -0300
-Subject: [PATCH] fix-snap-containerd-sock
+Date: Thu, 26 Jun 2025 15:01:00 -0300
+Subject: [PATCH] fix snap containerd sock
 
 Signed-off-by: Lincoln Wallace <lincoln.wallace@canonical.com>
 ---
- .../containerd/containerd/v2/defaults/defaults_unix.go          | 2 +-
+ .../containerd/containerd/v2/defaults/defaults_linux.go         | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/vendor/github.com/containerd/containerd/v2/defaults/defaults_unix.go b/vendor/github.com/containerd/containerd/v2/defaults/defaults_unix.go
-index e68a522cad..e2fe349138 100644
---- a/vendor/github.com/containerd/containerd/v2/defaults/defaults_unix.go
-+++ b/vendor/github.com/containerd/containerd/v2/defaults/defaults_unix.go
-@@ -26,7 +26,7 @@ const (
- 	// transient data
- 	DefaultStateDir = "/run/containerd"
+diff --git a/vendor/github.com/containerd/containerd/v2/defaults/defaults_linux.go b/vendor/github.com/containerd/containerd/v2/defaults/defaults_linux.go
+index dc1ff0909c..12f35c97dd 100644
+--- a/vendor/github.com/containerd/containerd/v2/defaults/defaults_linux.go
++++ b/vendor/github.com/containerd/containerd/v2/defaults/defaults_linux.go
+@@ -18,7 +18,7 @@ package defaults
+ 
+ const (
  	// DefaultAddress is the default unix socket address
 -	DefaultAddress = "/run/containerd/containerd.sock"
 +	DefaultAddress = "/run/containerd/bogus-containerd.sock" // this includes "bogus-" to prevent docker-snap from ever trying to connect to "containerd-outside-snap" (https://forum.snapcraft.io/t/docker-snap-18-09-9-error/14171/5)
