@@ -104,6 +104,41 @@ jobs:
 
           set -e
 
+      - name: Snap refresh test
+        run: |
+
+          trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=40 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep docker' ERR
+          sudo snap install docker
+
+          # Run well known application with tagged versions
+          sudo docker run --restart=always --detach -p 6379:6379 redis:8.0.2
+          sudo docker run --restart=always --detach -e RABBITMQ_DEFAULT_USER=user -e RABBITMQ_DEFAULT_PASS=pass rabbitmq:3-management
+          sudo docker run --restart=always --detach -p 3000:3000 grafana/grafana:12.0.2-ubuntu
+          sudo docker run --restart=always --detach -p 8080:8080 -p 50000:50000  jenkins/jenkins:jdk21
+          sudo docker run --restart=always --detach -p 7070:80 nginx:1.29.0
+          sudo docker run --restart=always --detach -e POSTGRES_USER=user -e POSTGRES_PASSWORD=pass -e POSTGRES_DB=db postgres:16-alpine
+
+          # Wait for the restart policy to take effect
+          # See: https://docs.docker.com/engine/containers/start-containers-automatically/#restart-policy-details
+          sleep 10
+
+          export UP_CONTAINERS_OLD=$(sudo docker ps -q | wc -l)
+
+          # Trigger a snap refresh operation
+          sudo snap install --dangerous ./docker_${{ github.run_id}}_${{ matrix.runner.arch }}.snap
+
+          sleep 10
+
+          export UP_CONTAINERS_NEW=$(sudo docker ps -q | wc -l)
+
+          if [ "$UP_CONTAINERS_NEW" -lt "$UP_CONTAINERS_OLD" ]; then
+            echo "Error containers didin't stand over snap refresh"
+            exit 1
+          fi
+
+          # Cleanup
+          sudo snap remove --purge docker
+
       - name: Install
         run: |
           sudo snap install --dangerous ./docker_${{ github.run_id}}_${{ matrix.runner.arch }}.snap
