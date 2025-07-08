@@ -110,7 +110,8 @@ jobs:
           trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=40 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep docker' ERR
           sudo snap install docker
 
-          sleep 5 # Give time for the daemon to startup
+          # Give time for the daemon to startup
+          sleep 5
 
           # Run well known application with tagged versions
           sudo docker run --restart=always --detach -p 6379:6379 redis:8.0.2
