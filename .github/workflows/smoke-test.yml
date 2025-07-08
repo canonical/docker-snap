@@ -127,7 +127,7 @@ jobs:
 
           export UP_CONTAINERS_OLD=$(sudo docker ps -q | wc -l)
 
-          # Trigger a snap refresh operation
+          # Refresh Docker snap to the current build
           sudo snap install --dangerous ./docker_${{ github.run_id}}_${{ matrix.runner.arch }}.snap
 
           sleep 10
