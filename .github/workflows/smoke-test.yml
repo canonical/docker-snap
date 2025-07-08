@@ -113,13 +113,13 @@ jobs:
           # Give time for the daemon to startup
           sleep 5
 
-          # Run well known application with tagged versions
-          sudo docker run --restart=always --detach -p 6379:6379 redis:8.0.2
-          sudo docker run --restart=always --detach -e RABBITMQ_DEFAULT_USER=user -e RABBITMQ_DEFAULT_PASS=pass rabbitmq:3-management
-          sudo docker run --restart=always --detach -p 3000:3000 grafana/grafana:12.0.2-ubuntu
-          sudo docker run --restart=always --detach -p 8080:8080 -p 50000:50000  jenkins/jenkins:jdk21
-          sudo docker run --restart=always --detach -p 7070:80 nginx:1.29.0
-          sudo docker run --restart=always --detach -e POSTGRES_USER=user -e POSTGRES_PASSWORD=pass -e POSTGRES_DB=db postgres:16-alpine
+          # Run latest versions of well known applications
+          sudo docker run --restart=always -d redis
+          sudo docker run --restart=always -d rabbitmq
+          sudo docker run --restart=always -d grafana/grafana
+          sudo docker run --restart=always -d jenkins/jenkins
+          sudo docker run --restart=always -d nginx
+          sudo docker run --restart=always -d -e POSTGRES_HOST_AUTH_METHOD=trust postgres
 
           # Wait for the restart policy to take effect
           # See: https://docs.docker.com/engine/containers/start-containers-automatically/#restart-policy-details
