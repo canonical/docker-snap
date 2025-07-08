@@ -135,7 +135,12 @@ jobs:
           export UP_CONTAINERS_NEW=$(sudo docker ps -q | wc -l)
 
           if [ "$UP_CONTAINERS_NEW" -lt "$UP_CONTAINERS_OLD" ]; then
-            echo "Error containers didin't stand over snap refresh"
+            echo "Error: not all containers started after snap refresh"
+            sudo docker ps -a
+            for i in $(sudo docker ps -q --filter "status=exited"); do
+              echo -e "\n[DOCKER-SNAP] Fetching logs of $i:\n"
+              sudo docker logs "$i"
+            done
             exit 1
           fi
 
