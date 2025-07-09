@@ -5,6 +5,7 @@ set -eEuo pipefail
 trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=40 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep docker' ERR
 
 cleanup() (
+  set -x
   sudo snap remove --purge docker
 )
 
@@ -21,10 +22,14 @@ refresh_docker() {
   sudo snap refresh docker --channel="$DOCKER_SNAP_CHANNEL"
 }
 
-setup() {
+install_docker()(
   set -x
   sudo snap install docker
   sleep 5 # Wait for docker to be fully initialized
+)
+
+setup() {
+  install_docker
 
   cat <<'EOF' >run-vector.sh
 #!/bin/bash -eu
@@ -38,7 +43,6 @@ EOF
 }
 
 check_container() {
-  set -x
   # Wait for the restart policy to take effect
   # See: https://docs.docker.com/engine/containers/start-containers-automatically/#restart-policy-details
   sleep 10
@@ -54,18 +58,25 @@ check_container() {
   fi
 }
 
+run_workload() (
+  set -x
+  sudo docker run --restart=always --detach -v $(pwd)/run-vector.sh:/run-vector.sh:ro --entrypoint=/run-vector.sh --runtime=nvidia --gpus all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda10.2
+)
+
 main() {
-  set -ex
   cleanup
+
   setup
 
-  sudo docker run --restart=always --detach -v $(pwd)/run-vector.sh:/run-vector.sh:ro --entrypoint=/run-vector.sh --runtime=nvidia --gpus all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda10.2
+  run_workload
 
   check_container
 
   refresh_docker
 
   check_container
+
+  echo "Docker snap successfully refreshed and container is still running."
 }
 
 main
