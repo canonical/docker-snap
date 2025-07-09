@@ -6,7 +6,7 @@ cleanup() (
   sudo snap remove --purge docker
 )
 
-refresh_docker() (
+refresh_docker() {
   # SNAP_CHANNEL may be set by the caller, or replaced in CI
   DOCKER_SNAP_CHANNEL=$SNAP_CHANNEL
   if [[ -z "$DOCKER_SNAP_CHANNEL" ]]; then
@@ -17,15 +17,14 @@ refresh_docker() (
 
   # refresh docker-snap
   sudo snap refresh docker --channel="$DOCKER_SNAP_CHANNEL"
-)
+}
 
-
-setup()(
+setup() {
   set -x
   sudo snap install docker
   sleep 5 # Wait for docker to be fully initialized
 
-  cat << 'EOF' > run-vector.sh
+  cat <<'EOF' >run-vector.sh
 #!/bin/bash -eu
 
 while true; do
@@ -34,10 +33,9 @@ while true; do
 done
 EOF
   chmod +x run-vector.sh
-)
+}
 
-
-check_container() (
+check_container() {
   set -x
   # Wait for the restart policy to take effect
   # See: https://docs.docker.com/engine/containers/start-containers-automatically/#restart-policy-details
@@ -50,9 +48,9 @@ check_container() (
     sudo docker ps -a
     exit 1
   fi
-)
+}
 
-main()(
+main() {
   set -ex
   cleanup
   setup
@@ -64,6 +62,6 @@ main()(
   refresh_docker
 
   check_container
-)
+}
 
 main
