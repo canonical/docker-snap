@@ -48,7 +48,6 @@ check_container() (
   if [ "$CONTAINER_COUNT" -ne 1 ]; then
     echo "Expected 1 container, found $CONTAINER_COUNT"
     sudo docker ps -a
-    sudo docker logs $(sudo docker ps -aq)
     exit 1
   fi
 )
