@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-set -e
+set -eEuo pipefail
+
+trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=40 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep docker' ERR
 
 cleanup() (
   sudo snap remove --purge docker
@@ -46,6 +48,8 @@ check_container() {
   if [ "$CONTAINER_COUNT" -ne 1 ]; then
     echo "Expected 1 container, found $CONTAINER_COUNT"
     sudo docker ps -a
+    # Trigger the trap and exit with the logs
+    false
     exit 1
   fi
 }
