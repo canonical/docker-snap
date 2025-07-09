@@ -137,8 +137,6 @@ jobs:
           if [ "$UP_CONTAINERS_NEW" -lt "$UP_CONTAINERS_OLD" ]; then
             echo "Error: not all containers started after snap refresh"
             sudo docker ps -a
-            # Trigger the trap and exit with the logs
-            false
             exit 1
           fi
 
