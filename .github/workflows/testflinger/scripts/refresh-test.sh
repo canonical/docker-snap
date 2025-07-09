@@ -52,8 +52,6 @@ check_container() {
   if [ "$CONTAINER_COUNT" -ne 1 ]; then
     echo "Expected 1 container, found $CONTAINER_COUNT"
     sudo docker ps -a
-    # Trigger the trap and exit with the logs
-    false
     exit 1
   fi
 }
