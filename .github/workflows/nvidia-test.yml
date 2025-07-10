@@ -79,6 +79,12 @@ jobs:
                   > $TESTFLINGER_DIR/scripts/setup.temp
                 mv $TESTFLINGER_DIR/scripts/setup.temp $TESTFLINGER_DIR/scripts/setup.sh
 
+                # Prepare refresh-test script
+                envsubst '$SNAP_CHANNEL' \
+                  < $TESTFLINGER_DIR/scripts/refresh-test.sh \
+                  > $TESTFLINGER_DIR/scripts/refresh-test.temp
+                mv $TESTFLINGER_DIR/scripts/refresh-test.temp $TESTFLINGER_DIR/scripts/refresh-test.sh
+
             - name: Run tests
               uses: canonical/testflinger/.github/actions/submit@main
               with:
