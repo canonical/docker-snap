@@ -126,7 +126,7 @@ To enable proper use of the GPU within docker, the nvidia runtime must be used. 
 
 #### Ubuntu Core 24
 
-The required nvidia kernel objects and user-space libraries are available in the [pc-kernel](https://snapcraft.io/pc-kernel) snap as optional components. These libraries can be provided to the Docker snap via the [mesa-2404](https://snapcraft.io/mesa-2404) snap.
+The required nvidia kernel objects and user-space libraries are available in the [pc-kernel](https://snapcraft.io/pc-kernel) snap (24/stable channel) as optional components. These libraries can be provided to the Docker snap via the [mesa-2404](https://snapcraft.io/mesa-2404) snap.
 
 ```shell
 # Install kernel components
@@ -151,15 +151,24 @@ content[gpu-2404]  docker:gpu-2404          mesa-2404:gpu-2404                  
 > [!CAUTION]
 > The support for using nvidia runtime on Ubuntu Core 22 has been deprecated. It will be fully removed in the next Docker snap base upgrade to core26 or later.
 
-The required nvidia libraries are available in the [nvidia-core22](https://snapcraft.io/nvidia-core22) content provider snap. The [mesa-core22](https://snapcraft.io/mesa-core22) provider snap is not supported.
+The required nvidia libraries are available in the [nvidia-core22](https://snapcraft.io/nvidia-core22) content provider snap. 
 
-<!--
-This also requires https://snapcraft.io/nvidia-assemble but we can't recommend that at this point.
--->
+Once installed, the Docker snap's xxx plug auto connects to nvidia-core22's corresponding slot:
+```console
+$ snap connections docker
+Interface                 Plug                     Slot                                 Notes
+...
+content[graphics-core22]  docker:graphics-core22   nvidia-core22:graphics-core22        -
+...
+```
 
-This requires connection of the graphics-core22 content interface provided by the nvidia-core22 snap, which should be automatically connected once installed.
+> [!NOTE]
+> The [mesa-core22](https://snapcraft.io/mesa-core22) provider snap is not supported.
 
-Note that if the `mesa-2404` snap is installed at the same time, the Docker snap uses the libraries provided by that instead. To prevent that, either remove mesa-2404 or manually disconnect the interface.
+> [!NOTE]
+> If the `mesa-2404` snap is installed at the same time, the Docker snap uses the libraries provided by that instead. To prevent that, either remove mesa-2404 or manually disconnect the interface.
+
+In addition to the content provider, install the [nvidia-assemble](https://github.com/canonical/nvidia-assemble) snap to assemble, load and setup NVIDIA graphics drivers from a compatible kernel snap, such as the pc-kernel snap (22/stable channel). 
 
 ### Ubuntu Server / Desktop
 
