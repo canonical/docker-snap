@@ -117,11 +117,42 @@ If the system is found to have an nvidia graphics card available, and the host h
 
 To enable proper use of the GPU within docker, the nvidia runtime must be used.  By default, the nvidia runtime will be configured to use [CDI](https://github.com/cncf-tags/container-device-interface) mode, and a the appropriate nvidia CDI config will be automatically created for the system.  You just need to specify the nvidia runtime when running a container.
 
-### Ubuntu Core 22
+### Ubuntu Core
 
-The required nvidia libraries are available in the nvidia-core22 snap.
+
+
+#### Ubuntu Core 24
+
+The required nvidia libraries are available in the [pc-kernel](https://snapcraft.io/pc-kernel) snap as optional components. These libraries can be provided to the Docker snap via the [mesa-2404](https://snapcraft.io/mesa-2404) snap.
+
+```shell
+# Install kernel components
+sudo snap install pc-kernel+nvidia-550-ko
+sudo snap install pc-kernel+nvidia-550-user
+
+# Install the content provider snap
+sudo snap install mesa-2404
+```
+
+Once installed, Docker snap's gpu-2404 plug automatically connects to mesa-2404:
+```console
+$ snap connections docker 
+Interface          Plug                     Slot                                 Notes
+...
+content[gpu-2404]  docker:gpu-2404          mesa-2404:gpu-2404                   -
+...
+```
+
+#### Ubuntu Core 22
+
+> [!CAUTION]
+> The support for using nvidia runtime on Ubuntu Core 22 has been deprecated. It will be fully removed in the next Docker snap base upgrade to core26 or later.
+
+The required nvidia libraries are available in the [nvidia-core22](https://snapcraft.io/nvidia-core22) content provider snap. The [mesa-core22](https://snapcraft.io/mesa-core22) provider snap is not supported.
 
 This requires connection of the graphics-core22 content interface provided by the nvidia-core22 snap, which should be automatically connected once installed.
+
+Note that if the `mesa-2404` snap is installed at the same time, the Docker snap uses the libraries provided by that instead. To prevent that, either remove mesa-2404 or manually disconnect the interface.
 
 ### Ubuntu Server / Desktop
 
