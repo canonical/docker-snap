@@ -122,6 +122,10 @@ To enable proper use of the GPU within docker, the nvidia runtime must be used. 
 
 ### Ubuntu Core
 
+The environment set up differs depending on the Ubuntu Core release. Refer below for specific instructions.
+
+> [!NOTE]
+> More than one graphic provider snap can be installed on the host and connected to the Docker snap. In such case, the Docker snap will only utilize the content provided by the first connected `gpu-2404` content provider.
 
 
 #### Ubuntu Core 24
@@ -165,8 +169,6 @@ content[graphics-core22]  docker:graphics-core22   nvidia-core22:graphics-core22
 > [!NOTE]
 > The [mesa-core22](https://snapcraft.io/mesa-core22) provider snap is not supported.
 
-> [!NOTE]
-> If the `mesa-2404` snap is installed at the same time, the Docker snap uses the libraries provided by that instead. To prevent that, either remove mesa-2404 or manually disconnect the interface.
 
 In addition to the content provider, install the [nvidia-assemble](https://github.com/canonical/nvidia-assemble) snap to assemble, load and setup NVIDIA graphics drivers from a compatible kernel snap, such as the pc-kernel snap (22/stable channel). 
 
