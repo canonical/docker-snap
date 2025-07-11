@@ -116,7 +116,7 @@ Docker should function normally, with the following caveats:
 If the system is found to have an nvidia graphics card available, and the host has the required nvidia libraries installed, the nvidia container toolkit will be setup and configured to enable use of the local GPU from docker. This can be used to enable use of CUDA from a docker container, for instance.
 
 > [!NOTE] 
-> The containerized workload must be ABI-compatible with the graphic user-space on the host. The Docker engine does not add any abstraction to make the container environment host-agnostic.
+> The containerized workload must be ABI-compatible with the graphic user-space libraries on the host. The Docker snap does not add any abstraction to make the container environment host-agnostic.
 
 To enable proper use of the GPU within docker, the nvidia runtime must be used. By default, the nvidia runtime will be configured to use [CDI](https://github.com/cncf-tags/container-device-interface) mode, and the appropriate nvidia CDI config will be automatically created for the system. You just need to specify the nvidia runtime when running a container.
 
@@ -126,7 +126,7 @@ To enable proper use of the GPU within docker, the nvidia runtime must be used. 
 
 #### Ubuntu Core 24
 
-The required nvidia libraries are available in the [pc-kernel](https://snapcraft.io/pc-kernel) snap as optional components. These libraries can be provided to the Docker snap via the [mesa-2404](https://snapcraft.io/mesa-2404) snap.
+The required nvidia kernel objects and user-space libraries are available in the [pc-kernel](https://snapcraft.io/pc-kernel) snap as optional components. These libraries can be provided to the Docker snap via the [mesa-2404](https://snapcraft.io/mesa-2404) snap.
 
 ```shell
 # Install kernel components
