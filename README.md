@@ -153,6 +153,10 @@ content[gpu-2404]  docker:gpu-2404          mesa-2404:gpu-2404                  
 
 The required nvidia libraries are available in the [nvidia-core22](https://snapcraft.io/nvidia-core22) content provider snap. The [mesa-core22](https://snapcraft.io/mesa-core22) provider snap is not supported.
 
+<!--
+This also requires https://snapcraft.io/nvidia-assemble but we can't recommend that at this point.
+-->
+
 This requires connection of the graphics-core22 content interface provided by the nvidia-core22 snap, which should be automatically connected once installed.
 
 Note that if the `mesa-2404` snap is installed at the same time, the Docker snap uses the libraries provided by that instead. To prevent that, either remove mesa-2404 or manually disconnect the interface.
