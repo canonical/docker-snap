@@ -113,9 +113,12 @@ Docker should function normally, with the following caveats:
 
 ## NVIDIA support
 
-If the system is found to have an nvidia graphics card available, and the host has the required nvidia libraries installed, the nvidia container toolkit will be setup and configured to enable use of the local GPU from docker.  This can be used to enable use of CUDA from a docker container, for instance.
+If the system is found to have an nvidia graphics card available, and the host has the required nvidia libraries installed, the nvidia container toolkit will be setup and configured to enable use of the local GPU from docker. This can be used to enable use of CUDA from a docker container, for instance.
 
-To enable proper use of the GPU within docker, the nvidia runtime must be used.  By default, the nvidia runtime will be configured to use [CDI](https://github.com/cncf-tags/container-device-interface) mode, and a the appropriate nvidia CDI config will be automatically created for the system.  You just need to specify the nvidia runtime when running a container.
+> [!NOTE] 
+> The containerized workload must be ABI-compatible with the graphic user-space on the host. The Docker engine does not add any abstraction to make the container environment host-agnostic.
+
+To enable proper use of the GPU within docker, the nvidia runtime must be used. By default, the nvidia runtime will be configured to use [CDI](https://github.com/cncf-tags/container-device-interface) mode, and the appropriate nvidia CDI config will be automatically created for the system. You just need to specify the nvidia runtime when running a container.
 
 ### Ubuntu Core
 
@@ -158,7 +161,7 @@ Note that if the `mesa-2404` snap is installed at the same time, the Docker snap
 
 The required nvidia libraries are available in the nvidia container toolkit packages.
 
-Instruction on how to install them can be found ([here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html))
+Instruction on how to install them can be found [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 
 ### Custom NVIDIA runtime config
 
