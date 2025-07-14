@@ -113,24 +113,24 @@ Docker should function normally, with the following caveats:
 
 ## NVIDIA support
 
-If the system is found to have an nvidia graphics card available, and the host has the required nvidia libraries installed, the nvidia container toolkit will be setup and configured to enable use of the local GPU from docker. This can be used to enable use of CUDA from a docker container, for instance.
+If the system is found to have an nvidia graphics card available, and the host has the required nvidia libraries installed, the nvidia container toolkit will be setup and configured to enable use of the local GPU from docker. This allows you, for instance, to use CUDA from a container.
 
 > [!NOTE] 
-> The containerized workload must be ABI-compatible with the graphic user-space libraries on the host. The Docker snap does not add any abstraction to make the container environment host-agnostic.
+> The containerized workload must be ABI-compatible with the graphics user-space libraries on the host. The Docker snap does not add any abstraction to make the container environment host-agnostic.
 
-To enable proper use of the GPU within docker, the nvidia runtime must be used. By default, the nvidia runtime will be configured to use [CDI](https://github.com/cncf-tags/container-device-interface) mode, and the appropriate nvidia CDI config will be automatically created for the system. You just need to specify the nvidia runtime when running a container.
+To enable proper use of the GPU within docker, the nvidia runtime must be used. By default, the nvidia runtime will be configured to use [CDI](https://github.com/cncf-tags/container-device-interface) mode, and the appropriate nvidia CDI config will be automatically created for the system. It is only required to specify the nvidia runtime when running a container.
 
 ### Ubuntu Core
 
 The environment set up differs depending on the Ubuntu Core release. Refer below for specific instructions.
 
 > [!NOTE]
-> More than one graphic provider snap can be installed on the host and connected to the Docker snap. In such case, the Docker snap will only utilize the content provided by the first connected `gpu-2404` content provider.
+> More than one graphic provider snap can be installed on the host and connected to the Docker snap. In such a case, the Docker snap will only utilize the content provided by the first connected `gpu-2404` content provider.
 
 
 #### Ubuntu Core 24
 
-The required nvidia kernel objects and user-space libraries are available in the [pc-kernel](https://snapcraft.io/pc-kernel) snap (24/stable channel) as optional components. These libraries can be provided to the Docker snap via the [mesa-2404](https://snapcraft.io/mesa-2404) snap.
+The required nvidia kernel objects and user-space libraries are available as optional components in the [pc-kernel](https://snapcraft.io/pc-kernel) snap (24/stable channel). These libraries can be provided to the Docker snap via the [mesa-2404](https://snapcraft.io/mesa-2404) snap.
 
 ```shell
 # Install kernel components
@@ -157,7 +157,7 @@ content[gpu-2404]  docker:gpu-2404          mesa-2404:gpu-2404                  
 
 The required nvidia libraries are available in the [nvidia-core22](https://snapcraft.io/nvidia-core22) content provider snap. 
 
-Once installed, the Docker snap's xxx plug auto connects to nvidia-core22's corresponding slot:
+Once installed, the Docker snap's graphics-core22 plug auto connects to nvidia-core22's corresponding slot:
 ```console
 $ snap connections docker
 Interface                 Plug                     Slot                                 Notes
