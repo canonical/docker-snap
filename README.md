@@ -122,11 +122,17 @@ To enable proper use of the GPU within docker, the nvidia runtime must be used. 
 
 ### Ubuntu Core
 
-The environment set up differs depending on the Ubuntu Core release. Refer below for specific instructions.
+On Ubuntu Core, the graphics dependencies must be provided to the Docker snap via another snap. 
+This is done using one of the supported content interfaces. 
+
+> [!TIP]
+> A [content interface](https://snapcraft.io/docs/content-interface) allows sharing data between snaps.
+> For NVIDIA support, the graphics user-space are shared from a *provider snap* to the Docker snap.
+
+The provider and environment setup differs depending on the Ubuntu Core release. Refer below for specific instructions.
 
 > [!NOTE]
-> More than one graphic provider snap can be installed on the host and connected to the Docker snap. In such a case, the Docker snap will only utilize the content provided by the first connected `gpu-2404` content provider.
-
+> It is possible to connect multiple graphic providers to the Docker snap. In such a case, the Docker snap will only utilize the content provided by the `gpu-2404` content provider. Do not connect more than one `gpu-2404` provider at the same time as the content may partially override each other.
 
 #### Ubuntu Core 24
 
