@@ -53,3 +53,6 @@ test_data:
     
     echo "Run tests"
     ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/test.sh)"
+
+    echo "Run snap refresh test"
+    ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/refresh-test.sh)"
