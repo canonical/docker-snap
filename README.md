@@ -208,7 +208,7 @@ snap set docker nvidia-support.cdi.device-name-strategy=uuid
 
 ### Disable NVIDIA support
 
-Setting up the NVIDIA support should be automatic the hardware is present, but you may wish to specifically disable it so that setup is not even attempted.  You can do so via the following snap config:
+Setting up the NVIDIA support should be automatic when the hardware is present, but you may wish to specifically disable it so that setup is not even attempted.  You can do so via the following snap config:
 ```shell
 snap set docker nvidia-support.disabled=true
 ```
