@@ -140,6 +140,21 @@ jobs:
             exit 1
           fi
 
+          export UP_CONTAINERS_OLD=$(sudo docker ps -q | wc -l)
+
+          # Revert docker snap to the previous version
+          sudo snap revert docker
+
+          sleep 10
+
+          export UP_CONTAINERS_NEW=$(sudo docker ps -q | wc -l)
+
+          if [ "$UP_CONTAINERS_NEW" -lt "$UP_CONTAINERS_OLD" ]; then
+            echo "Error: not all containers started after snap revert"
+            sudo docker ps -a
+            exit 1
+          fi
+
           # Cleanup
           sudo snap remove --purge docker
 
