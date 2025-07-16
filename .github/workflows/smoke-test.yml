@@ -123,6 +123,11 @@ jobs:
           echo "List of running containers"
           docker ps -a
 
+          if [[ -n $(sudo docker ps -q --filter "status=exited") ]]; then
+            echo "Error: docker snap did not start all containers"
+            exit 1
+          fi
+
           # NOTE: adjust this accordingly with the commands above if needed
           STARTED_CONTAINERS=6
 
