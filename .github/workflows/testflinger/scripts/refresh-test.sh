@@ -13,9 +13,6 @@ revert_docker()(
   set -x
   sudo snap revert docker
 
-  # Reverting doesn't change the channel, so we need to switch back to stable
-  sudo snap switch docker --stable
-
   sudo snap list docker
 )
 
