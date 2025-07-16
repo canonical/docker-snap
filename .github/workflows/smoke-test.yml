@@ -134,7 +134,7 @@ jobs:
 
           export UP_CONTAINERS_NEW=$(sudo docker ps -q | wc -l)
 
-          if [ "$UP_CONTAINERS_NEW" -lt "$UP_CONTAINERS_OLD" ]; then
+          if [ "$UP_CONTAINERS_NEW" -ne "$UP_CONTAINERS_OLD" ]; then
             echo "Error: not all containers started after snap refresh"
             sudo docker ps -a
             exit 1
@@ -149,7 +149,7 @@ jobs:
 
           export UP_CONTAINERS_NEW=$(sudo docker ps -q | wc -l)
 
-          if [ "$UP_CONTAINERS_NEW" -lt "$UP_CONTAINERS_OLD" ]; then
+          if [ "$UP_CONTAINERS_NEW" -ne "$UP_CONTAINERS_OLD" ]; then
             echo "Error: not all containers started after snap revert"
             sudo docker ps -a
             exit 1
