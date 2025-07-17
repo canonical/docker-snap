@@ -120,6 +120,9 @@ jobs:
           sudo docker run --restart=always -d jenkins/jenkins
           sudo docker run --restart=always -d nginx
           sudo docker run --restart=always -d -e POSTGRES_HOST_AUTH_METHOD=trust postgres
+          # NOTE: adjust this accordingly with the commands above if needed
+          STARTED_CONTAINERS=6
+
           echo "List of running containers"
           docker ps -a
 
@@ -128,8 +131,6 @@ jobs:
             exit 1
           fi
 
-          # NOTE: adjust this accordingly with the commands above if needed
-          STARTED_CONTAINERS=6
 
           # Wait for the restart policy to take effect
           # See: https://docs.docker.com/engine/containers/start-containers-automatically/#restart-policy-details
@@ -140,7 +141,7 @@ jobs:
 
           sleep 10
 
-          export RUNNING_CONTAINERS=$(sudo docker ps -q | wc -l)
+          RUNNING_CONTAINERS=$(sudo docker ps -q | wc -l)
 
           if [ "$RUNNING_CONTAINERS" -ne "$STARTED_CONTAINERS" ]; then
             echo "Error: not all containers started after snap refresh"
@@ -153,7 +154,7 @@ jobs:
 
           sleep 10
 
-          export RUNNING_CONTAINERS=$(sudo docker ps -q | wc -l)
+          RUNNING_CONTAINERS=$(sudo docker ps -q | wc -l)
 
           if [ "$RUNNING_CONTAINERS" -ne "$STARTED_CONTAINERS" ]; then
             echo "Error: not all containers started after snap revert"
