@@ -143,8 +143,8 @@ The required NVIDIA kernel objects and user-space libraries are available as opt
 
 ```shell
 # Install kernel components
-sudo snap install pc-kernel+nvidia-550-ko
-sudo snap install pc-kernel+nvidia-550-user
+sudo snap install pc-kernel+nvidia-550-erd-ko
+sudo snap install pc-kernel+nvidia-550-erd-user
 
 # Install the content provider snap
 sudo snap install mesa-2404
