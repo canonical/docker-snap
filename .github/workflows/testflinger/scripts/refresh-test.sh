@@ -9,6 +9,13 @@ cleanup() (
   sudo snap remove --purge docker
 )
 
+revert_docker()(
+  set -x
+  sudo snap revert docker
+
+  sudo snap list docker
+)
+
 refresh_docker() (
   # SNAP_CHANNEL may be set by the caller, or replaced in CI
   DOCKER_SNAP_CHANNEL=$SNAP_CHANNEL
@@ -73,6 +80,10 @@ main() {
   check_container
 
   refresh_docker
+
+  check_container
+
+  revert_docker
 
   check_container
 
