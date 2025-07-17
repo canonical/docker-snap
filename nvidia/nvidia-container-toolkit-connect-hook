@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# This script implements the connect hook for snap's graphics plugs
+. "${SNAP}/usr/share/nvidia-container-toolkit/lib"
+
+set -eux
+
+HOOK_LOG="${SNAP_COMMON}/hooks/${SNAP_REVISION}/$(basename "$0").log" && mkdir -p "${HOOK_LOG%/*}"
+exec &> >(tee -a "${HOOK_LOG}")
+
+. "${SNAP}/usr/share/nvidia-container-toolkit/lib"
+
+# Just exit if NVIDIA support is disabled #
+if nvidia_support_disabled; then
+    exit 0
+fi
+
+# Ensure hardware present #
+nvidia_hw_ensure
+
+# Restart services to reflect any changes if required #
+# If oneshot services are inactive they don't respond to restart, so stop/start #
+snapctl stop "${SNAP_NAME}.nvidia-container-toolkit"
+snapctl start --enable "${SNAP_NAME}.nvidia-container-toolkit"
+snapctl restart "${SNAP_NAME}.dockerd"

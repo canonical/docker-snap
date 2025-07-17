@@ -1,0 +1,37 @@
+#!/bin/bash -u
+# Detect if nvidia support enabled, and available, for a system type #
+
+. "${SNAP}/usr/share/nvidia-container-toolkit/lib"
+
+# Just exit if NVIDIA support is disabled #
+if nvidia_support_disabled; then
+    exit_inf "NVIDIA support disabled by user"
+fi
+
+if nvidia_support_classic; then
+    echo "Running on Classic system"
+elif nvidia_support_core; then
+    echo "Running on Ubuntu Core system"
+else
+    exit_inf "No NVIDIA support detected. For NVIDIA support, please refer to https://github.com/canonical/docker-snap"
+fi
+
+## Running gpu-2404 wrapper for Core systems only ##
+
+# Classic does not require this wrapper #
+if nvidia_support_classic; then
+    exec "$@"
+fi
+
+if nvidia_support_core; then
+    if snapctl is-connected gpu-2404; then
+        exec "${SNAP}/gpu-2404/bin/gpu-2404-provider-wrapper" "$@"
+    fi
+
+    # Core 22 does not require this wrapper #
+    if snapctl is-connected graphics-core22  ; then
+        exec "$@"
+    fi
+
+    exit_inf "GPU user-space content provider not connected."
+fi
