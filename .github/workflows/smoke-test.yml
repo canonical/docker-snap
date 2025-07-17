@@ -104,6 +104,45 @@ jobs:
 
           set -e
 
+      - name: Snap refresh test
+        run: |
+
+          trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=40 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep docker' ERR
+          sudo snap install docker
+
+          # Give time for the daemon to startup
+          sleep 5
+
+          # Run latest versions of well known applications
+          sudo docker run --restart=always -d redis
+          sudo docker run --restart=always -d rabbitmq
+          sudo docker run --restart=always -d grafana/grafana
+          sudo docker run --restart=always -d jenkins/jenkins
+          sudo docker run --restart=always -d nginx
+          sudo docker run --restart=always -d -e POSTGRES_HOST_AUTH_METHOD=trust postgres
+
+          # Wait for the restart policy to take effect
+          # See: https://docs.docker.com/engine/containers/start-containers-automatically/#restart-policy-details
+          sleep 10
+
+          export UP_CONTAINERS_OLD=$(sudo docker ps -q | wc -l)
+
+          # Refresh Docker snap to the current build
+          sudo snap install --dangerous ./docker_${{ github.run_id}}_${{ matrix.runner.arch }}.snap
+
+          sleep 10
+
+          export UP_CONTAINERS_NEW=$(sudo docker ps -q | wc -l)
+
+          if [ "$UP_CONTAINERS_NEW" -lt "$UP_CONTAINERS_OLD" ]; then
+            echo "Error: not all containers started after snap refresh"
+            sudo docker ps -a
+            exit 1
+          fi
+
+          # Cleanup
+          sudo snap remove --purge docker
+
       - name: Install
         run: |
           sudo snap install --dangerous ./docker_${{ github.run_id}}_${{ matrix.runner.arch }}.snap
@@ -190,7 +229,7 @@ jobs:
       - name: Docker Build
         run: |
           sudo docker build --pull -t debian-hello - <<'EOF'
-            FROM debian:buster-slim
+            FROM debian:stable-slim
             RUN set -eux; \
                 apt-get update; \
                 apt-get install -y hello; \
@@ -217,7 +256,7 @@ jobs:
         run: |
           trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sleep 1; sudo tail -n20 /var/log/*.log; sudo dmesg | tail -n20; sudo journalctl --no-pager | grep DENIED | grep docker' ERR
           sudo DOCKER_BUILDKIT=1 docker build --pull -t debian-hello - <<'EOF'
-            FROM debian:buster-slim
+            FROM debian:stable-slim
             RUN set -eux; \
                 apt-get update; \
                 apt-get install -y hello; \

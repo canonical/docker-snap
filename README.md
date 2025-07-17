@@ -113,21 +113,79 @@ Docker should function normally, with the following caveats:
 
 ## NVIDIA support
 
-If the system is found to have an nvidia graphics card available, and the host has the required nvidia libraries installed, the nvidia container toolkit will be setup and configured to enable use of the local GPU from docker.  This can be used to enable use of CUDA from a docker container, for instance.
+The Docker snap does not include the NVIDIA GPU and CUDA drivers.
+The snap includes various parts of the [NVIDIA Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit) and [NVIDIA container runtime library](https://github.com/NVIDIA/libnvidia-container).
 
-To enable proper use of the GPU within docker, the nvidia runtime must be used.  By default, the nvidia runtime will be configured to use [CDI](https://github.com/cncf-tags/container-device-interface) mode, and a the appropriate nvidia CDI config will be automatically created for the system.  You just need to specify the nvidia runtime when running a container.
+If the system is found to have an NVIDIA graphics card available, and the host has the required drivers installed, the NVIDIA Container Toolkit will be set up and configured to enable use of the local GPU from docker. This allows you, for instance, to use CUDA from a container.
 
-### Ubuntu Core 22
+> [!NOTE] 
+> The containerized workload must be ABI-compatible with the graphics user-space libraries on the host. The Docker snap does not add any abstraction to make the container environment host-agnostic.
 
-The required nvidia libraries are available in the nvidia-core22 snap.
+To enable proper use of the GPU within docker, the `nvidia` runtime must be used. By default, this runtime will be configured to use [CDI](https://github.com/cncf-tags/container-device-interface) mode, and the appropriate NVIDIA CDI config will be automatically created for the system. It is only required to specify the `nvidia` runtime when running a container.
 
-This requires connection of the graphics-core22 content interface provided by the nvidia-core22 snap, which should be automatically connected once installed.
+### Ubuntu Core
+
+On Ubuntu Core, the graphics dependencies must be provided to the Docker snap via another snap. 
+This is done using one of the supported content interfaces. 
+
+> [!TIP]
+> A [content interface](https://snapcraft.io/docs/content-interface) allows sharing data between snaps.
+> For NVIDIA support, the graphics user-space are shared from a *provider snap* to the Docker snap.
+
+The provider and environment setup differs depending on the Ubuntu Core release. Refer below for specific instructions.
+
+> [!NOTE]
+> It is possible to connect multiple graphic providers to the Docker snap. In such a case, the Docker snap will only utilize the content provided by the `gpu-2404` content provider. Do not connect more than one `gpu-2404` provider at the same time as the content may partially override each other.
+
+#### Ubuntu Core 24
+
+The required NVIDIA kernel objects and user-space libraries are available as optional components in the [pc-kernel](https://snapcraft.io/pc-kernel) snap (24/stable channel). These libraries can be provided to the Docker snap via the [mesa-2404](https://snapcraft.io/mesa-2404) snap.
+
+```shell
+# Install kernel components
+sudo snap install pc-kernel+nvidia-550-ko
+sudo snap install pc-kernel+nvidia-550-user
+
+# Install the content provider snap
+sudo snap install mesa-2404
+```
+
+Once installed, Docker snap's gpu-2404 plug automatically connects to mesa-2404:
+```console
+$ snap connections docker 
+Interface          Plug                     Slot                                 Notes
+...
+content[gpu-2404]  docker:gpu-2404          mesa-2404:gpu-2404                   -
+...
+```
+
+#### Ubuntu Core 22
+
+> [!CAUTION]
+> The support for using `nvidia` runtime on Ubuntu Core 22 has been deprecated. It will be fully removed in the next Docker snap base upgrade to core26 or later.
+
+The required NVIDIA libraries are available in the [nvidia-core22](https://snapcraft.io/nvidia-core22) content provider snap. 
+
+Once installed, the Docker snap's graphics-core22 plug auto connects to nvidia-core22's corresponding slot:
+```console
+$ snap connections docker
+Interface                 Plug                     Slot                                 Notes
+...
+content[graphics-core22]  docker:graphics-core22   nvidia-core22:graphics-core22        -
+...
+```
+
+> [!NOTE]
+> The [mesa-core22](https://snapcraft.io/mesa-core22) provider snap is not supported.
+
+
+In addition to the content provider, install the [nvidia-assemble](https://github.com/canonical/nvidia-assemble) snap to assemble, load and setup NVIDIA graphics drivers from a compatible kernel snap, such as the pc-kernel snap (22/stable channel). 
 
 ### Ubuntu Server / Desktop
 
-The required nvidia libraries are available in the nvidia container toolkit packages.
+The required NVIDIA libraries are available in the NVIDIA Container Toolkit packages.
 
-Instruction on how to install them can be found ([here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html))
+Instruction on how to install them can be found [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 
 ### Custom NVIDIA runtime config
 
@@ -150,7 +208,7 @@ snap set docker nvidia-support.cdi.device-name-strategy=uuid
 
 ### Disable NVIDIA support
 
-Setting up the nvidia support should be automatic the hardware is present, but you may wish to specifically disable it so that setup is not even attempted.  You can do so via the following snap config:
+Setting up the NVIDIA support should be automatic when the hardware is present, but you may wish to specifically disable it so that setup is not even attempted.  You can do so via the following snap config:
 ```shell
 snap set docker nvidia-support.disabled=true
 ```
@@ -169,7 +227,7 @@ or
 docker run --rm --runtime nvidia --env NVIDIA_VISIBLE_DEVICES=all {cuda-container-image-name}
 ```
 
-If your container image already has appropriate environment variables set, you may be able to just specify the nvidia runtime with no additional args required.
+If your container image already has appropriate environment variables set, you may be able to just specify the `nvidia` runtime with no additional args required.
 
 You may run `nvidia-smi` to validate the environment set up from a temporary container:
 ```
