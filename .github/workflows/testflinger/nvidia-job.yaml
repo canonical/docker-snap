@@ -39,14 +39,6 @@ test_data:
       sleep 30
     done
 
-    echo "Set up the right kernel"
-    ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/setup-kernel.sh)"
-
-    while ! ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/check-snap-changes.sh)"; do
-      echo "Waiting for ssh server and snap changes ..."
-      sleep 30
-    done
-
     echo "Setup the environment on the target device"
     ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/setup.sh)"
 
