@@ -124,7 +124,7 @@ Developing the `docker` snap package is typically performed on a "classic" Ubunt
 Install the snap tooling:
 
 ```shell
-sudo snap install snapcraft --classic
+sudo snap install snapcraft --classic --channel=7.x/stable
 ```
 
 Checkout and enter this repository:
