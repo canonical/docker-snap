@@ -120,22 +120,44 @@ jobs:
           sudo docker run --restart=always -d jenkins/jenkins
           sudo docker run --restart=always -d nginx
           sudo docker run --restart=always -d -e POSTGRES_HOST_AUTH_METHOD=trust postgres
+          # NOTE: adjust this accordingly with the commands above if needed
+          STARTED_CONTAINERS=6
+
+          echo "List of running containers"
+          docker ps -a
+
+          if [[ -n $(sudo docker ps -q --filter "status=exited") ]]; then
+            echo "Error: docker snap did not start all containers"
+            exit 1
+          fi
+
 
           # Wait for the restart policy to take effect
           # See: https://docs.docker.com/engine/containers/start-containers-automatically/#restart-policy-details
           sleep 10
-
-          export UP_CONTAINERS_OLD=$(sudo docker ps -q | wc -l)
 
           # Refresh Docker snap to the current build
           sudo snap install --dangerous ./docker_${{ github.run_id}}_${{ matrix.runner.arch }}.snap
 
           sleep 10
 
-          export UP_CONTAINERS_NEW=$(sudo docker ps -q | wc -l)
+          RUNNING_CONTAINERS=$(sudo docker ps -q | wc -l)
 
-          if [ "$UP_CONTAINERS_NEW" -lt "$UP_CONTAINERS_OLD" ]; then
+          if [ "$RUNNING_CONTAINERS" -ne "$STARTED_CONTAINERS" ]; then
             echo "Error: not all containers started after snap refresh"
+            sudo docker ps -a
+            exit 1
+          fi
+
+          # Revert docker snap to the previous version
+          sudo snap revert docker
+
+          sleep 10
+
+          RUNNING_CONTAINERS=$(sudo docker ps -q | wc -l)
+
+          if [ "$RUNNING_CONTAINERS" -ne "$STARTED_CONTAINERS" ]; then
+            echo "Error: not all containers started after snap revert"
             sudo docker ps -a
             exit 1
           fi
