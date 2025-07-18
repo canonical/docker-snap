@@ -197,7 +197,7 @@ parts:
     source-tag: v0.19.0
     source-depth: 1
     organize:
-      'usr/local/bin/tini-static': bin/docker-init
+      'bin/tini-static': bin/docker-init
     build-packages:
       - build-essential
     prime:
