@@ -188,12 +188,23 @@ parts:
       - libsystemd-dev
       - patch
       - pkg-config
+      - to armhf:
+        - execstack
     stage-packages:
       - git
       - libltdl7
       - pigz
       - xz-utils
       - zfsutils-linux
+    override-stage: |
+      craftctl default
+      # clear executable stack flag bit on libzpool (from zfsutils-linux) when building for armhf
+      # to satisfy store validation
+      #
+      # we do it in override-stage because libzpool comes from stage-packages and therefore only exists in $CRAFT_STAGE
+      if [ "${CRAFT_ARCH_BUILD_FOR}" = "armhf" ]; then
+        find "$CRAFT_STAGE" -name "libzpool.so.*" -exec execstack --clear-execstack {} \;
+      fi
 
   containerd:
     plugin: make
