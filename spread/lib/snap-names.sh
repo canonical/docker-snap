@@ -5,4 +5,4 @@ core_name=$(snap list | awk '/^(ubuntu-)?core / {print $1; exit}')
 if [ "$kernel_name" = "pi3-kernel" ] ; then
 	kernel_name=pi2-kernel
 fi
-docker_base=core22
+docker_base=core24
