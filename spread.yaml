@@ -23,44 +23,48 @@ environment:
     SNAP_CHANNEL: $(HOST:echo $SNAP_CHANNEL)
 
 backends:
-    uvt-kvm:
-        type: adhoc
-        allocate: |
-            VM_NAME=docker-snap-spread-kvm-$SPREAD_SYSTEM
-            if [ ! -z $(uvt-kvm list | grep $VM_NAME) ]; then
-                FATAL "uvt-kvm machine with domain $VM_NAME already exists, please destroy before continuing"
-            fi
-            # configure the script to contain the password in it - the environment variables here
-            # won't be available inside the VM when the script runs
-            SCRIPT_DIR=$(mktemp -d)
-            sed "s/SPREAD_PASSWORD/$SPREAD_PASSWORD/" spread/lib/setup-root-ssh-uvt.sh.in > $SCRIPT_DIR/setup-root-ssh-uvt.sh
-            if [ ! -f $SCRIPT_DIR/setup-root-ssh-uvt.sh ]; then
-                 FATAL "failed to generate setup script"
-            fi
-            case $SPREAD_SYSTEM in
-                ubuntu-18.04)
-                    RELEASE=bionic;;
-                ubuntu-16.04)
-                    RELEASE=xenial;;
-                *)
-                    FATAL "unsupported uvt-kvm release: $SPREAD_SYSTEM";;
-            esac
-            # TODO: fix this for non-amd64 systems
-            uvt-simplestreams-libvirt sync arch=amd64 release=$RELEASE
-            uvt-kvm create $VM_NAME release=$RELEASE --run-script-once $SCRIPT_DIR/setup-root-ssh-uvt.sh
-            # remove the script so we don't leave it lying around with the password in it
-            rm $SCRIPT_DIR/setup-root-ssh-uvt.sh
-            # wait for the machine to come alive
-            uvt-kvm wait $VM_NAME
-            # now get the address
-            ADDRESS $(uvt-kvm ip $VM_NAME)
-        discard: |
-            trap '' 2
-            uvt-kvm destroy docker-snap-spread-kvm-$SPREAD_SYSTEM
-            trap
-        systems:
-            - ubuntu-18.04
-            - ubuntu-16.04
+    lxd:
+        systems: [ubuntu-24.04, ubuntu-22.04]
+
+    # TODO: this needs to be updated and fixed (commented out for now)
+    # uvt-kvm:
+    #     type: adhoc
+    #     allocate: |
+    #         VM_NAME=docker-snap-spread-kvm-$SPREAD_SYSTEM
+    #         if [ ! -z $(uvt-kvm list | grep $VM_NAME) ]; then
+    #             FATAL "uvt-kvm machine with domain $VM_NAME already exists, please destroy before continuing"
+    #         fi
+    #         # configure the script to contain the password in it - the environment variables here
+    #         # won't be available inside the VM when the script runs
+    #         SCRIPT_DIR=$(mktemp -d)
+    #         sed "s/SPREAD_PASSWORD/$SPREAD_PASSWORD/" spread/lib/setup-root-ssh-uvt.sh.in > $SCRIPT_DIR/setup-root-ssh-uvt.sh
+    #         if [ ! -f $SCRIPT_DIR/setup-root-ssh-uvt.sh ]; then
+    #              FATAL "failed to generate setup script"
+    #         fi
+    #         case $SPREAD_SYSTEM in
+    #             ubuntu-18.04)
+    #                 RELEASE=bionic;;
+    #             ubuntu-16.04)
+    #                 RELEASE=xenial;;
+    #             *)
+    #                 FATAL "unsupported uvt-kvm release: $SPREAD_SYSTEM";;
+    #         esac
+    #         # TODO: fix this for non-amd64 systems
+    #         uvt-simplestreams-libvirt sync arch=amd64 release=$RELEASE
+    #         uvt-kvm create $VM_NAME release=$RELEASE --run-script-once $SCRIPT_DIR/setup-root-ssh-uvt.sh
+    #         # remove the script so we don't leave it lying around with the password in it
+    #         rm $SCRIPT_DIR/setup-root-ssh-uvt.sh
+    #         # wait for the machine to come alive
+    #         uvt-kvm wait $VM_NAME
+    #         # now get the address
+    #         ADDRESS $(uvt-kvm ip $VM_NAME)
+    #     discard: |
+    #         trap '' 2
+    #         uvt-kvm destroy docker-snap-spread-kvm-$SPREAD_SYSTEM
+    #         trap
+    #     systems:
+    #         - ubuntu-18.04
+    #         - ubuntu-16.04
 
 
 # Put this somewhere where we have read-write access
@@ -80,8 +84,8 @@ suites:
     spread/main/:
         summary: Full-system tests for the docker snap
         systems:
-            - ubuntu-18.04
-            - ubuntu-16.04
+            - ubuntu-24.04
+            - ubuntu-22.04
         prepare: |
             . $TESTSLIB/prepare.sh
         restore-each: |
