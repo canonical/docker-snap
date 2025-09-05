@@ -1,5 +1,5 @@
 name: docker
-version: '28.3.3'
+version: '28.4.0'
 summary: Docker container runtime
 description: Refer to https://snapcraft.io/docker
 license: (Apache-2.0 AND MIT AND GPL-2.0)
@@ -138,7 +138,7 @@ parts:
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
-    source-tag: v28.3.3
+    source-tag: v28.4.0
     source-depth: 1
     override-build: |
       $CRAFT_STAGE/patches/patch.sh
@@ -185,7 +185,7 @@ parts:
   containerd:
     plugin: make
     source: https://github.com/containerd/containerd.git
-    # from https://github.com/moby/moby/blob/v28.3.3/Dockerfile#L199
+    # from https://github.com/moby/moby/blob/v28.4.0/Dockerfile#L199
     source-tag: v1.7.27
     source-depth: 1
     override-build: |
@@ -202,7 +202,7 @@ parts:
   runc:
     plugin: make
     source: https://github.com/opencontainers/runc.git
-    # from https://github.com/moby/moby/blob/v28.3.3/Dockerfile#L290
+    # from https://github.com/moby/moby/blob/v28.4.0/Dockerfile#L290
     source-tag: v1.2.6
     source-depth: 1
     override-build: |
@@ -265,7 +265,7 @@ parts:
     plugin: cmake
     source: https://github.com/krallin/tini.git
     source-type: git
-    # from https://github.com/moby/moby/blob/v28.3.3/Dockerfile#L325
+    # from https://github.com/moby/moby/blob/v28.4.0/Dockerfile#L325
     source-tag: v0.19.0
     source-depth: 1
     organize:
@@ -279,7 +279,7 @@ parts:
     plugin: make
     build-snaps: *go
     source: https://github.com/docker/cli.git
-    source-tag: v28.3.3
+    source-tag: v28.4.0
     source-depth: 1
     override-build: |
       # docker build specific environment variables
