@@ -1,18 +1,18 @@
-From 173566eebc60e3ed18ec595686688ad10f25388b Mon Sep 17 00:00:00 2001
+From 1534b01a725498de64971edbc0614f502428b215 Mon Sep 17 00:00:00 2001
 From: Lincoln Wallace <lincoln.wallace@canonical.com>
-Date: Wed, 28 Aug 2024 17:30:12 -0300
-Subject: [PATCH 2/5] snappy-apparmor-tweaks
+Date: Fri, 5 Sep 2025 08:52:16 -0300
+Subject: [PATCH] snappy apparmor tweaks
 
 Signed-off-by: Lincoln Wallace <lincoln.wallace@canonical.com>
 ---
- profiles/apparmor/apparmor.go | 17 +++++++++++++++++
- profiles/apparmor/template.go |  8 ++++++++
+ .../moby/profiles/apparmor/apparmor.go          | 17 +++++++++++++++++
+ .../moby/profiles/apparmor/template.go          |  8 ++++++++
  2 files changed, 25 insertions(+)
 
-diff --git a/profiles/apparmor/apparmor.go b/profiles/apparmor/apparmor.go
-index 277c853ebe..92e3872722 100644
---- a/profiles/apparmor/apparmor.go
-+++ b/profiles/apparmor/apparmor.go
+diff --git a/vendor/github.com/moby/profiles/apparmor/apparmor.go b/vendor/github.com/moby/profiles/apparmor/apparmor.go
+index 445eed64e9..83ef27d941 100644
+--- a/vendor/github.com/moby/profiles/apparmor/apparmor.go
++++ b/vendor/github.com/moby/profiles/apparmor/apparmor.go
 @@ -9,6 +9,7 @@ import (
  	"os"
  	"os/exec"
@@ -51,11 +51,11 @@ index 277c853ebe..92e3872722 100644
  	return compiled.Execute(out, p)
  }
  
-diff --git a/profiles/apparmor/template.go b/profiles/apparmor/template.go
-index 8dbc1b6102..c908b98999 100644
---- a/profiles/apparmor/template.go
-+++ b/profiles/apparmor/template.go
-@@ -55,5 +55,13 @@ profile {{.Name}} flags=(attach_disconnected,mediate_deleted) {
+diff --git a/vendor/github.com/moby/profiles/apparmor/template.go b/vendor/github.com/moby/profiles/apparmor/template.go
+index 2ebcc218a7..9de570696b 100644
+--- a/vendor/github.com/moby/profiles/apparmor/template.go
++++ b/vendor/github.com/moby/profiles/apparmor/template.go
+@@ -54,5 +54,13 @@ profile {{.Name}} flags=(attach_disconnected,mediate_deleted) {
  
    # suppress ptrace denials when using 'docker ps' or using 'ps' inside a container
    ptrace (trace,read,tracedby,readby) peer={{.Name}},
