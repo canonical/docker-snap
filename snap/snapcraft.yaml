@@ -7,7 +7,7 @@ license: (Apache-2.0 AND MIT AND GPL-2.0)
 grade: stable
 confinement: strict
 
-base: core22
+base: core24
 assumes:
   - snapd2.59.1
 
@@ -42,11 +42,17 @@ plugs:
     interface: docker
   opengl:
   # For nvidia userspace libs support #
+  gpu-2404:
+    interface: content
+    target: $SNAP/gpu-2404
+    # This is the only relevant provider, but leaving unspecified to prevent auto-installing of the providing snap #
+    # default-provider: mesa-2404
   graphics-core22:
     interface: content
     target: $SNAP/graphics
     # Currently, this is the only relevant provider, but cannot be default as not supported on all archs #
     #default-provider: nvidia-core22
+
 slots:
   config-ro:
     interface: content
@@ -88,6 +94,7 @@ apps:
       - network-control
       - privileged
       - support
+      - gpu-2404
       - graphics-core22
     slots:
       - docker-daemon
@@ -101,15 +108,18 @@ apps:
       - home
 
   nvidia-container-toolkit:
+    command-chain:
+      - bin/system-detection
     command: bin/nvidia-container-toolkit
     daemon: oneshot
     plugs:
+      - gpu-2404
       - graphics-core22
     before:
       - dockerd
 
 parts:
-  wrapper-scripts:
+  utility-scripts:
     plugin: dump
     source: .
     stage-packages:
@@ -117,6 +127,9 @@ parts:
     organize:
       nvidia/lib: usr/share/nvidia-container-toolkit/lib
       nvidia/nvidia-container-toolkit: bin/
+      nvidia/nvidia-container-toolkit-connect-hook: bin/
+      nvidia/system-detection: bin/
+      nvidia/gpu-2404-optional-wrapper: bin/
     stage:
       - bin/*
       - config/daemon.json
@@ -161,10 +174,10 @@ parts:
       install -T bundles/dynbinary-daemon/dockerd "$CRAFT_PART_INSTALL/bin/dockerd"
       # install docker-proxy previously provided by libnetwork part
       install -T bundles/dynbinary-daemon/docker-proxy "$CRAFT_PART_INSTALL/bin/docker-proxy"
-    # https://github.com/moby/moby/blob/v28.3.3/Dockerfile#L3 (Docker-supported Go version for Engine)
+    # https://github.com/moby/moby/blob/v28.4.0/Dockerfile#L3 (Docker-supported Go version for Engine)
     build-snaps: &go ['go/1.24/stable']
     # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
-    after: [wrapper-scripts]
+    after: [utility-scripts]
     build-packages:
       - btrfs-progs
       - gcc
@@ -175,12 +188,23 @@ parts:
       - libsystemd-dev
       - patch
       - pkg-config
+      - to armhf:
+        - execstack
     stage-packages:
       - git
       - libltdl7
       - pigz
       - xz-utils
       - zfsutils-linux
+    override-stage: |
+      craftctl default
+      # clear executable stack flag bit on libzpool (from zfsutils-linux) when building for armhf
+      # to satisfy store validation
+      #
+      # we do it in override-stage because libzpool comes from stage-packages and therefore only exists in $CRAFT_STAGE
+      if [ "${CRAFT_ARCH_BUILD_FOR}" = "armhf" ]; then
+        find "$CRAFT_STAGE" -name "libzpool.so.*" -exec execstack --clear-execstack {} \;
+      fi
 
   containerd:
     plugin: make
@@ -232,6 +256,7 @@ parts:
     build-snaps: *go
     build-packages:
       - make
+      - libtirpc-dev
     organize:
       bin: usr/bin/
     stage:
@@ -247,7 +272,7 @@ parts:
     override-build: *arch-restrict
     override-stage: *arch-restrict
     override-prime: *arch-restrict
-    after: [wrapper-scripts]
+    after: [utility-scripts]
     build-packages:
       - bmake
       - curl
@@ -299,14 +324,14 @@ parts:
       install -d "$CRAFT_PART_INSTALL/bin"
       install -T build/docker "$CRAFT_PART_INSTALL/bin/docker"
       install -T contrib/completion/bash/docker "$CRAFT_PART_INSTALL/bin/docker-completion.sh"
-    after: [wrapper-scripts]
+    after: [utility-scripts]
     stage-packages:
       - git
 
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
-    # https://github.com/moby/moby/blob/v28.3.3/Dockerfile#L15
+    # https://github.com/moby/moby/blob/v28.4.0/Dockerfile#L15
     source-tag: v0.24.0
     source-depth: 1
     override-build: |
@@ -321,8 +346,8 @@ parts:
     plugin: make
     source: https://github.com/docker/compose.git
     # https://github.com/docker/docker-ce-packaging/blob/master/common.mk // reference URL
-    # https://github.com/moby/moby/blob/v28.3.3/Dockerfile#L16 // Fetch from
-    source-tag: v2.36.2
+    # https://github.com/moby/moby/blob/v28.4.0/Dockerfile#L16 // Fetch from
+    source-tag: v2.39.1
     source-depth: 1
     override-build: |
       make build
