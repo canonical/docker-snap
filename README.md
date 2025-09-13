@@ -92,6 +92,8 @@ sudo snap enable docker
 
 Docker should function normally, with the following caveats:
 
+* To configure the `docker` daemon edit `/var/snap/docker/current/config/daemon.json`.
+
 * All files that `docker` needs access to should live within your `$HOME` folder.
 
   * If you are using Ubuntu Core 16, you'll need to work within a subfolder of `$HOME` that is readable by root; see [#8](https://github.com/docker/docker-snap/issues/8).
