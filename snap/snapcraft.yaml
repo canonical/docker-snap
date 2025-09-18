@@ -7,7 +7,7 @@ license: (Apache-2.0 AND MIT AND GPL-2.0)
 grade: stable
 confinement: strict
 
-base: core24
+base: core22
 assumes:
   - snapd2.59.1
 
