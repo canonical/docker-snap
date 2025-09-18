@@ -24,7 +24,7 @@ jobs:
         steps:
             # Download snap artifact from a previous smoke-test/build GitHub Workflow run
             - name: Download snap artifact
-              uses: dawidd6/action-download-artifact@v9
+              uses: dawidd6/action-download-artifact@v11
               with:
                 run_id: ${{ inputs.run_id }}
                 name: docker_${{ inputs.run_id }}_amd64.snap
@@ -49,8 +49,7 @@ jobs:
             distro: 
               - noble
               - core22-latest
-              # Skip, pending https://github.com/canonical/docker-snap/pull/260
-              # - core24-latest
+              - core24-latest
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger
           SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
@@ -59,7 +58,7 @@ jobs:
               run: "echo ::notice::Snap channel: $SNAP_CHANNEL"
 
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
 
             - name: Create Testflinger job
               env:

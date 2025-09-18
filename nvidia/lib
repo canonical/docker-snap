@@ -1,3 +1,4 @@
+#!/bin/bash
 # nvidia toolkit related setup funtions #
 
 U_MACHINE="$(uname -m)"
@@ -7,13 +8,18 @@ U_USERLAND="${U_OS%%/*}"
 
 ARCH_TRIPLET="${U_MACHINE}-${U_KERNEL,,}-${U_USERLAND,,}"
 
-NVIDIA_SUPPORT_DISABLED="$(snapctl get nvidia-support.disabled)"
+nvidia_support_disabled() {
+    [ "$(snapctl get nvidia-support.disabled)" == "true" ]
+}
 
-if [ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ] ; then
-    NVIDIA_SUPPORT_CLASSIC="true"
-else
-    NVIDIA_SUPPORT_CLASSIC="false"
-fi
+nvidia_support_core() {
+    snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22
+}
+
+nvidia_support_classic() {
+    # If the directory exists, we assume classic support is enabled then this returns true #
+    [ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ]
+}
 
 device_wait() {
 
@@ -41,7 +47,7 @@ device_wait() {
 
 # Check if hardware is present - just exit if not #
 nvidia_hw_ensure() {
-    lspci -d 10de: | grep -q 'NVIDIA Corporation' || exit 0
+    lspci -d 10de: | grep -q 'NVIDIA Corporation' || exit_inf "NVIDIA hardware not found"
     echo "NVIDIA hardware detected: $(lspci -d 10de:)"
 }
 
@@ -58,13 +64,27 @@ cdi_generate () {
     CDI_DEVICE_NAME_STRATEGY="${CDI_DEVICE_NAME_STRATEGY:-index}"
 
     # Default CDI libs search path and shell path for install on core systems #
-    CDI_LIB_SEARCH_PATH="${SNAP}/graphics/lib/${ARCH_TRIPLET}"
-    CDI_CONFIG_SEARCH_PATH="${SNAP}/graphics/share"
-    CDI_PATH="${PATH}:${SNAP}/graphics/bin"
+    CONTENT_PATH="/usr"
+    
+    if [ -n "${NVIDIA_DRIVER_ROOT:-}" ]; then # UC24
+        # NVIDIA_DRIVER_ROOT comes from the pc-kernel snap, through mesa-2404
+        CONTENT_PATH="${NVIDIA_DRIVER_ROOT}/usr"
+    elif [ -d "${SNAP}/graphics/lib/${ARCH_TRIPLET}" ]; then # UC22
+        CONTENT_PATH="${SNAP}/graphics"
+    fi
+    echo "CONTENT_PATH=${CONTENT_PATH}"
+
+    # FIXME: if UC24, can we just rely on the wrapper env instead of these vars ?
+    CDI_LIB_SEARCH_PATH="${CONTENT_PATH}/lib/${ARCH_TRIPLET}"
+    CDI_CONFIG_SEARCH_PATH="${CONTENT_PATH}/share"
+    CDI_PATH="${PATH}:${CONTENT_PATH}/bin"
+
     # Otherwise, if on classic and nvidia driver is installed, set hostfs for the CDI libs search path and shell path #
-    [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] && CDI_LIB_SEARCH_PATH="/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}"
-    [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] && CDI_CONFIG_SEARCH_PATH="/var/lib/snapd/hostfs/usr/share"
-    [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] && CDI_PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin"
+    if nvidia_support_classic; then
+        CDI_LIB_SEARCH_PATH="/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}"
+        CDI_CONFIG_SEARCH_PATH="/var/lib/snapd/hostfs/usr/share"
+        CDI_PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin"
+    fi
 
     # Generate the CDI spec
     XDG_DATA_DIRS="${XDG_DATA_DIRS:-}:${CDI_CONFIG_SEARCH_PATH}" LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${CDI_LIB_SEARCH_PATH}" PATH="${CDI_PATH}" \
@@ -74,7 +94,7 @@ cdi_generate () {
      --device-name-strategy "${CDI_DEVICE_NAME_STRATEGY}" \
      --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
 
-    if [ "${NVIDIA_SUPPORT_CLASSIC}" == "true" ] ; then
+    if nvidia_support_classic; then
         # Replace container path for binaries such as nvidia-smi to make them discoverable from the default PATH
         sed -i "s|containerPath: /var/lib/snapd/hostfs/usr/bin|containerPath: /usr/bin|g" "${SNAP_DATA}/etc/cdi/nvidia.yaml"
     fi
@@ -89,7 +109,6 @@ nvidia_runtime_config () {
         echo "${RUNTIME_CONFIG_OVERRIDE}" > "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
     # Default - opinionated, but most viable option for now #
     else
-        # FIXME: CDI spec-dirs can be set is a list using `"${SNAP_DATA}/etc/cdi",/var/run/cdi`, once this is fixed: https://github.com/NVIDIA/nvidia-container-toolkit/issues/466
         rm -f "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
         "${SNAP}/usr/bin/nvidia-ctk" config --in-place --set nvidia-container-runtime.mode=cdi --set nvidia-container-runtime.modes.cdi.spec-dirs="${SNAP_DATA}/etc/cdi" --config "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
     fi
@@ -118,4 +137,9 @@ setup_fail () {
 # Info #
 setup_info () {
     echo "Conainter Toolkit setup complete"
+}
+
+exit_inf () {
+    echo "INFO: ${1}"
+    exit 0
 }
