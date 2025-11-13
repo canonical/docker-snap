@@ -124,6 +124,8 @@ parts:
     source: .
     stage-packages:
       - mount
+      - iptables
+      - nftables
     organize:
       nvidia/lib: usr/share/nvidia-container-toolkit/lib
       nvidia/nvidia-container-toolkit: bin/
@@ -132,6 +134,7 @@ parts:
       nvidia/gpu-2404-optional-wrapper: bin/
     stage:
       - bin/*
+      - usr/sbin/*
       - config/daemon.json
       - patches/*
       - usr/share/nvidia-container-toolkit/*
@@ -139,8 +142,15 @@ parts:
       - -bin/go-build-helper.sh
       - -patches/*
       - bin/*
+      - usr/sbin/*
       - config/daemon.json
       - usr/share/nvidia-container-toolkit/*
+    override-prime: |
+      craftctl default
+      ln -sf xtables-legacy-multi $CRAFT_PRIME/usr/sbin/iptables-legacy
+      ln -sf xtables-legacy-multi $CRAFT_PRIME/usr/sbin/ip6tables-legacy
+      ln -sf xtables-nft-multi $CRAFT_PRIME/usr/sbin/iptables-nft
+      ln -sf xtables-nft-multi $CRAFT_PRIME/usr/sbin/ip6tables-nft
 
   utils:
     plugin: nil
