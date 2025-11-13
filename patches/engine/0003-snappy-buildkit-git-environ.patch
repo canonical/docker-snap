@@ -1,7 +1,7 @@
-From 65d421326d7edf6a96ce7b62d0c216d1b59e6509 Mon Sep 17 00:00:00 2001
+From d823dbc8ad84febaa25ace42a695093ac93cd7d6 Mon Sep 17 00:00:00 2001
 From: Lincoln Wallace <lincoln.wallace@canonical.com>
 Date: Fri, 30 Aug 2024 11:52:32 -0300
-Subject: [PATCH 3/5] snappy buildkit git environ
+Subject: [PATCH 3/6] snappy buildkit git environ
 
 Signed-off-by: Lincoln Wallace <lincoln.wallace@canonical.com>
 ---
@@ -9,10 +9,10 @@ Signed-off-by: Lincoln Wallace <lincoln.wallace@canonical.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/vendor/github.com/moby/buildkit/util/gitutil/git_cli.go b/vendor/github.com/moby/buildkit/util/gitutil/git_cli.go
-index 5c35f9365b..b0e0fb3aef 100644
+index 39d4397947..c584b81628 100644
 --- a/vendor/github.com/moby/buildkit/util/gitutil/git_cli.go
 +++ b/vendor/github.com/moby/buildkit/util/gitutil/git_cli.go
-@@ -183,6 +183,9 @@ func (cli *GitCLI) Run(ctx context.Context, args ...string) (_ []byte, err error
+@@ -188,6 +188,9 @@ func (cli *GitCLI) Run(ctx context.Context, args ...string) (_ []byte, err error
  
  		cmd.Env = []string{
  			"PATH=" + os.Getenv("PATH"),

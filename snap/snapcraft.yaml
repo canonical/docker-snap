@@ -1,5 +1,5 @@
 name: docker
-version: '28.5.2'
+version: '29.0.0'
 summary: Docker container runtime
 description: Refer to https://snapcraft.io/docker
 license: (Apache-2.0 AND MIT AND GPL-2.0)
@@ -151,7 +151,7 @@ parts:
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
-    source-tag: v28.5.2
+    source-tag: docker-v29.0.0
     source-depth: 1
     override-build: |
       $CRAFT_STAGE/patches/patch.sh
@@ -186,6 +186,7 @@ parts:
       - libdevmapper-dev
       - libltdl-dev
       - libsystemd-dev
+      - libnftables-dev
       - patch
       - pkg-config
       - to armhf:
@@ -193,6 +194,8 @@ parts:
     stage-packages:
       - git
       - libltdl7
+      - libjansson4
+      - libnftables1
       - pigz
       - xz-utils
       - zfsutils-linux
@@ -209,8 +212,8 @@ parts:
   containerd:
     plugin: make
     source: https://github.com/containerd/containerd.git
-    # from https://github.com/moby/moby/blob/v28.5.2/Dockerfile#L199
-    source-tag: v1.7.28
+    # from https://github.com/moby/moby/blob/docker-v29.0.0/Dockerfile#L166
+    source-tag: v2.1.5
     source-depth: 1
     override-build: |
       make GIT_COMMIT= GIT_BRANCH= LDFLAGS=
@@ -226,7 +229,7 @@ parts:
   runc:
     plugin: make
     source: https://github.com/opencontainers/runc.git
-    # from https://github.com/moby/moby/blob/v28.5.2/Dockerfile#L290
+    # from https://github.com/moby/moby/blob/docker-v29.0.0/Dockerfile#L257
     source-tag: v1.3.3
     source-depth: 1
     override-build: |
@@ -290,7 +293,7 @@ parts:
     plugin: cmake
     source: https://github.com/krallin/tini.git
     source-type: git
-    # from https://github.com/moby/moby/blob/v28.5.2/Dockerfile#L325
+    # from https://github.com/moby/moby/blob/docker-v29.0.0/Dockerfile#L291
     source-tag: v0.19.0
     source-depth: 1
     organize:
@@ -304,7 +307,7 @@ parts:
     plugin: make
     build-snaps: *go
     source: https://github.com/docker/cli.git
-    source-tag: v28.5.2
+    source-tag: v29.0.0
     source-depth: 1
     override-build: |
       # docker build specific environment variables
@@ -331,8 +334,8 @@ parts:
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
-    # https://github.com/moby/moby/blob/v28.5.2/Dockerfile#L15
-    source-tag: v0.24.0
+    # https://github.com/moby/moby/blob/docker-v29.0.0/Dockerfile#L24
+    source-tag: v0.29.1
     source-depth: 1
     override-build: |
       export DESTDIR="$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"

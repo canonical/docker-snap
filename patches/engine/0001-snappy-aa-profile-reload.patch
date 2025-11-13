@@ -1,25 +1,25 @@
-From 407abbba714f69e316a11b10bc654353045f3309 Mon Sep 17 00:00:00 2001
+From 5621af0a01cfd03acdac7363d8580af8d6699670 Mon Sep 17 00:00:00 2001
 From: Lucas Kanashiro <lucas.kanashiro@canonical.com>
 Date: Wed, 23 Aug 2023 18:54:54 -0300
-Subject: [PATCH 1/5] snappy-aa-profile-reload
+Subject: [PATCH 1/6] snappy-aa-profile-reload
 
 ---
  daemon/apparmor_default.go | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/daemon/apparmor_default.go b/daemon/apparmor_default.go
-index 6376001613..d9be0dc683 100644
+index a1048e303c..55934032ea 100644
 --- a/daemon/apparmor_default.go
 +++ b/daemon/apparmor_default.go
-@@ -5,6 +5,7 @@ package daemon // import "github.com/docker/docker/daemon"
+@@ -4,6 +4,7 @@ package daemon
  
  import (
  	"fmt"
 +	"os"
  
- 	"github.com/containerd/containerd/pkg/apparmor"
- 	aaprofile "github.com/docker/docker/profiles/apparmor"
-@@ -32,7 +33,7 @@ func ensureDefaultAppArmorProfile() error {
+ 	"github.com/containerd/containerd/v2/pkg/apparmor"
+ 	aaprofile "github.com/moby/profiles/apparmor"
+@@ -31,7 +32,7 @@ func ensureDefaultAppArmorProfile() error {
  		}
  
  		// Nothing to do.
@@ -29,5 +29,5 @@ index 6376001613..d9be0dc683 100644
  		}
  
 -- 
-2.25.1
+2.43.0
 
