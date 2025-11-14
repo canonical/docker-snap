@@ -58,7 +58,7 @@ main() {
 
   check_new_version
 
-  SNAP_VERSION=${LATEST#v}
+  SNAP_VERSION=${LATEST#docker-v}
   echo -e "New snap version $SNAP_VERSION"
 
   echo "The latest version of moby is: $LATEST"
