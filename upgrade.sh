@@ -18,7 +18,7 @@ validate_version() {
   # v\d+.\d+.\d+\-*(rc.\d|rc\d|beta.\d)*
   # By analysing the last tags on github.com/moby/moby/tags
   # of last 3 years (since 2021).
-  if [[ "$LATEST" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]|rc[0-9]|beta\.[0-9])?$ ]]; then
+  if [[ "$LATEST" =~ ^docker-v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]|rc[0-9]|beta\.[0-9])?$ ]]; then
     echo "$LATEST matches the regex."
   else
     echo "Version doesn't match known pattern."
@@ -58,7 +58,7 @@ main() {
 
   check_new_version
 
-  SNAP_VERSION=${LATEST#v}
+  SNAP_VERSION=${LATEST#docker-v}
   echo -e "New snap version $SNAP_VERSION"
 
   echo "The latest version of moby is: $LATEST"
