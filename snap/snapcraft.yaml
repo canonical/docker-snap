@@ -54,6 +54,21 @@ plugs:
     #default-provider: nvidia-core22
 
 slots:
+  # Expose the config directory to allow a content provider snap to make changes.
+  #
+  # The reason for using a slot instead of a plug is that the snap needs to
+  # maintain write access to this directory. This is required to allow
+  # the nvidia-container-runtime to write to this directory, to prepare the 
+  # the nvidia-docker support and make changes to daemon.json.
+  #
+  # A snap which intends to make changes to daemon.json via this interface
+  # should do so after the connection, e.g. via a connect-plug hook.
+  config-rw:
+    interface: content
+    content: docker-config
+    write:
+      - $SNAP_DATA/config
+  # Read-only access to the config directory
   config-ro:
     interface: content
     content: docker-config-ro
