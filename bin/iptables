@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# If kernel support is missing (and nft fails), automatically assume xtables
+USE_NFTABLES="$(nft list ruleset > /dev/null 2> /dev/null && echo true || echo false)"
+
+# Otherwise resolve the iptables symlink from the host and use
+# xtables if it is pointing to xtables-legacy-multi
+if [ "$USE_NFTABLES" == "true" ]; then
+    if readlink -f /var/lib/snapd/hostfs/sbin/iptables 2>/dev/null | grep -q xtables-legacy-multi; then
+        USE_NFTABLES=false
+    fi
+
+    # If it's not a symlink then it is pure a pure xtables implementation
+    if readlink -f /var/lib/snapd/hostfs/sbin/iptables 2>/dev/null | grep -q "^/var/lib/snapd/hostfs/sbin/iptables"; then
+        USE_NFTABLES=false
+    fi
+fi
+
+if [ "$USE_NFTABLES" == "true" ]; then
+    IMPL=iptables-nft
+else
+    IMPL=iptables-legacy
+fi
+
+exec "$SNAP/usr/sbin/$IMPL" "$@"
