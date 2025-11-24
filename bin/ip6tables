@@ -4,9 +4,14 @@
 USE_NFTABLES="$(nft list ruleset > /dev/null 2> /dev/null && echo true || echo false)"
 
 # Otherwise resolve the iptables symlink from the host and use
-# xtables if it is pointing to xtables-legacy-multi
+# xtables if it is pointing to xtables-legacy-multi or the
+# pre-nftables xtables binary
 if [ "$USE_NFTABLES" == "true" ]; then
-    if readlink -f /var/lib/snapd/hostfs/sbin/ip6tables 2>/dev/null | grep -q xtables-legacy-multi; then
+    if readlink -f /var/lib/snapd/hostfs/sbin/ip6tables 2>/dev/null | grep -q "xtables-legacy-multi$"; then
+        USE_NFTABLES=false
+    fi
+
+    if readlink -f /var/lib/snapd/hostfs/sbin/ip6tables 2>/dev/null | grep -q "xtables-multi$"; then
         USE_NFTABLES=false
     fi
 
@@ -17,9 +22,9 @@ if [ "$USE_NFTABLES" == "true" ]; then
 fi
 
 if [ "$USE_NFTABLES" == "true" ]; then
-    IMPL=ip6tables-nft
+    BIN=xtables-nft-multi
 else
-    IMPL=ip6tables-legacy
+    BIN=xtables-legacy-multi
 fi
 
-exec "$SNAP/usr/sbin/$IMPL" "$@"
+exec "$BIN" ip6tables "$@"
