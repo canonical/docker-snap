@@ -297,27 +297,46 @@ jobs:
       - name: Docker using xtables-nft
         run: |
           sudo snap stop docker
+
           sudo nft flush ruleset
+          set +e
+          COUNT="$(sudo nft list ruleset 2>/dev/null | grep -i docker | wc -l)"
+          set -e
+          [ "$COUNT" -eq 0 ]
 
           sudo update-alternatives --set iptables /usr/sbin/iptables-nft
           sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-nft
 
           sudo snap start docker
-          sleep 5
+          sleep 10
 
+          set +e
           COUNT="$(sudo nft list ruleset 2>/dev/null | grep -i docker | wc -l)"
+          set -e
           [ "$COUNT" -gt 0 ]
 
       - name: Docker using xtables-legacy
         run: |
           sudo snap stop docker
+
           sudo nft flush ruleset
+          set +e
+          COUNT="$(sudo nft list ruleset 2>/dev/null | grep -i docker | wc -l)"
+          set -e
+          [ "$COUNT" -eq 0 ]
 
           sudo update-alternatives --set iptables /usr/sbin/iptables-legacy
           sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
 
-          sudo snap start docker
-          sleep 5
-
+          set +e
           COUNT="$(sudo iptables -L | grep -i docker | wc -l)"
+          set -e
+          [ "$COUNT" -eq 0 ]
+
+          sudo snap start docker
+          sleep 10
+
+          set +e
+          COUNT="$(sudo iptables -L | grep -i docker | wc -l)"
+          set -e
           [ "$COUNT" -gt 0 ]
