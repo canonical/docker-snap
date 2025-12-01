@@ -335,7 +335,7 @@ parts:
     plugin: nil
     source: https://github.com/docker/buildx.git
     # https://github.com/moby/moby/blob/docker-v29.0.1/Dockerfile#L24
-    source-tag: v0.30.0
+    source-tag: v0.30.1
     source-depth: 1
     override-build: |
       export DESTDIR="$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
