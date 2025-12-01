@@ -124,6 +124,7 @@ parts:
     source: .
     stage-packages:
       - mount
+      - nftables
     organize:
       nvidia/lib: usr/share/nvidia-container-toolkit/lib
       nvidia/nvidia-container-toolkit: bin/
@@ -132,6 +133,7 @@ parts:
       nvidia/gpu-2404-optional-wrapper: bin/
     stage:
       - bin/*
+      - usr/sbin/*
       - config/daemon.json
       - patches/*
       - usr/share/nvidia-container-toolkit/*
@@ -139,6 +141,7 @@ parts:
       - -bin/go-build-helper.sh
       - -patches/*
       - bin/*
+      - usr/sbin/*
       - config/daemon.json
       - usr/share/nvidia-container-toolkit/*
 

@@ -29,7 +29,7 @@ jobs:
     runs-on: ${{ matrix.runner.os }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Build
         uses: snapcore/action-build@v1
@@ -38,7 +38,7 @@ jobs:
           snapcraft-args: snap --output docker_${{ github.run_id }}_${{ matrix.runner.arch }}.snap
 
       - name: Upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: docker_${{ github.run_id}}_${{ matrix.runner.arch }}.snap
           path: ${{ steps.snapcraft.outputs.snap }}
@@ -60,10 +60,10 @@ jobs:
     runs-on: ${{ matrix.runner.os }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: docker_${{ github.run_id}}_${{ matrix.runner.arch }}.snap
 
@@ -293,3 +293,50 @@ jobs:
           sudo DOCKER_BUILDKIT=1 docker build --pull -t tianon/gosleep https://github.com/tianon/gosleep.git
           sudo docker run --rm tianon/gosleep gosleep --help
           sudo docker image rm tianon/gosleep
+
+      - name: Docker using xtables-nft
+        run: |
+          sudo snap stop docker
+
+          sudo nft flush ruleset
+          set +e
+          COUNT="$(sudo nft list ruleset 2>/dev/null | grep -i docker | wc -l)"
+          set -e
+          [ "$COUNT" -eq 0 ]
+
+          sudo update-alternatives --set iptables /usr/sbin/iptables-nft
+          sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-nft
+
+          sudo snap start docker
+          sleep 10
+
+          set +e
+          COUNT="$(sudo nft list ruleset 2>/dev/null | grep -i docker | wc -l)"
+          set -e
+          [ "$COUNT" -gt 0 ]
+
+      - name: Docker using xtables-legacy
+        run: |
+          sudo snap stop docker
+
+          sudo nft flush ruleset
+          set +e
+          COUNT="$(sudo nft list ruleset 2>/dev/null | grep -i docker | wc -l)"
+          set -e
+          [ "$COUNT" -eq 0 ]
+
+          sudo update-alternatives --set iptables /usr/sbin/iptables-legacy
+          sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
+
+          set +e
+          COUNT="$(sudo iptables -L | grep -i docker | wc -l)"
+          set -e
+          [ "$COUNT" -eq 0 ]
+
+          sudo snap start docker
+          sleep 10
+
+          set +e
+          COUNT="$(sudo iptables -L | grep -i docker | wc -l)"
+          set -e
+          [ "$COUNT" -gt 0 ]
