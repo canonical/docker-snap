@@ -337,6 +337,7 @@ parts:
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
+    # from `docker buildx version`
     source-tag: v0.30.1
     source-depth: 1
     override-build: |
