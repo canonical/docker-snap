@@ -337,7 +337,8 @@ parts:
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
-    # from `docker buildx version`
+    # Matching `docker buildx version`, installed as a Debian package from Docker's apt repo
+    # https://docs.docker.com/engine/install/ubuntu/
     source-tag: v0.30.1
     source-depth: 1
     override-build: |
