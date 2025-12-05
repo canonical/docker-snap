@@ -27,14 +27,32 @@ check_multipass() {
 }
 
 launch_vm() {
-  echo "Launching Multipass VM..."
-  multipass launch noble -n "${VM_NAME}" -c 2 -m 4G -d 10G || {
-    echo "VM might already exist, trying to start it..."
-    multipass start docker-upgrader || true
-  }
+  local max_attempts=3
+  local attempt=1
 
-  # Wait for VM to be ready
-  sleep 5
+  while [ $attempt -le $max_attempts ]; do
+    echo "Launching Multipass VM (attempt $attempt/$max_attempts)..."
+
+    if multipass launch noble -n "${VM_NAME}" -c 2 -m 4G -d 10G; then
+      echo "VM launched successfully!"
+      sleep 5
+      return 0
+    else
+      echo "Failed to launch VM on attempt $attempt"
+
+      if [ $attempt -lt $max_attempts ]; then
+        echo "VM might already exist, cleaning up and retrying..."
+        multipass delete "${VM_NAME}" 2>/dev/null || true
+        multipass purge 2>/dev/null || true
+        sleep 2
+      fi
+
+      ((attempt++))
+    fi
+  done
+
+  echo "Error: Failed to launch VM after $max_attempts attempts" >&2
+  return 1
 }
 
 run_on_vm() {
