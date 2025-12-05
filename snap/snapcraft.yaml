@@ -151,6 +151,14 @@ parts:
       - jq
       - pciutils
 
+  # NOTE: the parts: engine, docker-cli, containerd, runc, tini, buildx
+  # and compose, had their tags versions set by installing the deb packages
+  # from docker archive (https://docs.docker.com/engine/install/ubuntu/)
+  # and extracting then with:
+  # `docker version`
+  # `docker buildx version`
+  # `docker compose version`
+
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
@@ -177,8 +185,7 @@ parts:
       install -T bundles/dynbinary-daemon/dockerd "$CRAFT_PART_INSTALL/bin/dockerd"
       # install docker-proxy previously provided by libnetwork part
       install -T bundles/dynbinary-daemon/docker-proxy "$CRAFT_PART_INSTALL/bin/docker-proxy"
-    # https://github.com/moby/moby/blob/v28.3.3/Dockerfile#L3 (Docker-supported Go version for Engine)
-    build-snaps: &go ['go/1.25/stable']
+    build-snaps: &go ['go/1.24/stable']
     # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
     after: [utility-scripts]
     build-packages:
@@ -211,6 +218,34 @@ parts:
       if [ "${CRAFT_ARCH_BUILD_FOR}" = "armhf" ]; then
         find "$CRAFT_STAGE" -name "libzpool.so.*" -exec execstack --clear-execstack {} \;
       fi
+
+  docker-cli:
+    plugin: make
+    build-snaps: *go
+    source: https://github.com/docker/cli.git
+    source-tag: v29.0.0
+    source-depth: 1
+    override-build: |
+      # docker build specific environment variables
+      export VERSION=$(craftctl get version)
+      export DOCKER_GITCOMMIT=$(git rev-parse --short HEAD)
+      export GITCOMMIT=$DOCKER_GITCOMMIT
+      export DISABLE_WARN_OUTSIDE_CONTAINER=1
+
+      # setup the go build environment for docker-cli
+      . $CRAFT_STAGE/bin/go-build-helper.sh
+      gopartbootstrap github.com/docker/cli
+
+      # build the docker cli binary
+      unset LDFLAGS
+      make binary
+
+      install -d "$CRAFT_PART_INSTALL/bin"
+      install -T build/docker "$CRAFT_PART_INSTALL/bin/docker"
+      install -T contrib/completion/bash/docker "$CRAFT_PART_INSTALL/bin/docker-completion.sh"
+    after: [utility-scripts]
+    stage-packages:
+      - git
 
   containerd:
     plugin: make
@@ -245,6 +280,48 @@ parts:
       - libapparmor-dev
       - libseccomp-dev
 
+  tini:
+    plugin: cmake
+    source: https://github.com/krallin/tini.git
+    source-type: git
+    source-tag: v0.19.0
+    source-depth: 1
+    organize:
+      'usr/local/bin/tini-static': bin/docker-init
+    build-packages:
+      - build-essential
+    prime:
+      - -usr/local/bin/tini
+
+
+  buildx:
+    plugin: nil
+    source: https://github.com/docker/buildx.git
+    # from: `docker version buildx`
+    source-tag: v0.29.1
+    source-depth: 1
+    override-build: |
+      export DESTDIR="$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
+      export VERSION=$(git describe --match 'v[0-9]*' --always --tags)
+      export REVISION=$(git rev-parse HEAD)
+      export GO_EXTRA_LDFLAGS="-s -w"
+      ./hack/build
+    build-snaps: *go
+
+  compose:
+    plugin: make
+    source: https://github.com/docker/compose.git
+    # https://github.com/docker/docker-ce-packaging/blob/master/common.mk // reference URL
+    source-tag: v2.40.3
+    source-depth: 1
+    override-build: |
+      make build
+
+      install -d "$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
+      install -T bin/build/docker-compose "$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
+    build-snaps: *go
+
+  # NVIDIA container toolkit related parts #
   nvidia-container-toolkit:
     plugin: go
     source: https://github.com/NVIDIA/nvidia-container-toolkit.git
@@ -291,77 +368,6 @@ parts:
     prime:
       - usr/bin/nvidia-container-cli*
       - usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/libnvidia-container*.so*
-
-  tini:
-    plugin: cmake
-    source: https://github.com/krallin/tini.git
-    source-type: git
-    # from https://github.com/moby/moby/blob/docker-v29.1.2/Dockerfile#L291
-    source-tag: v0.19.0
-    source-depth: 1
-    organize:
-      'usr/local/bin/tini-static': bin/docker-init
-    build-packages:
-      - build-essential
-    prime:
-      - -usr/local/bin/tini
-
-  docker-cli:
-    plugin: make
-    build-snaps: *go
-    source: https://github.com/docker/cli.git
-    source-tag: v29.1.2
-    source-depth: 1
-    override-build: |
-      # docker build specific environment variables
-      export VERSION=$(craftctl get version)
-      export DOCKER_GITCOMMIT=$(git rev-parse --short HEAD)
-      export GITCOMMIT=$DOCKER_GITCOMMIT
-      export DISABLE_WARN_OUTSIDE_CONTAINER=1
-
-      # setup the go build environment for docker-cli
-      . $CRAFT_STAGE/bin/go-build-helper.sh
-      gopartbootstrap github.com/docker/cli
-
-      # build the docker cli binary
-      unset LDFLAGS
-      make binary
-
-      install -d "$CRAFT_PART_INSTALL/bin"
-      install -T build/docker "$CRAFT_PART_INSTALL/bin/docker"
-      install -T contrib/completion/bash/docker "$CRAFT_PART_INSTALL/bin/docker-completion.sh"
-    after: [utility-scripts]
-    stage-packages:
-      - git
-
-  buildx:
-    plugin: nil
-    source: https://github.com/docker/buildx.git
-    # Matching `docker buildx version`, installed as a Debian package from Docker's archive repo
-    # https://docs.docker.com/engine/install/ubuntu/
-    source-tag: v0.30.1
-    source-depth: 1
-    override-build: |
-      export DESTDIR="$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
-      export VERSION=$(git describe --match 'v[0-9]*' --always --tags)
-      export REVISION=$(git rev-parse HEAD)
-      export GO_EXTRA_LDFLAGS="-s -w"
-      ./hack/build
-    build-snaps: *go
-
-  compose-v2:
-    plugin: make
-    source: https://github.com/docker/compose.git
-    # https://github.com/docker/docker-ce-packaging/blob/master/common.mk // reference URL
-    # https://github.com/moby/moby/blob/v28.5.2/Dockerfile#L16 // Fetch from
-    source-tag: v5.0.0
-    source-depth: 1
-    override-build: |
-      make build
-
-      install -d "$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
-      install -T bin/build/docker-compose "$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
-    build-snaps: *go
 
 lint:
   ignore:
