@@ -145,7 +145,7 @@ update_yaml() {
     ["tini.source-tag"]=$TINI_VERSION
     ["docker-cli.source-tag"]=$DOCKERCLI_VERSION
     ["buildx.source-tag"]=$BUILDX_VERSION
-    ["compose-v2.source-tag"]=$COMPOSE_VERSION
+    ["compose.source-tag"]=$COMPOSE_VERSION
   )
 
   for part in "${!yaml_updates[@]}"; do
