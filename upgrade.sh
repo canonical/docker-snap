@@ -37,20 +37,24 @@ launch_vm() {
   sleep 5
 }
 
+run_on_vm() {
+  multipass exec "${VM_NAME}" -- "$@"
+}
+
 install_docker() {
   echo "Installing Docker Engine in VM..."
 
   # Install prerequisites
-  multipass exec "${VM_NAME}" -- sudo apt-get update
-  multipass exec "${VM_NAME}" -- sudo apt-get install -y ca-certificates curl
+  run_on_vm sudo apt-get update
+  run_on_vm sudo apt-get install -y ca-certificates curl
 
   # Add Docker's official GPG key
-  multipass exec "${VM_NAME}" -- sudo install -m 0755 -d /etc/apt/keyrings
-  multipass exec "${VM_NAME}" -- sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-  multipass exec "${VM_NAME}" -- sudo chmod a+r /etc/apt/keyrings/docker.asc
+  run_on_vm sudo install -m 0755 -d /etc/apt/keyrings
+  run_on_vm sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  run_on_vm sudo chmod a+r /etc/apt/keyrings/docker.asc
 
   # Add the repository to Apt sources
-  multipass exec "${VM_NAME}" -- bash -c 'sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+  run_on_vm bash -c 'sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
 Types: deb
 URIs: https://download.docker.com/linux/ubuntu
 Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
@@ -59,8 +63,8 @@ Signed-By: /etc/apt/keyrings/docker.asc
 EOF'
 
   # Install Docker
-  multipass exec "${VM_NAME}" -- sudo apt-get update
-  multipass exec "${VM_NAME}" -- sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  run_on_vm sudo apt-get update
+  run_on_vm sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
   echo "Docker installation complete."
 }
@@ -69,7 +73,7 @@ extract_versions() {
   echo "Extracting version information..."
 
   # Get docker version output in JSON format
-  docker_version=$(multipass exec "${VM_NAME}" -- sudo docker version --format json)
+  docker_version=$(run_on_vm sudo docker version --format json)
 
   # Extract versions using yq with JSON parser
   ENGINE_VERSION=$(echo "$docker_version" | yq -p=json '.Server.Version')
@@ -80,11 +84,11 @@ extract_versions() {
   TINI_VERSION=$(echo "$docker_version" | yq -p=json '.Server.Components[] | select(.Name == "docker-init") | .Version')
 
   # Get buildx version (doesn't support --format json)
-  buildx_version=$(multipass exec "${VM_NAME}" -- sudo docker buildx version)
+  buildx_version=$(run_on_vm sudo docker buildx version)
   BUILDX_VERSION=$(echo "$buildx_version" | awk '{print $2}')
 
   # Get compose version in JSON format
-  compose_version=$(multipass exec "${VM_NAME}" -- sudo docker compose version --format json)
+  compose_version=$(run_on_vm sudo docker compose version --format json)
   COMPOSE_VERSION=$(echo "$compose_version" | yq -p=json '.version')
 
   # Extract major.minor for Go version
