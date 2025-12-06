@@ -42,7 +42,7 @@ jobs:
         needs: publish
         # Run also when previous job has been skipped (publish not required)
         if: ${{ always() && !failure() && !cancelled() }}
-        runs-on: [self-hosted, testflinger]
+        runs-on: self-hosted-linux-amd64-jammy-private-endpoint-medium
         strategy:
           fail-fast: ${{ inputs.fail_fast }}
           matrix:
@@ -62,7 +62,7 @@ jobs:
 
             - name: Create Testflinger job
               env:
-                JOB_QUEUE: docker-nvidia
+                JOB_QUEUE: lxd-nvidia
                 DISTRO: ${{ matrix.distro }}
               run: |
 
