@@ -43,8 +43,8 @@ setup_core24() (
   snap components pc-kernel
 
   # Install kernel components. 
-  sudo snap install pc-kernel+nvidia-570-erd-ko
-  sudo snap install pc-kernel+nvidia-570-erd-user
+  sudo snap install pc-kernel+nvidia-580-erd-ko
+  sudo snap install pc-kernel+nvidia-580-erd-user
   
   sudo snap install mesa-2404
 )
