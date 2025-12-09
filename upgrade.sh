@@ -113,12 +113,11 @@ extract_versions() {
   GO_VERSION=$(echo "$GO_VERSION" | awk -F. '{print $1 "." $2}')
 
   # Ensure versions have 'v' prefix where needed
-  [[ "$DOCKERCLI_VERSION" != v* ]] && DOCKERCLI_VERSION="v$DOCKERCLI_VERSION"
-  [[ "$CONTAINERD_VERSION" != v* ]] && CONTAINERD_VERSION="v$CONTAINERD_VERSION"
-  [[ "$RUNC_VERSION" != v* ]] && RUNC_VERSION="v$RUNC_VERSION"
-  [[ "$BUILDX_VERSION" != v* ]] && BUILDX_VERSION="v$BUILDX_VERSION"
-  [[ "$COMPOSE_VERSION" != v* ]] && COMPOSE_VERSION="v$COMPOSE_VERSION"
-  [[ "$TINI_VERSION" != v* ]] && TINI_VERSION="v$TINI_VERSION"
+  for var in DOCKERCLI_VERSION CONTAINERD_VERSION RUNC_VERSION BUILDX_VERSION COMPOSE_VERSION TINI_VERSION; do
+    if [[ "${!var}" != v* ]]; then
+      eval "$var=v\${$var}"
+    fi
+  done
 
   # Construct ENGINE_TAG (format: docker-v{version})
   ENGINE_TAG="docker-v$ENGINE_VERSION"
