@@ -179,6 +179,8 @@ parts:
       install -T bundles/dynbinary-daemon/dockerd "$CRAFT_PART_INSTALL/bin/dockerd"
       # install docker-proxy previously provided by libnetwork part
       install -T bundles/dynbinary-daemon/docker-proxy "$CRAFT_PART_INSTALL/bin/docker-proxy"
+    # fetch from `docker compose version` installing the docker deb packages
+    # from docker archive (https://docs.docker.com/engine/install/ubuntu/)
     build-snaps: &go ['go/1.25/stable']
     # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
     after: [utility-scripts]
