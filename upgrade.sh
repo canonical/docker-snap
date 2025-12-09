@@ -102,11 +102,11 @@ extract_versions() {
   TINI_VERSION=$(echo "$docker_version" | yq -p=json '.Server.Components[] | select(.Name == "docker-init") | .Version')
 
   # Get buildx version (doesn't support --format json)
-  buildx_version=$(run_on_vm sudo docker buildx version)
+  buildx_version=$(vm_run sudo docker buildx version)
   BUILDX_VERSION=$(echo "$buildx_version" | awk '{print $2}')
 
   # Get compose version in JSON format
-  compose_version=$(run_on_vm sudo docker compose version --format json)
+  compose_version=$(vm_run sudo docker compose version --format json)
   COMPOSE_VERSION=$(echo "$compose_version" | yq -p=json '.version')
 
   # Extract major.minor for Go version
