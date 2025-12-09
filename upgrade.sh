@@ -176,9 +176,6 @@ update_yaml() {
   # Replace `build-snaps` for `engine` with $GO_VERSION
   yq_p '.parts.engine."build-snaps"[0] |= sub("[0-9]+\.[0-9]+", "'"$GO_VERSION"'")' "$yaml_file"
 
-  # Replace the remaining comments (update blob references)
-  sed -i "s/moby\/blob\/$CURRENT/moby\/blob\/$ENGINE_TAG/g" "$yaml_file"
-
   echo "YAML file updated successfully."
 }
 
