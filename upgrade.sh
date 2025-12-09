@@ -55,7 +55,7 @@ launch_vm() {
   return 1
 }
 
-run_on_vm() {
+vm_run() {
   multipass exec "${VM_NAME}" -- "$@"
 }
 
@@ -63,16 +63,16 @@ install_docker() {
   echo "Installing Docker Engine in VM..."
 
   # Install prerequisites
-  run_on_vm sudo apt-get update
-  run_on_vm sudo apt-get install -y ca-certificates curl
+  vm_run sudo apt-get update
+  vm_run sudo apt-get install -y ca-certificates curl
 
   # Add Docker's official GPG key
-  run_on_vm sudo install -m 0755 -d /etc/apt/keyrings
-  run_on_vm sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-  run_on_vm sudo chmod a+r /etc/apt/keyrings/docker.asc
+  vm_run sudo install -m 0755 -d /etc/apt/keyrings
+  vm_run sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  vm_run sudo chmod a+r /etc/apt/keyrings/docker.asc
 
   # Add the repository to Apt sources
-  run_on_vm bash -c 'sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+  vm_run bash -c 'sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
 Types: deb
 URIs: https://download.docker.com/linux/ubuntu
 Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
@@ -81,8 +81,8 @@ Signed-By: /etc/apt/keyrings/docker.asc
 EOF'
 
   # Install Docker
-  run_on_vm sudo apt-get update
-  run_on_vm sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  vm_run sudo apt-get update
+  vm_run sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
   echo "Docker installation complete."
 }
@@ -91,7 +91,7 @@ extract_versions() {
   echo "Extracting version information..."
 
   # Get docker version output in JSON format
-  docker_version=$(run_on_vm sudo docker version --format json)
+  docker_version=$(vm_run sudo docker version --format json)
 
   # Extract versions using yq with JSON parser
   ENGINE_VERSION=$(echo "$docker_version" | yq -p=json '.Server.Version')
