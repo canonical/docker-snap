@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Docker snap discussions
+    url: https://github.com/canonical/docker-snap/discussions
+    about: Questions regarding Docker snap usage

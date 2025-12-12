@@ -1,0 +1,36 @@
+From 6dc5ab337fed9c0028316d7d78bae5d62e0df0dc Mon Sep 17 00:00:00 2001
+From: Lincoln Wallace <lincoln.wallace@canonical.com>
+Date: Fri, 13 Jun 2025 11:50:42 -0300
+Subject: [PATCH 6/6] use realchroot fallback func
+
+Signed-off-by: Lincoln Wallace <lincoln.wallace@canonical.com>
+---
+ .../internal/mounttree/switchroot_linux.go           | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/vendor/github.com/moby/go-archive/internal/mounttree/switchroot_linux.go b/vendor/github.com/moby/go-archive/internal/mounttree/switchroot_linux.go
+index cc0f64da68..24a3f8965e 100644
+--- a/vendor/github.com/moby/go-archive/internal/mounttree/switchroot_linux.go
++++ b/vendor/github.com/moby/go-archive/internal/mounttree/switchroot_linux.go
+@@ -23,6 +23,18 @@ func SwitchRoot(path string) error {
+ 		}
+ 	}
+ 
++	// This patch forces the use of the chroot(2) instead of pivot_root(2).
++	//
++	// During a docker pull, AppArmor denies operations related to the creation
++	// of a /snap directory in an image layer.
++	// This is caused by the pivot_root(2) syscall performed during
++	// the extraction of the image layer, confusing AppArmor to enforce
++	// the rules of snap.docker.dockerd profile on the wrong root environment.
++	// See: https://github.com/canonical/docker-snap/issues/281
++	if os.Getenv("SNAP") != "" {
++		return realChroot(path)
++	}
++
+ 	// setup oldRoot for pivot_root
+ 	pivotDir, err := os.MkdirTemp(path, ".pivot_root")
+ 	if err != nil {
+-- 
+2.43.0
+

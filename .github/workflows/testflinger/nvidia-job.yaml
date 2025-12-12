@@ -4,33 +4,55 @@ job_queue: $JOB_QUEUE
 global_timeout: 3600
 output_timeout: 1800
 provision_data:
-    distro: "noble"
+  distro: $DISTRO
 test_data:
 
   # Copy files from the GH runner to the Testflinger Agent
   attachments:
-    - local: ".github/workflows/testflinger/scripts"
+    - local: "scripts"
       agent: "scripts"
 
   # Run commands on the Testflinger Agent
   test_cmds: |
     #!/usr/bin/env bash
-    set -ex
-
-    # List the attached files
-    find attachments/test
+    set -e
 
     SCRIPTS=./attachments/test/scripts
 
-    echo "Testing: DEVICE_IP = $DEVICE_IP"
-    # Setup the environment on the target device
+    echo "List attached files"
+    find $SCRIPTS
+
+    echo "Testing device with IP: $DEVICE_IP"
+
+    # Don't refresh automatically
+    ssh ubuntu@$DEVICE_IP "sudo snap refresh --hold=3h --no-wait"
+    
+    # On UC22, the kernel, core, snapd snaps get refreshed right after first boot,
+    # causing unexpected errors and triggering a reboot
+    # On UC24, the auto refresh starts after a delay while testing
+    echo "Force refresh snaps for consistency"
+    ssh ubuntu@$DEVICE_IP "sudo snap refresh --no-wait"
+
+    # Refresh of some system snaps stops SnapD and schedules a reboot
+    while ! ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/check-snap-changes.sh)"; do
+      echo "Waiting for ssh server and snap changes ..."
+      sleep 30
+    done
+
+    echo "Setup the environment on the target device"
     ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/setup.sh)"
 
     # Reboot the device in background to avoid breaking the SSH connection prematurely
+    echo "Rebooting the device"
     ssh ubuntu@$DEVICE_IP "(sleep 3 && sudo reboot) &"
 
-    echo "Wait for the device to boot and start its SSH server"
-    $SCRIPTS/wait_for_port.sh $DEVICE_IP 22
-
-    # Run the tests
+    while ! ssh ubuntu@$DEVICE_IP "sudo docker version"; do
+      echo "Waiting for ssh server and Docker daemon ..."
+      sleep 30
+    done
+    
+    echo "Run tests"
     ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/test.sh)"
+
+    echo "Run snap refresh test"
+    ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/refresh-test.sh)"

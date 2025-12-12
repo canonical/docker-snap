@@ -1,0 +1,65 @@
+name: Bug Report
+description: File a bug report
+labels: "bug"
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Thanks for taking the time to fill out this bug report! Before
+        submitting your issue, make sure this has not been already
+        reported or if it works with the latest published version
+        of Docker snap.
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug description
+      description: >
+        If applicable, add screenshots to help explain your problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: To reproduce
+      description: >
+        Provide a step-by-step instruction on how to reproduce the behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment information for bug reproduction
+      description: >
+        Kindly copy **all** the commands below, run them in your terminal,
+        and share the results here.
+          ```bash
+            echo -e "\nSnap information:"
+            snap list docker snapd
+
+            echo -e "\nPlug Connections:"
+            snap connections docker
+
+            echo -e "\nAppArmor version:"
+            apparmor_parser --version
+
+            echo -e "\nOS release:"
+            cat /etc/os-release
+
+            echo -e "\nKernel and architecture:"
+            uname -rvm
+          ```
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Additional information
+      description: >
+        Provide any additional information, including relevant logs.
+    validations:
+      required: true

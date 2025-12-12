@@ -7,10 +7,16 @@ exec &> >(tee -a "${HOOK_LOG}")
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
+# If the user unset the data-root, set it to the default
+data_root="$(snapctl get data-root)"
+if [ -z "$data_root" ] ; then
+    snapctl set data-root="${DEFAULT_DATA_ROOT}"
+fi
+
 # Flag to trigger service restart if any condition requires it #
 SVC_RESTART=false
 
-if [ "${NVIDIA_SUPPORT_DISABLED}" == "true" ] ; then
+if nvidia_support_disabled; then
 
     # Remove nvidia runtime config, if it exists #
     jq -r 'del(.runtimes.nvidia)' "${SNAP_DATA}/config/daemon.json" > "${SNAP_DATA}/config/daemon.json.new"

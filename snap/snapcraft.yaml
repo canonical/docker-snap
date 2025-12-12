@@ -1,44 +1,15 @@
 name: docker
-#title: Docker
-version: '24.0.5'
+version: '29.1.2'
 summary: Docker container runtime
-description: |
-  Build and run container images with Docker.
-
-  **Usage**
-
-  * This build can only access files in the home directory. So Dockerfiles and all other files used in commands like `docker build`, `docker save` and `docker load` need to be in $HOME.
-  * You can change the configuration of this build by modifying the files in `/var/snap/docker/current/`.
-  * Additional certificates used by the Docker daemon to authenticate with registries need to be added in `/var/snap/docker/current/etc/docker/certs.d` (instead of `/etc/docker/certs.d`). This directory can be accessed by other snaps using the `docker-registry-certificates` content interface.
-  * Specifying the option `--security-opt="no-new-privileges=true"` with the `docker run` command (or the equivalent in docker-compose) will result in a failure of the container to start. This is due to an an underlying external constraint on AppArmor (see https://bugs.launchpad.net/snappy/+bug/1908448 for details).
-
-  **Running Docker as normal user**
-
-  By default, Docker is only accessible with root privileges (`sudo`). If you want to use docker as a regular user, you need to add your user to the `docker` group.
-
-      sudo addgroup --system docker
-      sudo adduser $USER docker
-      newgrp docker
-      sudo snap disable docker
-      sudo snap enable docker
-
-  **Warning:** if you add your user to the `docker` group, it will have similar power as the `root` user. For details on how this impacts security in your system, see https://docs.docker.com/engine/security/#docker-daemon-attack-surface
-
-  **Authors**
-
-  This snap is built by Canonical based on source code published by Docker, Inc. It is not endorsed or published by Docker, Inc.
-
-  Docker and the Docker logo are trademarks or registered trademarks of Docker, Inc. in the United States and/or other countries. Docker, Inc. and other parties may also have trademark rights in other terms used herein.
+description: Refer to https://snapcraft.io/docker
 license: (Apache-2.0 AND MIT AND GPL-2.0)
-grade: stable
 
-base: core22
+grade: stable
 confinement: strict
 
-# Using passthrough until LP#2019931 is fixed
-passthrough:
-  assumes:
-    - snapd2.59.1
+base: core24
+assumes:
+  - snapd2.59.1
 
 layout:
   /etc/docker:
@@ -51,19 +22,19 @@ layout:
     bind-file: $SNAP/usr/bin/ssh
 
 environment:
+  DEFAULT_DATA_ROOT: "$SNAP_COMMON/var-lib-docker"
   GIT_EXEC_PATH: "$SNAP/usr/lib/git-core"
   GIT_TEMPLATE_DIR: "$SNAP/usr/share/git-core/templates"
   # For nvidia support #
-  LD_LIBRARY_PATH:    $SNAP/graphics/lib/${CRAFT_ARCH_TRIPLET}:${SNAP}/lib/:${SNAP}/lib/${CRAFT_ARCH_TRIPLET}:${SNAP}/usr/lib/:${SNAP}/usr/lib/${CRAFT_ARCH_TRIPLET}
-  LIBGL_DRIVERS_PATH: $SNAP/graphics/lib/${CRAFT_ARCH_TRIPLET}/dri
-  LIBVA_DRIVERS_PATH: $SNAP/graphics/lib/${CRAFT_ARCH_TRIPLET}/dri
+  LD_LIBRARY_PATH: $SNAP/graphics/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:${SNAP}/lib/:${SNAP}/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:${SNAP}/usr/lib/:${SNAP}/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
+  LIBGL_DRIVERS_PATH: $SNAP/graphics/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/dri
+  LIBVA_DRIVERS_PATH: $SNAP/graphics/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/dri
   # nvidia-container-runtime can only set alternative config directory via XDG_CONFIG_HOME #
   XDG_CONFIG_HOME: $SNAP_DATA/etc
 
 plugs:
   home:
     read: all
-  removable-media:
   support:
     interface: docker-support
   privileged:
@@ -73,11 +44,17 @@ plugs:
     interface: docker
   opengl:
   # For nvidia userspace libs support #
+  gpu-2404:
+    interface: content
+    target: $SNAP/gpu-2404
+    # This is the only relevant provider, but leaving unspecified to prevent auto-installing of the providing snap #
+    # default-provider: mesa-2404
   graphics-core22:
     interface: content
     target: $SNAP/graphics
     # Currently, this is the only relevant provider, but cannot be default as not supported on all archs #
     #default-provider: nvidia-core22
+
 slots:
   config-ro:
     interface: content
@@ -113,6 +90,7 @@ apps:
     command: bin/dockerd-wrapper
     daemon: simple
     plugs:
+      - removable-media
       - firewall-control
       - home
       - log-observe
@@ -120,6 +98,7 @@ apps:
       - network-control
       - privileged
       - support
+      - gpu-2404
       - graphics-core22
     slots:
       - docker-daemon
@@ -127,32 +106,38 @@ apps:
   compose:
     command: usr/libexec/docker/cli-plugins/docker-compose
     plugs:
+      - removable-media
       - docker-cli
       - network
       - home
 
   nvidia-container-toolkit:
+    command-chain:
+      - bin/system-detection
     command: bin/nvidia-container-toolkit
     daemon: oneshot
     plugs:
+      - gpu-2404
       - graphics-core22
     before:
       - dockerd
 
-  help:
-    command: bin/help
-
 parts:
-  wrapper-scripts:
+  utility-scripts:
     plugin: dump
     source: .
     stage-packages:
       - mount
+      - nftables
     organize:
       nvidia/lib: usr/share/nvidia-container-toolkit/lib
       nvidia/nvidia-container-toolkit: bin/
+      nvidia/nvidia-container-toolkit-connect-hook: bin/
+      nvidia/system-detection: bin/
+      nvidia/gpu-2404-optional-wrapper: bin/
     stage:
       - bin/*
+      - usr/sbin/*
       - config/daemon.json
       - patches/*
       - usr/share/nvidia-container-toolkit/*
@@ -160,6 +145,7 @@ parts:
       - -bin/go-build-helper.sh
       - -patches/*
       - bin/*
+      - usr/sbin/*
       - config/daemon.json
       - usr/share/nvidia-container-toolkit/*
 
@@ -177,7 +163,7 @@ parts:
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
-    source-tag: v24.0.5
+    source-tag: docker-v29.1.2
     source-depth: 1
     override-build: |
       $CRAFT_STAGE/patches/patch.sh
@@ -200,10 +186,10 @@ parts:
       install -T bundles/dynbinary-daemon/dockerd "$CRAFT_PART_INSTALL/bin/dockerd"
       # install docker-proxy previously provided by libnetwork part
       install -T bundles/dynbinary-daemon/docker-proxy "$CRAFT_PART_INSTALL/bin/docker-proxy"
-    # https://github.com/moby/moby/blob/v24.0.5/Dockerfile.simple (Docker-supported Go version for Engine)
-    build-snaps: &go ['go/1.20/stable']
+    # https://github.com/moby/moby/blob/v28.3.3/Dockerfile#L3 (Docker-supported Go version for Engine)
+    build-snaps: &go ['go/1.25/stable']
     # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
-    after: [wrapper-scripts]
+    after: [utility-scripts]
     build-packages:
       - btrfs-progs
       - gcc
@@ -212,20 +198,34 @@ parts:
       - libdevmapper-dev
       - libltdl-dev
       - libsystemd-dev
+      - libnftables-dev
       - patch
       - pkg-config
+      - to armhf:
+        - execstack
     stage-packages:
       - git
       - libltdl7
+      - libjansson4
+      - libnftables1
       - pigz
       - xz-utils
       - zfsutils-linux
+    override-stage: |
+      craftctl default
+      # clear executable stack flag bit on libzpool (from zfsutils-linux) when building for armhf
+      # to satisfy store validation
+      #
+      # we do it in override-stage because libzpool comes from stage-packages and therefore only exists in $CRAFT_STAGE
+      if [ "${CRAFT_ARCH_BUILD_FOR}" = "armhf" ]; then
+        find "$CRAFT_STAGE" -name "libzpool.so.*" -exec execstack --clear-execstack {} \;
+      fi
 
   containerd:
     plugin: make
     source: https://github.com/containerd/containerd.git
-    # from https://github.com/moby/moby/releases/tag/v24.0.5
-    source-tag: v1.6.21
+    # from https://github.com/moby/moby/blob/docker-v29.1.2/Dockerfile#L166
+    source-tag: v2.2.0
     source-depth: 1
     override-build: |
       make GIT_COMMIT= GIT_BRANCH= LDFLAGS=
@@ -241,8 +241,8 @@ parts:
   runc:
     plugin: make
     source: https://github.com/opencontainers/runc.git
-    # from https://github.com/moby/moby/releases/tag/v24.0.5
-    source-tag: v1.1.12
+    # from https://github.com/moby/moby/blob/docker-v29.1.2/Dockerfile#L257
+    source-tag: v1.3.4
     source-depth: 1
     override-build: |
       make BUILDTAGS='seccomp apparmor selinux' COMMIT=
@@ -257,11 +257,11 @@ parts:
   nvidia-container-toolkit:
     plugin: go
     source: https://github.com/NVIDIA/nvidia-container-toolkit.git
-    source-tag: v1.15.0
+    source-tag: v1.17.8
     source-depth: 1
     override-pull: &arch-restrict |
-      [ "${CRAFT_TARGET_ARCH}" != "amd64" ] && \
-        [ "${CRAFT_TARGET_ARCH}" != "arm64" ] && \
+      [ "${CRAFT_ARCH_BUILD_FOR}" != "amd64" ] && \
+        [ "${CRAFT_ARCH_BUILD_FOR}" != "arm64" ] && \
         exit 0
       [ "${CRAFT_STEP_NAME}" = "BUILD" ] && $CRAFT_STAGE/patches/patch.sh
       craftctl default
@@ -271,6 +271,7 @@ parts:
     build-snaps: *go
     build-packages:
       - make
+      - libtirpc-dev
     organize:
       bin: usr/bin/
     stage:
@@ -280,13 +281,13 @@ parts:
   libnvidia-container:
     plugin: make
     source: https://github.com/NVIDIA/libnvidia-container.git
-    source-tag: v1.15.0
+    source-tag: v1.17.8
     source-depth: 1
     override-pull: *arch-restrict
     override-build: *arch-restrict
     override-stage: *arch-restrict
     override-prime: *arch-restrict
-    after: [wrapper-scripts]
+    after: [utility-scripts]
     build-packages:
       - bmake
       - curl
@@ -295,16 +296,16 @@ parts:
     # Paths taken from upstream packaging #
     organize:
       usr/local/bin/nvidia-container-cli: usr/bin/nvidia-container-cli
-      usr/local/lib: usr/lib/${CRAFT_ARCH_TRIPLET}/
+      usr/local/lib: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/
     prime:
       - usr/bin/nvidia-container-cli*
-      - usr/lib/${CRAFT_ARCH_TRIPLET}/libnvidia-container*.so*
+      - usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/libnvidia-container*.so*
 
   tini:
     plugin: cmake
     source: https://github.com/krallin/tini.git
     source-type: git
-    # from https://github.com/moby/moby/blob/v24.0.5/hack/dockerfile/install/tini.installer
+    # from https://github.com/moby/moby/blob/docker-v29.1.2/Dockerfile#L291
     source-tag: v0.19.0
     source-depth: 1
     organize:
@@ -318,7 +319,7 @@ parts:
     plugin: make
     build-snaps: *go
     source: https://github.com/docker/cli.git
-    source-tag: v24.0.5
+    source-tag: v29.1.2
     source-depth: 1
     override-build: |
       # docker build specific environment variables
@@ -338,15 +339,16 @@ parts:
       install -d "$CRAFT_PART_INSTALL/bin"
       install -T build/docker "$CRAFT_PART_INSTALL/bin/docker"
       install -T contrib/completion/bash/docker "$CRAFT_PART_INSTALL/bin/docker-completion.sh"
-    after: [wrapper-scripts]
+    after: [utility-scripts]
     stage-packages:
       - git
 
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
-    # https://github.com/moby/moby/releases/tag/v24.0.5
-    source-tag: v0.11.2
+    # Matching `docker buildx version`, installed as a Debian package from Docker's archive repo
+    # https://docs.docker.com/engine/install/ubuntu/
+    source-tag: v0.30.1
     source-depth: 1
     override-build: |
       export DESTDIR="$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
@@ -359,8 +361,9 @@ parts:
   compose-v2:
     plugin: make
     source: https://github.com/docker/compose.git
-    # https://github.com/docker/docker-ce-packaging/blob/master/common.mk
-    source-tag: v2.20.3
+    # https://github.com/docker/docker-ce-packaging/blob/master/common.mk // reference URL
+    # https://github.com/moby/moby/blob/v28.5.2/Dockerfile#L16 // Fetch from
+    source-tag: v5.0.0
     source-depth: 1
     override-build: |
       make build

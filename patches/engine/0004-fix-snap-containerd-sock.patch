@@ -1,0 +1,26 @@
+From f01565b0c0645419f8459e5ff4b88d0ccd5bddf5 Mon Sep 17 00:00:00 2001
+From: Lincoln Wallace <lincoln.wallace@canonical.com>
+Date: Thu, 26 Jun 2025 15:01:00 -0300
+Subject: [PATCH 4/6] fix snap containerd sock
+
+Signed-off-by: Lincoln Wallace <lincoln.wallace@canonical.com>
+---
+ .../containerd/containerd/v2/defaults/defaults_linux.go         | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/vendor/github.com/containerd/containerd/v2/defaults/defaults_linux.go b/vendor/github.com/containerd/containerd/v2/defaults/defaults_linux.go
+index dc1ff0909c..12f35c97dd 100644
+--- a/vendor/github.com/containerd/containerd/v2/defaults/defaults_linux.go
++++ b/vendor/github.com/containerd/containerd/v2/defaults/defaults_linux.go
+@@ -18,7 +18,7 @@ package defaults
+ 
+ const (
+ 	// DefaultAddress is the default unix socket address
+-	DefaultAddress = "/run/containerd/containerd.sock"
++	DefaultAddress = "/run/containerd/bogus-containerd.sock" // this includes "bogus-" to prevent docker-snap from ever trying to connect to "containerd-outside-snap" (https://forum.snapcraft.io/t/docker-snap-18-09-9-error/14171/5)
+ 	// DefaultDebugAddress is the default unix socket address for pprof data
+ 	DefaultDebugAddress = "/run/containerd/debug.sock"
+ 	// DefaultFIFODir is the default location used by client-side cio library
+-- 
+2.43.0
+
