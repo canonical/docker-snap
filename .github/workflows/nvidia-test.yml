@@ -62,7 +62,7 @@ jobs:
 
             - name: Create Testflinger job
               env:
-                JOB_QUEUE: lxd-nvidia
+                JOB_QUEUE: docker-nvidia
                 DISTRO: ${{ matrix.distro }}
               run: |
 
