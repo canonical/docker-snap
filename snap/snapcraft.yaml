@@ -1,5 +1,5 @@
 name: docker
-version: '29.1.2'
+version: '29.1.3'
 summary: Docker container runtime
 description: Refer to https://snapcraft.io/docker
 license: (Apache-2.0 AND MIT AND GPL-2.0)
@@ -156,7 +156,7 @@ parts:
     source: https://github.com/moby/moby.git
     # fetch from `docker version` installing the docker deb packages
     # from docker archive (https://docs.docker.com/engine/install/ubuntu/)
-    source-tag: docker-v29.1.2
+    source-tag: docker-v29.1.3
     source-depth: 1
     override-build: |
       $CRAFT_STAGE/patches/patch.sh
