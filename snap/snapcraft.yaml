@@ -18,6 +18,8 @@ layout:
     bind-file: $SNAP_DATA/etc/gitconfig
   /usr/libexec/docker/cli-plugins:
     symlink: $SNAP/usr/libexec/docker/cli-plugins
+  /usr/bin/ssh:
+    bind-file: $SNAP/usr/bin/ssh
 
 environment:
   DEFAULT_DATA_ROOT: "$SNAP_COMMON/var-lib-docker"
@@ -81,6 +83,8 @@ apps:
       - network
       - home
       - removable-media
+      - ssh-keys
+      - ssh-public-keys
 
   dockerd:
     command: bin/dockerd-wrapper
@@ -150,6 +154,11 @@ parts:
     stage-packages:
       - jq
       - pciutils
+
+  ssh:
+    plugin: nil
+    stage-packages:
+      - openssh-client
 
   engine:
     plugin: make
