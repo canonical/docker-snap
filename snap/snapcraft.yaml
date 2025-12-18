@@ -371,7 +371,6 @@ parts:
       install -T bin/build/docker-compose "$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
     build-snaps: *go
 
-
 lint:
   ignore:
     # Change to unused-library, once available
