@@ -2,7 +2,7 @@
 
 set -eu
 
-VM_NAME=docker-upgrader
+VM_NAME=docker-upgrader-$(date +%s)
 
 # yq preserving blank lines
 yq_p() {
@@ -200,7 +200,6 @@ update_yaml() {
 cleanup_vm() {
   echo "Cleaning up VM..."
   multipass delete "${VM_NAME}"
-  multipass purge
   echo "VM cleaned up."
 }
 
