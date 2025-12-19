@@ -154,8 +154,6 @@ parts:
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
-    # fetch from `docker version` installing the docker deb packages
-    # from docker archive (https://docs.docker.com/engine/install/ubuntu/)
     source-tag: docker-v29.1.3
     source-depth: 1
     override-build: |
@@ -179,8 +177,6 @@ parts:
       install -T bundles/dynbinary-daemon/dockerd "$CRAFT_PART_INSTALL/bin/dockerd"
       # install docker-proxy previously provided by libnetwork part
       install -T bundles/dynbinary-daemon/docker-proxy "$CRAFT_PART_INSTALL/bin/docker-proxy"
-    # fetch from `docker version` installing the docker deb packages
-    # from docker archive (https://docs.docker.com/engine/install/ubuntu/)
     build-snaps: &go ['go/1.25/stable']
     # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
     after: [utility-scripts]
@@ -218,8 +214,6 @@ parts:
   containerd:
     plugin: make
     source: https://github.com/containerd/containerd.git
-    # fetch from `docker version` installing the docker deb packages
-    # from docker archive (https://docs.docker.com/engine/install/ubuntu/)
     source-tag: v2.2.0
     source-depth: 1
     override-build: |
@@ -236,8 +230,6 @@ parts:
   runc:
     plugin: make
     source: https://github.com/opencontainers/runc.git
-    # fetch from `docker version` installing the docker deb packages
-    # from docker archive (https://docs.docker.com/engine/install/ubuntu/)
     source-tag: v1.3.4
     source-depth: 1
     override-build: |
@@ -301,8 +293,6 @@ parts:
     plugin: cmake
     source: https://github.com/krallin/tini.git
     source-type: git
-    # fetch from `docker version` installing the docker deb packages
-    # from docker archive (https://docs.docker.com/engine/install/ubuntu/)
     source-tag: v0.19.0
     source-depth: 1
     organize:
@@ -316,8 +306,6 @@ parts:
     plugin: make
     build-snaps: *go
     source: https://github.com/docker/cli.git
-    # fetch from `docker version` installing the docker deb packages
-    # from docker archive (https://docs.docker.com/engine/install/ubuntu/)
     source-tag: v29.0.0
     source-depth: 1
     override-build: |
@@ -345,8 +333,6 @@ parts:
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
-    # fetch from `docker buildx version` installing the docker deb packages
-    # from docker archive (https://docs.docker.com/engine/install/ubuntu/)
     source-tag: v0.29.1
     source-depth: 1
     override-build: |
@@ -360,8 +346,6 @@ parts:
   compose:
     plugin: make
     source: https://github.com/docker/compose.git
-    # fetch from `docker compose version` installing the docker deb packages
-    # from docker archive (https://docs.docker.com/engine/install/ubuntu/)
     source-tag: v2.40.3
     source-depth: 1
     override-build: |
