@@ -306,7 +306,7 @@ parts:
     plugin: make
     build-snaps: *go
     source: https://github.com/docker/cli.git
-    source-tag: v29.0.0
+    source-tag: v29.1.3
     source-depth: 1
     override-build: |
       # docker build specific environment variables
@@ -333,7 +333,7 @@ parts:
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
-    source-tag: v0.29.1
+    source-tag: v0.30.1
     source-depth: 1
     override-build: |
       export DESTDIR="$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
@@ -346,7 +346,7 @@ parts:
   compose:
     plugin: make
     source: https://github.com/docker/compose.git
-    source-tag: v2.40.3
+    source-tag: v5.0.0
     source-depth: 1
     override-build: |
       make build
