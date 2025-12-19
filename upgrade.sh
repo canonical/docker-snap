@@ -133,6 +133,24 @@ extract_versions() {
   echo "  COMPOSE_VERSION: $COMPOSE_VERSION"
 }
 
+validate_yaml_parts() {
+  yaml_file="snap/snapcraft.yaml"
+
+  echo "Validating snapcraft.yaml parts..."
+
+  local expected_parts=("engine" "containerd" "runc" "tini" "docker-cli" "buildx" "compose")
+
+  for part in "${expected_parts[@]}"; do
+    if ! yq e ".parts | has(\"$part\")" "$yaml_file" | grep -q "true"; then
+      echo "Error: part '$part' doesn't exist, please update this script to reflect the changes on snapcraft.yaml" >&2
+      cleanup_vm
+      exit 1
+    fi
+  done
+
+  echo "All required parts found in snapcraft.yaml"
+}
+
 check_new_version() {
   yaml_file="snap/snapcraft.yaml"
   CURRENT=$(yq e '.parts.engine.source-tag' "$yaml_file")
@@ -193,6 +211,7 @@ main() {
   launch_vm
   install_docker
   extract_versions
+  validate_yaml_parts
   check_new_version
   update_yaml
   cleanup_vm
