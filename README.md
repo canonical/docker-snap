@@ -279,6 +279,13 @@ sudo snap disable docker
 sudo snap enable docker
 ```
 
+### Upgrading the Docker Snap
+
+The [upgrade.sh](./upgrade.sh) script can be used to update the version tags in `snapcraft.yaml` for all parts except the NVIDIA-related ones.
+
+It does so by launching a VM, installing Docker Engine Community Edition from the official Docker archive,
+and extracting version information using `docker version`, `docker compose version`, and `docker buildx version`.
+
 ## Testing
 
 The snap has various tests in place:

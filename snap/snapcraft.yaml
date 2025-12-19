@@ -177,7 +177,6 @@ parts:
       install -T bundles/dynbinary-daemon/dockerd "$CRAFT_PART_INSTALL/bin/dockerd"
       # install docker-proxy previously provided by libnetwork part
       install -T bundles/dynbinary-daemon/docker-proxy "$CRAFT_PART_INSTALL/bin/docker-proxy"
-    # https://github.com/moby/moby/blob/v28.3.3/Dockerfile#L3 (Docker-supported Go version for Engine)
     build-snaps: &go ['go/1.25/stable']
     # we get weird behavior if we mix/match Go versions throughout this one snapcraft.yml, so we use a YAML reference here to ensure we're always consistent throughout
     after: [utility-scripts]
@@ -215,7 +214,6 @@ parts:
   containerd:
     plugin: make
     source: https://github.com/containerd/containerd.git
-    # from https://github.com/moby/moby/blob/docker-v29.1.2/Dockerfile#L166
     source-tag: v2.2.0
     source-depth: 1
     override-build: |
@@ -232,7 +230,6 @@ parts:
   runc:
     plugin: make
     source: https://github.com/opencontainers/runc.git
-    # from https://github.com/moby/moby/blob/docker-v29.1.2/Dockerfile#L257
     source-tag: v1.3.4
     source-depth: 1
     override-build: |
@@ -296,7 +293,6 @@ parts:
     plugin: cmake
     source: https://github.com/krallin/tini.git
     source-type: git
-    # from https://github.com/moby/moby/blob/docker-v29.1.2/Dockerfile#L291
     source-tag: v0.19.0
     source-depth: 1
     organize:
@@ -337,8 +333,6 @@ parts:
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
-    # Matching `docker buildx version`, installed as a Debian package from Docker's archive repo
-    # https://docs.docker.com/engine/install/ubuntu/
     source-tag: v0.30.1
     source-depth: 1
     override-build: |
@@ -352,8 +346,6 @@ parts:
   compose:
     plugin: make
     source: https://github.com/docker/compose.git
-    # https://github.com/docker/docker-ce-packaging/blob/master/common.mk // reference URL
-    # https://github.com/moby/moby/blob/v28.5.2/Dockerfile#L16 // Fetch from
     source-tag: v5.0.0
     source-depth: 1
     override-build: |
@@ -362,6 +354,7 @@ parts:
       install -d "$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
       install -T bin/build/docker-compose "$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins/docker-compose"
     build-snaps: *go
+
 lint:
   ignore:
     # Change to unused-library, once available

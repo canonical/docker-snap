@@ -1,29 +1,12 @@
 #!/bin/bash
 
-set -eux
+set -eu
+
+VM_NAME=docker-upgrader-$(date +%s)
 
 # yq preserving blank lines
 yq_p() {
   yq "$1" "$2" | diff -wB "$2" - | patch "$2" -
-}
-
-fetch_latest() {
-  # Fetch latest version from Github releases API
-  LATEST=$(curl -s "https://api.github.com/repos/moby/moby/releases?per_page=1" | jq -r '.[0].tag_name')
-}
-
-# Validate the version format
-validate_version() {
-  # Original simplified RegEx:
-  # v\d+.\d+.\d+\-*(rc.\d|rc\d|beta.\d)*
-  # By analysing the last tags on github.com/moby/moby/tags
-  # of last 3 years (since 2021).
-  if [[ "$LATEST" =~ ^docker-v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]|rc[0-9]|beta\.[0-9])?$ ]]; then
-    echo "$LATEST matches the regex."
-  else
-    echo "Version doesn't match known pattern."
-    exit 1
-  fi
 }
 
 check_yq() {
@@ -35,76 +18,173 @@ check_yq() {
   fi
 }
 
+check_multipass() {
+  if ! command -v multipass &>/dev/null; then
+    echo -e "multipass is not installed."
+    echo -e "Please install multipass first."
+    exit 1
+  fi
+}
+
+launch_vm() {
+  local max_attempts=3
+  local attempt=1
+
+  while [ $attempt -le $max_attempts ]; do
+    echo "Launching Multipass VM (attempt $attempt/$max_attempts)..."
+
+    if multipass launch noble -n "${VM_NAME}" -c 2 -m 4G -d 10G; then
+      echo "VM launched successfully!"
+      sleep 5
+      return 0
+    else
+      echo "Failed to launch VM on attempt $attempt"
+
+      if [ $attempt -lt $max_attempts ]; then
+        echo "VM might already exist, cleaning up and retrying..."
+        multipass delete "${VM_NAME}" 2>/dev/null || true
+        multipass purge 2>/dev/null || true
+        sleep 2
+      fi
+
+      ((attempt++))
+    fi
+  done
+
+  echo "Error: Failed to launch VM after $max_attempts attempts" >&2
+  return 1
+}
+
+vm_run() {
+  multipass exec "${VM_NAME}" -- "$@"
+}
+
+install_docker() {
+  echo "Installing Docker Engine in VM..."
+
+  # Install prerequisites
+  vm_run sudo apt-get update
+  vm_run sudo apt-get install -y ca-certificates curl
+
+  # Add Docker's official GPG key
+  vm_run sudo install -m 0755 -d /etc/apt/keyrings
+  vm_run sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  vm_run sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+  # Add the repository to Apt sources
+  vm_run bash -c 'sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF'
+
+  # Install Docker
+  vm_run sudo apt-get update
+  vm_run sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+  echo "Docker installation complete."
+}
+
+extract_versions() {
+  echo "Extracting version information..."
+
+  # Get docker version output in JSON format
+  docker_version=$(vm_run sudo docker version --format json)
+
+  # Extract versions using yq with JSON parser
+  ENGINE_VERSION=$(echo "$docker_version" | yq -p=json '.Server.Version')
+  DOCKERCLI_VERSION=$(echo "$docker_version" | yq -p=json '.Client.Version')
+  GO_VERSION=$(echo "$docker_version" | yq -p=json '.Server.GoVersion' | sed 's/go//')
+  CONTAINERD_VERSION=$(echo "$docker_version" | yq -p=json '.Server.Components[] | select(.Name == "containerd") | .Version')
+  RUNC_VERSION=$(echo "$docker_version" | yq -p=json '.Server.Components[] | select(.Name == "runc") | .Version')
+  TINI_VERSION=$(echo "$docker_version" | yq -p=json '.Server.Components[] | select(.Name == "docker-init") | .Version')
+
+  # Get buildx version (doesn't support --format json)
+  buildx_version=$(vm_run sudo docker buildx version)
+  BUILDX_VERSION=$(echo "$buildx_version" | awk '{print $2}')
+
+  # Get compose version in JSON format
+  compose_version=$(vm_run sudo docker compose version --format json)
+  COMPOSE_VERSION=$(echo "$compose_version" | yq -p=json '.version')
+
+  # Extract major.minor for Go version
+  GO_VERSION=$(echo "$GO_VERSION" | awk -F. '{print $1 "." $2}')
+
+  # Ensure versions have 'v' prefix where needed
+  for var in DOCKERCLI_VERSION CONTAINERD_VERSION RUNC_VERSION BUILDX_VERSION COMPOSE_VERSION TINI_VERSION; do
+    if [[ "${!var}" != v* ]]; then
+      eval "$var=v\${$var}"
+    fi
+  done
+
+  # Construct ENGINE_TAG (format: docker-v{version})
+  ENGINE_TAG="docker-v$ENGINE_VERSION"
+
+  echo "Extracted versions:"
+  echo "  ENGINE_TAG: $ENGINE_TAG"
+  echo "  DOCKERCLI_VERSION: $DOCKERCLI_VERSION"
+  echo "  GO_VERSION: $GO_VERSION"
+  echo "  CONTAINERD_VERSION: $CONTAINERD_VERSION"
+  echo "  RUNC_VERSION: $RUNC_VERSION"
+  echo "  TINI_VERSION: $TINI_VERSION"
+  echo "  BUILDX_VERSION: $BUILDX_VERSION"
+  echo "  COMPOSE_VERSION: $COMPOSE_VERSION"
+}
+
+validate_yaml_parts() {
+  yaml_file="snap/snapcraft.yaml"
+
+  echo "Validating snapcraft.yaml parts..."
+
+  local expected_parts=("engine" "containerd" "runc" "tini" "docker-cli" "buildx" "compose")
+
+  for part in "${expected_parts[@]}"; do
+    if ! yq e ".parts | has(\"$part\")" "$yaml_file" | grep -q "true"; then
+      echo "Error: part '$part' doesn't exist, please update this script to reflect the changes on snapcraft.yaml" >&2
+      cleanup_vm
+      exit 1
+    fi
+  done
+
+  echo "All required parts found in snapcraft.yaml"
+}
+
 check_new_version() {
-  if [[ "$CURRENT" == "$LATEST" ]]; then
+  yaml_file="snap/snapcraft.yaml"
+  CURRENT=$(yq e '.parts.engine.source-tag' "$yaml_file")
+
+  if [[ "$CURRENT" == "$ENGINE_TAG" ]]; then
     echo -e "Docker snap is already updated\n"
+    cleanup_vm
     exit 0
   fi
 }
 
-main() {
-  check_yq
-
-  # Define the path to the YAML file
+update_yaml() {
   yaml_file="snap/snapcraft.yaml"
 
+  echo "Updating snapcraft.yaml..."
+
+  # Get current version for sed replacement
   CURRENT=$(yq e '.parts.engine.source-tag' "$yaml_file")
 
-  fetch_latest
+  # Update snap version (remove 'v' prefix)
+  SNAP_VERSION=${ENGINE_VERSION}
+  echo "New snap version: $SNAP_VERSION"
 
-  echo "Latest TAG: $LATEST"
-
-  validate_version
-
-  check_new_version
-
-  SNAP_VERSION=${LATEST#docker-v}
-  echo -e "New snap version $SNAP_VERSION"
-
-  echo "The latest version of moby is: $LATEST"
-
-  # Fetch the Dockerfile
-  dockerfile=$(curl -s "https://raw.githubusercontent.com/moby/moby/refs/tags/$LATEST/Dockerfile")
-
-  # Declare variables and their corresponding regex patterns
-  declare -A variables=(
-    [GO_VERSION]='^ARG GO_VERSION='
-    [CONTAINERD_VERSION]='^ARG CONTAINERD_VERSION='
-    [RUNC_VERSION]='^ARG RUNC_VERSION='
-    [TINI_VERSION]='^ARG TINI_VERSION='
-    [DOCKERCLI_VERSION]='^ARG DOCKERCLI_VERSION='
-    [BUILDX_VERSION]='^ARG BUILDX_VERSION='
-    [COMPOSE_VERSION]='^ARG COMPOSE_VERSION='
-  )
-
-  # Extract versions using a loop
-  for var in "${!variables[@]}"; do
-    value=$(echo "$dockerfile" | awk -F= "/${variables[$var]}/ {print \$2}")
-
-    # Handle special cases: GO_VERSION and BUILDX_VERSION
-    if [[ "$var" == "GO_VERSION" ]]; then
-      # for GO_VERSION Extract major.minor
-      value=$(echo "$value" | awk -F. '{print $1 "." $2}')
-    elif [[ "$var" == "BUILDX_VERSION" && $value != v* ]]; then
-      value="v$value" # Prepend 'v' if missing
-    fi
-
-    declare "$var=$value"
-    echo "$var: ${!var}"
-  done
-
-  # Replace the `version:` field with the value of $SNAP_VERSION
   yq_p ".version = \"$SNAP_VERSION\"" "$yaml_file"
 
   # Replace fields in YAML using a loop
   declare -A yaml_updates=(
-    [engine.source-tag]=$LATEST
-    [containerd.source-tag]=$CONTAINERD_VERSION
-    [runc.source-tag]=$RUNC_VERSION
-    [tini.source-tag]=$TINI_VERSION
-    [docker-cli.source-tag]=$DOCKERCLI_VERSION
-    [buildx.source-tag]=$BUILDX_VERSION
-    [compose-v2.source-tag]=$COMPOSE_VERSION
+    ["engine.source-tag"]=$ENGINE_TAG
+    ["containerd.source-tag"]=$CONTAINERD_VERSION
+    ["runc.source-tag"]=$RUNC_VERSION
+    ["tini.source-tag"]=$TINI_VERSION
+    ["docker-cli.source-tag"]=$DOCKERCLI_VERSION
+    ["buildx.source-tag"]=$BUILDX_VERSION
+    ["compose.source-tag"]=$COMPOSE_VERSION
   )
 
   for part in "${!yaml_updates[@]}"; do
@@ -114,11 +194,28 @@ main() {
   # Replace `build-snaps` for `engine` with $GO_VERSION
   yq_p '.parts.engine."build-snaps"[0] |= sub("[0-9]+\.[0-9]+", "'"$GO_VERSION"'")' "$yaml_file"
 
-  # Replace the remaining comments
-  sed -i "s/moby\/blob\/$CURRENT/moby\/blob\/$LATEST/g" "$yaml_file"
-
   echo "YAML file updated successfully."
+}
 
+cleanup_vm() {
+  echo "Cleaning up VM..."
+  multipass delete "${VM_NAME}"
+  echo "VM cleaned up."
+}
+
+main() {
+  check_yq
+  check_multipass
+
+  launch_vm
+  install_docker
+  extract_versions
+  validate_yaml_parts
+  check_new_version
+  update_yaml
+  cleanup_vm
+
+  echo "Docker snap update complete!"
 }
 
 main
