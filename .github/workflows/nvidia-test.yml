@@ -24,7 +24,7 @@ jobs:
         steps:
             # Download snap artifact from a previous smoke-test/build GitHub Workflow run
             - name: Download snap artifact
-              uses: dawidd6/action-download-artifact@v11
+              uses: dawidd6/action-download-artifact@v12
               with:
                 run_id: ${{ inputs.run_id }}
                 name: docker_${{ inputs.run_id }}_amd64.snap
