@@ -23,21 +23,9 @@ test_data:
     find $SCRIPTS
 
     echo "Testing device with IP: $DEVICE_IP"
-
-    # Don't refresh automatically
-    ssh ubuntu@$DEVICE_IP "sudo snap refresh --hold=3h --no-wait"
     
-    # On UC22, the kernel, core, snapd snaps get refreshed right after first boot,
-    # causing unexpected errors and triggering a reboot
-    # On UC24, the auto refresh starts after a delay while testing
-    echo "Force refresh snaps for consistency"
-    ssh ubuntu@$DEVICE_IP "sudo snap refresh --no-wait"
-
-    # Refresh of some system snaps stops SnapD and schedules a reboot
-    while ! ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/check-snap-changes.sh)"; do
-      echo "Waiting for ssh server and snap changes ..."
-      sleep 30
-    done
+    # Update preinstalled system snaps to latest versions
+    $SCRIPTS/update-snaps.sh
 
     echo "Setup the environment on the target device"
     ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/setup.sh)"

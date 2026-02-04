@@ -50,7 +50,10 @@ setup_core24() (
 )
 
 install_dependencies() {
-  . /etc/os-release
+  # Source variables that define the version.
+  # e.g. core: ID=ubuntu-core, VERSION_ID="24"
+  # e.g. desktop: ID=ubuntu, VERSION_ID="25.10"
+  source /etc/os-release
 
   case "$ID-$VERSION_ID" in
     ubuntu-24.04)
