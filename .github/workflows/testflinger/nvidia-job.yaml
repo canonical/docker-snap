@@ -17,7 +17,7 @@ test_data:
     #!/usr/bin/env bash
     set -e
 
-    SCRIPTS=./attachments/test/scripts
+    export SCRIPTS=./attachments/test/scripts
 
     echo "List attached files"
     find $SCRIPTS
