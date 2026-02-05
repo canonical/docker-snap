@@ -7,15 +7,13 @@ set -e
 # Hold automatic refreshes until we can manually trigger and handle the restarts
 ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh --hold=3h --no-wait"
 
-timeout=$((20 * 60))  # 20 minutes in seconds
-interval=30
-elapsed=0
+max_iterations=30 # x interval = 30 minutes
+interval=60 # seconds
+iteration=0
 while true; do
   echo "Force refresh all snaps"
-  # This command will fail if the machine is offline or restarting
   ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
 
-  # If all changes have been applied, check for component support
   if ssh $DEVICE_USER@$DEVICE_IP "$(< $SCRIPTS/check-snap-changes.sh)"; then
     echo "Checking snapd support for components"
     if ssh $DEVICE_USER@$DEVICE_IP "snap components"; then
@@ -26,11 +24,11 @@ while true; do
     fi
   fi
 
-  if (( elapsed >= timeout )); then
+  iteration=$((iteration + 1))
+  if (( iteration >= max_iterations )); then
     echo "Timeout waiting for snaps to update"
     exit 1
   fi
 
   sleep $interval
-  elapsed=$((elapsed + interval))
 done
