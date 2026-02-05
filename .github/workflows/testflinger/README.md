@@ -43,7 +43,8 @@ JOB_QUEUE=docker-nvidia DISTRO=noble SNAP_CHANNEL=latest/edge ./run.sh
 ```
 
 To create a copy of the template job with filled variables, without submitting it, set the `--dryrun` flag.
-This allows manual modifications of the job before submitting it.
+This allows manual modifications of the job before submitting it, 
+like adding `reserve_data` for debugging a failed job.
 
 ## Run via Github Workflow
 

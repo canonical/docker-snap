@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
 set -e
 
+run_retry_command() {
+  local RETRIES=3
+  local DELAY=5
+  local n=1
+  until "$@"; do
+    if [[ $n -ge $RETRIES ]]; then
+      echo "Command failed after $RETRIES attempts: $*"
+      return 1
+    fi
+    echo "Command failed (attempt $n/$RETRIES): $*. Retrying in $DELAY seconds..."
+    ((n++))
+    sleep $DELAY
+  done
+}
+
 apt_update() {
   # ignore errors, some nodes fail to access the repos
   set +e
-  sudo apt-get -qq update
+  run_retry_command sudo apt-get -qq update
   set -e
 }
 
@@ -15,16 +30,16 @@ install_snap() {
   if snap list | grep -q "^$SNAP_NAME "; then
     echo "Snap $SNAP_NAME is already installed. Refreshing instead."
     if [[ -z "$SNAP_CHANNEL" ]]; then
-      sudo snap refresh "$SNAP_NAME"
+      run_retry_command sudo snap refresh "$SNAP_NAME"
     else
-      sudo snap refresh "$SNAP_NAME" --channel="$SNAP_CHANNEL"
+      run_retry_command sudo snap refresh "$SNAP_NAME" --channel="$SNAP_CHANNEL"
     fi
   else
     echo "Installing $SNAP_NAME..."
     if [[ -z "$SNAP_CHANNEL" ]]; then
-      sudo snap install "$SNAP_NAME"
+      run_retry_command sudo snap install "$SNAP_NAME"
     else
-      sudo snap install "$SNAP_NAME" --channel="$SNAP_CHANNEL"
+      run_retry_command sudo snap install "$SNAP_NAME" --channel="$SNAP_CHANNEL"
     fi
   fi
 }
@@ -41,7 +56,7 @@ install_components() {
       echo "Component $COMPONENT_NAME is already installed."
     else
       echo "Installing $COMPONENT_NAME..."
-      sudo snap install "$FULL_NAME"
+      run_retry_command sudo snap install "$FULL_NAME"
     fi
   done
 }
@@ -64,7 +79,7 @@ setup_classic() (
   set -x
 
   apt_update
-  sudo apt-get -qqy install nvidia-driver-570
+  run_retry_command sudo apt-get -qqy install nvidia-driver-570
 )
 
 setup_core22() (
