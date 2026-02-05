@@ -8,24 +8,59 @@ apt_update() {
   set -e
 }
 
+install_snap() {
+  SNAP_NAME=$1
+  SNAP_CHANNEL=$2
+
+  if snap list | grep -q "^$SNAP_NAME "; then
+    echo "Snap $SNAP_NAME is already installed. Refreshing instead."
+    if [[ -z "$SNAP_CHANNEL" ]]; then
+      sudo snap refresh "$SNAP_NAME"
+    else
+      sudo snap refresh "$SNAP_NAME" --channel="$SNAP_CHANNEL"
+    fi
+  else
+    echo "Installing $SNAP_NAME..."
+    if [[ -z "$SNAP_CHANNEL" ]]; then
+      sudo snap install "$SNAP_NAME"
+    else
+      sudo snap install "$SNAP_NAME" --channel="$SNAP_CHANNEL"
+    fi
+  fi
+}
+
+# parameter 1 is snap name, followed by components
+install_components() {
+  PARENT_SNAP=$1
+  COMPONENTS=$2
+
+  for COMPONENT_NAME in $COMPONENTS; do
+    FULL_NAME="${PARENT_SNAP}+${COMPONENT_NAME}"
+
+    if snap components "$PARENT_SNAP" 2>/dev/null | grep -q "$COMPONENT_NAME.*installed"; then
+      echo "Component $COMPONENT_NAME is already installed."
+    else
+      echo "Installing $COMPONENT_NAME..."
+      sudo snap install "$FULL_NAME"
+    fi
+  done
+}
+
 install_docker() (
-  # SNAP_CHANNEL may be set by the caller, or replaced in CI
-  DOCKER_SNAP_CHANNEL=$SNAP_CHANNEL
+  DOCKER_SNAP_CHANNEL=$1
   if [[ -z "$DOCKER_SNAP_CHANNEL" ]]; then
     DOCKER_SNAP_CHANNEL="latest/edge"
   fi
 
   set -x
 
-  # install docker-snap
-  sudo snap install docker --channel="$DOCKER_SNAP_CHANNEL"
+  install_snap docker "$DOCKER_SNAP_CHANNEL"
 
   # check the auto-connections
   sudo snap connections docker
 )
 
 setup_classic() (
-
   set -x
 
   apt_update
@@ -34,19 +69,21 @@ setup_classic() (
 
 setup_core22() (
   set -x
-  sudo snap install nvidia-core22
-  sudo snap install nvidia-assemble --channel 22/stable
+  install_snap nvidia-core22
+  install_snap nvidia-assemble 22/stable
 )
 
 setup_core24() (
   set -x
+  # List available kernel components for debugging
   snap components pc-kernel
 
-  # Install kernel components. 
-  sudo snap install pc-kernel+nvidia-550-erd-ko
-  sudo snap install pc-kernel+nvidia-550-erd-user
-  
-  sudo snap install mesa-2404
+  # Install kernel components.
+  PARENT_SNAP="pc-kernel"
+  COMPONENTS="nvidia-550-erd-ko pc-kernel+nvidia-550-erd-user"
+  install_components $PARENT_SNAP "$COMPONENTS"
+
+  install_snap mesa-2404
 )
 
 install_dependencies() {
@@ -56,23 +93,23 @@ install_dependencies() {
   source /etc/os-release
 
   case "$ID-$VERSION_ID" in
-    ubuntu-24.04)
-      setup_classic
-      ;;
-    ubuntu-core-22)
-      setup_core22
-      ;;
-    ubuntu-core-24)
-      setup_core24
-      ;;
-    *)
-      echo "Unsupported OS / version: $ID $VERSION_ID"
-      exit 1
-      ;;
+  ubuntu-24.04)
+    setup_classic
+    ;;
+  ubuntu-core-22)
+    setup_core22
+    ;;
+  ubuntu-core-24)
+    setup_core24
+    ;;
+  *)
+    echo "Unsupported OS / version: $ID $VERSION_ID"
+    exit 1
+    ;;
   esac
 }
 
 install_dependencies
-install_docker
+install_docker "$1"
 
 echo "A reboot is required!"

@@ -3,7 +3,7 @@ set -e
 
 # Test nvidia-smi
 smi_test() (
-  . /etc/os-release
+  source /etc/os-release
 
   set -x
 

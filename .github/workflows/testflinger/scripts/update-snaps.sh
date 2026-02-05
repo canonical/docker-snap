@@ -12,7 +12,8 @@ interval=30
 elapsed=0
 while true; do
   echo "Force refresh all snaps"
-  ssh ubuntu@$DEVICE_IP "sudo snap refresh --no-wait"
+  # This command will fail if the machine is offline or restarting
+  ssh ubuntu@$DEVICE_IP "sudo snap refresh --no-wait" || true
 
   # If all changes have been applied, check for component support
   if ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/check-snap-changes.sh)"; then
