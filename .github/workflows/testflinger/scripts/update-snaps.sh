@@ -5,7 +5,7 @@ set -e
 # causing unexpected errors and triggering a reboot
 # On UC24, the auto refresh starts after a delay while testing
 # Hold automatic refreshes until we can manually trigger and handle the restarts
-ssh ubuntu@$DEVICE_IP "sudo snap refresh --hold=3h --no-wait"
+ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh --hold=3h --no-wait"
 
 timeout=$((20 * 60))  # 20 minutes in seconds
 interval=30
@@ -13,12 +13,12 @@ elapsed=0
 while true; do
   echo "Force refresh all snaps"
   # This command will fail if the machine is offline or restarting
-  ssh ubuntu@$DEVICE_IP "sudo snap refresh --no-wait" || true
+  ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
 
   # If all changes have been applied, check for component support
-  if ssh ubuntu@$DEVICE_IP "$(< $SCRIPTS/check-snap-changes.sh)"; then
+  if ssh $DEVICE_USER@$DEVICE_IP "$(< $SCRIPTS/check-snap-changes.sh)"; then
     echo "Checking snapd support for components"
-    if ssh ubuntu@$DEVICE_IP "snap components"; then
+    if ssh $DEVICE_USER@$DEVICE_IP "snap components"; then
       echo "Snapd has component support"
       break
     else

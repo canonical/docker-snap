@@ -21,20 +21,25 @@ A number of environment variables need to be exported for this script to run.
 An example command look like this:
 
 ```bash
-DEVICE_IP=10.27.6.124 SNAP_CHANNEL=latest/edge/runid-20851421444 SCRIPTS=./scripts ./scripts/agent.sh
+DEVICE_IP=192.168.86.86 DEVICE_USER=ubuntu SNAP_CHANNEL=latest/edge ./scripts/agent.sh
 ```
+
+* `DEVICE_IP` - Network address of the device under test. Testflinger exports this variable in the agent's environment.
+* `DEVICE_USER` - Username used to SSH to the device under test. This defaults to the value `ubuntu`.
+* `SNAP_CHANNEL` - Snap Store channel from where the docker snap will be installed to perform the tests on.
+* `SCRIPTS` - Directory where all the test scripts are located.
 
 ## Run on Testflinger
 
 These tests can be submitted as a Testflinger job from your local computer.
 
-The `nvidia-job.yaml` job definition contains variables that need to be replaces with actual values.
+The `nvidia-job.yaml` job definition contains variables that need to be replaced with actual values.
 A convenience script `run.sh` is provided that makes a copy of the job, fills the variables, and submits the job to
 Testflinger.
 Export the required variables and then run the script, e.g:
 
 ```bash
-JOB_QUEUE=docker-nvidia SNAP_CHANNEL=latest/edge DISTRO=noble ./run.sh
+JOB_QUEUE=docker-nvidia DISTRO=noble SNAP_CHANNEL=latest/edge ./run.sh
 ```
 
 To create a copy of the template job with filled variables, without submitting it, set the `--dryrun` flag.

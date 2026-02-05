@@ -18,6 +18,4 @@ test_data:
     set -e
     
     export SNAP_CHANNEL=$SNAP_CHANNEL
-    export SCRIPTS=./attachments/test/scripts
-    
-    $SCRIPTS/agent.sh
+    ./attachments/test/scripts/agent.sh
