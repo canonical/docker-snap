@@ -14,8 +14,8 @@ Tested distros:
 The entry point for the tests is the `scripts/agent.sh` script.
 This script can be run locally to do testing over SSH on a remote machine.
 The SSH username `ubuntu` is used, and SSH key authentication is required.
-One can use a Multipass VM as remote machine, as long as your local users's ssh public key has been added to the VM's
-`authorized_keys` file.
+One can use a Multipass VM as remote machine, 
+as long as your local users's ssh public key has been added to the VM's `authorized_keys` file.
 
 A number of environment variables need to be exported for this script to run.
 An example command look like this:
@@ -34,8 +34,8 @@ DEVICE_IP=192.168.86.86 DEVICE_USER=ubuntu SNAP_CHANNEL=latest/edge ./scripts/ag
 These tests can be submitted as a Testflinger job from your local computer.
 
 The `nvidia-job.yaml` job definition contains variables that need to be replaced with actual values.
-A convenience script `run.sh` is provided that makes a copy of the job, fills the variables, and submits the job to
-Testflinger.
+A convenience script `run.sh` is provided that makes a copy of the job, fills the variables, 
+and submits the job to Testflinger.
 Export the required variables and then run the script, e.g:
 
 ```bash
@@ -50,10 +50,9 @@ This allows manual modifications of the job before submitting it.
 The Testflinger job is used in the [nvidia-test.yml](../nvidia-test.yml) Github Workflow.
 This workflow can only be run manually.
 
-The workflow takes a Docker snap build artifact generated via a previous [smoke-test.yml](../smoke-test.yml) workflow
-run, publishes it to the Snap Store under a branch, and then uses that branch to run the tests.
+The workflow takes a Docker snap build artifact generated via a previous [smoke-test.yml](../smoke-test.yml) workflow run, 
+publishes it to the Snap Store under a branch, and then uses that branch to run the tests.
 
-To run the Github workflow, go to
-the [workflow page](https://github.com/canonical/docker-snap/actions/workflows/nvidia-test.yml) on Github, open the
-`Run workflow` menu, and provide the necessary inputs.
+To run the Github workflow, go to the [workflow page](https://github.com/canonical/docker-snap/actions/workflows/nvidia-test.yml) on Github, 
+open the `Run workflow` menu, and provide the necessary inputs.
 The `Publish to Store` option should only be set if the artifact hasn't been uploaded to the Store.
