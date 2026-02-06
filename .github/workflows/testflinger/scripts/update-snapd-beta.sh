@@ -2,6 +2,7 @@
 set -e
 
 # Due to an issue with kernel components and snapd <2.74, we need to update to snapd from the beta channel.
+echo "Updating snapd to beta"
 ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh snapd --channel=latest/beta --no-wait" || true
 
 # Wait for snapd update to finish
