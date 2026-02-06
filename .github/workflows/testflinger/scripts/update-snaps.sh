@@ -12,7 +12,7 @@ while true; do
   # Check if server is online and there are no snapd changes in progress
   if ssh $DEVICE_USER@$DEVICE_IP "$(<$SCRIPTS/check-snap-changes.sh)"; then
     echo "Checking snapd version"
-    ssh $DEVICE_USER@$DEVICE_IP "snap list snapd"
+    ssh $DEVICE_USER@$DEVICE_IP "sudo snap list snapd" || true
 
     echo "Checking snapd support for components"
     if ssh $DEVICE_USER@$DEVICE_IP "snap components"; then
@@ -26,7 +26,7 @@ while true; do
         ssh $DEVICE_USER@$DEVICE_IP "(sleep 3 && sudo reboot) &"
       else
         echo "Trying to refresh snaps again"
-        ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait"
+        ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
       fi
     fi
   fi

@@ -11,7 +11,7 @@ iteration=0
 while true; do
   if ssh $DEVICE_USER@$DEVICE_IP "$(<$SCRIPTS/check-snap-changes.sh)"; then
     echo "Checking snapd version"
-    ssh $DEVICE_USER@$DEVICE_IP "snap list snapd"
+    ssh $DEVICE_USER@$DEVICE_IP "sudo snap list snapd" || true
     break
   fi
 
