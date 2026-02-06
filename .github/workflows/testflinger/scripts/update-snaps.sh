@@ -5,6 +5,9 @@ set -e
 echo "Force refresh all snaps"
 ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
 
+# Due to an issue with kernel components and snapd <2.74, we need to update to snapd from the beta channel.
+ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh snapd --channel=latest/beta --no-wait" || true
+
 max_iterations=10 # x interval = 30 minutes
 interval=60 # seconds
 iteration=0
