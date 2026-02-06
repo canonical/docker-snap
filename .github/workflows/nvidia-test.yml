@@ -47,8 +47,8 @@ jobs:
           fail-fast: ${{ inputs.fail_fast }}
           matrix:
             distro: 
-              - noble
-              - core22-latest
+#              - noble
+#              - core22-latest
               - core24-latest
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger

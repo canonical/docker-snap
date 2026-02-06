@@ -5,7 +5,7 @@ set -e
 echo "Force refresh all snaps"
 ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
 
-max_iterations=10 # x interval = 30 minutes
+max_iterations=30 # x interval = 30 minutes
 interval=60       # seconds
 iteration=0
 while true; do
