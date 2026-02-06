@@ -25,7 +25,7 @@ while true; do
         echo "A restart is pending"
         ssh $DEVICE_USER@$DEVICE_IP "(sleep 3 && sudo reboot) &"
       else
-        echo "Refreshing snaps"
+        echo "Trying to refresh snaps again"
         ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait"
       fi
     fi
