@@ -265,6 +265,7 @@ parts:
     stage:
       - usr/bin/nvidia-container-*
       - usr/bin/nvidia-ctk
+      - usr/bin/nvidia-cdi-hook
 
   libnvidia-container:
     plugin: make
