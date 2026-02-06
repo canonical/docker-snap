@@ -5,8 +5,8 @@ set -e
 ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh snapd --channel=latest/beta --no-wait" || true
 
 # Wait for snapd update to finish
-max_iterations=10 # x interval = 30 minutes
-interval=60       # seconds
+max_iterations=30
+interval=60 # seconds
 iteration=0
 while true; do
   if ssh $DEVICE_USER@$DEVICE_IP "$(<$SCRIPTS/check-snap-changes.sh)"; then
