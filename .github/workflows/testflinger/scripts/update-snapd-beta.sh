@@ -10,6 +10,8 @@ interval=60       # seconds
 iteration=0
 while true; do
   if ssh $DEVICE_USER@$DEVICE_IP "$(<$SCRIPTS/check-snap-changes.sh)"; then
+    echo "Checking snapd version"
+    ssh $DEVICE_USER@$DEVICE_IP "snap list snapd"
     break
   fi
 

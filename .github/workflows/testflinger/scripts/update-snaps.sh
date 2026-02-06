@@ -11,13 +11,20 @@ iteration=0
 while true; do
   # Check if server is online and there are no snapd changes in progress
   if ssh $DEVICE_USER@$DEVICE_IP "$(<$SCRIPTS/check-snap-changes.sh)"; then
+    echo "Checking snapd version"
+    ssh $DEVICE_USER@$DEVICE_IP "snap list snapd"
+
     echo "Checking snapd support for components"
     if ssh $DEVICE_USER@$DEVICE_IP "snap components"; then
       echo "Snapd has component support"
       break
     else
-      echo "Snapd does not support components. A reboot is likely required"
-      ssh $DEVICE_USER@$DEVICE_IP "(sleep 3 && sudo reboot) &"
+      echo "Snapd does not support components"
+
+      if ssh $DEVICE_USER@$DEVICE_IP "[ -f /run/snapd/reboot-required ]"; then
+        echo "A restart is pending"
+        ssh $DEVICE_USER@$DEVICE_IP "(sleep 3 && sudo reboot) &"
+      fi
     fi
   fi
 
