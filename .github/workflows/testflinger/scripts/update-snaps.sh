@@ -24,6 +24,9 @@ while true; do
       if ssh $DEVICE_USER@$DEVICE_IP "[ -f /run/snapd/reboot-required ]"; then
         echo "A restart is pending"
         ssh $DEVICE_USER@$DEVICE_IP "(sleep 3 && sudo reboot) &"
+      else
+        echo "Refreshing snaps"
+        ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait"
       fi
     fi
   fi
