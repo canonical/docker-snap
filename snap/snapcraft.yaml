@@ -1,5 +1,5 @@
 name: docker
-version: '29.1.3'
+version: '29.1.4'
 summary: Docker container runtime
 description: Refer to https://snapcraft.io/docker
 license: (Apache-2.0 AND MIT AND GPL-2.0)
@@ -154,7 +154,7 @@ parts:
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
-    source-tag: docker-v29.1.3
+    source-tag: docker-v29.1.4
     source-depth: 1
     override-build: |
       $CRAFT_STAGE/patches/patch.sh
@@ -214,7 +214,7 @@ parts:
   containerd:
     plugin: make
     source: https://github.com/containerd/containerd.git
-    source-tag: v2.2.0
+    source-tag: v2.2.1
     source-depth: 1
     override-build: |
       make GIT_COMMIT= GIT_BRANCH= LDFLAGS=
@@ -307,7 +307,7 @@ parts:
     plugin: make
     build-snaps: *go
     source: https://github.com/docker/cli.git
-    source-tag: v29.1.3
+    source-tag: v29.1.4
     source-depth: 1
     override-build: |
       # docker build specific environment variables
@@ -347,7 +347,7 @@ parts:
   compose:
     plugin: make
     source: https://github.com/docker/compose.git
-    source-tag: v5.0.0
+    source-tag: v5.0.1
     source-depth: 1
     override-build: |
       make build
