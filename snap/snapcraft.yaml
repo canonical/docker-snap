@@ -1,5 +1,5 @@
 name: docker
-version: '29.1.4'
+version: '29.2.1'
 summary: Docker container runtime
 description: Refer to https://snapcraft.io/docker
 license: (Apache-2.0 AND MIT AND GPL-2.0)
@@ -154,7 +154,7 @@ parts:
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
-    source-tag: docker-v29.1.4
+    source-tag: docker-v29.2.1
     source-depth: 1
     override-build: |
       $CRAFT_STAGE/patches/patch.sh
@@ -307,7 +307,7 @@ parts:
     plugin: make
     build-snaps: *go
     source: https://github.com/docker/cli.git
-    source-tag: v29.1.4
+    source-tag: v29.2.1
     source-depth: 1
     override-build: |
       # docker build specific environment variables
@@ -334,20 +334,27 @@ parts:
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
-    source-tag: v0.30.1
+    source-tag: v0.31.1
     source-depth: 1
     override-build: |
       export DESTDIR="$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
       export VERSION=$(git describe --match 'v[0-9]*' --always --tags)
       export REVISION=$(git rev-parse HEAD)
+
+      export PACKAGE=github.com/docker/buildx
+      export GO_PKG=github.com/docker/buildx
+
+      export GO_LDFLAGS="-X ${GO_PKG}/version.Version=${VERSION} -X ${GO_PKG}/version.Revision=${REVISION} -X ${GO_PKG}/version.Package=${PACKAGE}"
       export GO_EXTRA_LDFLAGS="-s -w"
-      ./hack/build
+
+      go build -trimpath -ldflags "${GO_LDFLAGS} ${GO_EXTRA_LDFLAGS}" -o "${DESTDIR}/docker-buildx" ./cmd/buildx
+
     build-snaps: *go
 
   compose:
     plugin: make
     source: https://github.com/docker/compose.git
-    source-tag: v5.0.1
+    source-tag: v5.1.0
     source-depth: 1
     override-build: |
       make build
