@@ -185,9 +185,22 @@ In addition to the content provider, install the [nvidia-assemble](https://githu
 
 ### Ubuntu Server / Desktop
 
-The required NVIDIA libraries are available in the NVIDIA Container Toolkit packages.
+The required NVIDIA libraries are available in the NVIDIA driver packages.
 
-Instruction on how to install them can be found [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+It is advised to **not** have the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on your host computer, as a NVIDIA CDI incompatibility may manifest as a failure to launch containers with GPU support since version `v29.2.0`, as discussed in [Issue #357](https://github.com/canonical/docker-snap/issues/357). 
+If already installed, please consider removing the NVIDIA Container Toolkit and rebooting your computer. For your convinience, the removal command is reported here:
+
+```shell
+apt remove libnvidia-container1 libnvidia-container-tools nvidia-container-toolkit-base nvidia-container-toolkit
+```
+
+If removing the NVIDIA Container Toolkit is not possible for you, please make sure to specify `nvidia.runtime-hook` as the GPU driver when you run your containers with GPU support:
+
+```shell
+docker run --rm --runtime nvidia --gpus="all,driver=nvidia.runtime-hook" <container-name>
+```
+
+
 
 ### Custom NVIDIA runtime config
 
