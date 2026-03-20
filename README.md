@@ -205,7 +205,7 @@ sudo reboot
 
 #### NVIDIA Container Toolkit compatibility
 
-Since version `v29.2.0`, Docker snap fails to launch containers with NVIDIA GPUs if NVIDIA Container Toolkit is installed on your computer. For more information, refer to [Issue #357](https://github.com/canonical/docker-snap/issues/357).
+Since version `v29.2.0`, Docker snap fails to launch containers with NVIDIA GPUs if NVIDIA Container Toolkit is installed on the host as a Debian package. For more information, refer to [Issue #357](https://github.com/canonical/docker-snap/issues/357).
 
 In order to use the latest version of Docker snap with the GPU, remove NVIDIA Container Toolkit from the host or specify `nvidia.runtime-hook` as the GPU driver for your containers.
 
