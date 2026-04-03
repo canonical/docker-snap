@@ -1,88 +1,84 @@
-#
-# Copyright (C) 2015, 2016 Canonical Ltd
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 3 as
-# published by the Free Software Foundation.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-project: docker
-
-environment:
-    PROJECT_PATH: /home/docker
-    TESTSLIB: $PROJECT_PATH/spread/lib
-    SNAP_NAME: docker
-    # Allow the host to pass the channel to use for the test rim
-    SNAP_CHANNEL: $(HOST:echo $SNAP_CHANNEL)
-
+project: demo
 backends:
-    uvt-kvm:
-        type: adhoc
-        allocate: |
-            VM_NAME=docker-snap-spread-kvm-$SPREAD_SYSTEM
-            if [ ! -z $(uvt-kvm list | grep $VM_NAME) ]; then
-                FATAL "uvt-kvm machine with domain $VM_NAME already exists, please destroy before continuing"
+  # LXD is currently not supported as a backend, because we need to set lxc instance config to make docker work in an lxc container, see https://ubuntu.com/tutorials/how-to-run-docker-inside-lxd-containers#2-create-lxd-container
+  #lxd:
+  #  systems:
+  #    - ubuntu-24.04
+
+  garden:
+    type: adhoc
+
+    allocate: |
+      # Spread automatically injects /snap/bin to PATH. When we are
+      # running from the image-garden snap then SPREAD_HOST_PATH is the
+      # original path before such modifications were applied. Snap
+      # applications cannot normally run /snap/bin/* entry-points
+      # successfully so re-set PATH to the original value, as provided by
+      # snapcraft.
+      if [ -n "${SPREAD_HOST_PATH-}" ]; then
+          PATH="${SPREAD_HOST_PATH}"
+      fi
+
+      export QEMU_SMP_OPTION="-smp 2"
+      export QEMU_MEM_OPTION="-m 3072"
+
+      ARCH="${ARCH:-$(uname -m)}"
+      if OUT="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}"."$ARCH")"; then
+            if [ "$ARCH" != "$(uname -m)" ]; then
+                  # Spread has a fixed, 5-minute timeout for ssh to become ready.
+                  # When emulating across architectures this may not be sufficient
+                  # for the system to become ready. Sleep for a while to give things
+                  # a chance to finish.
+                  sleep 3m
             fi
-            # configure the script to contain the password in it - the environment variables here
-            # won't be available inside the VM when the script runs
-            SCRIPT_DIR=$(mktemp -d)
-            sed "s/SPREAD_PASSWORD/$SPREAD_PASSWORD/" spread/lib/setup-root-ssh-uvt.sh.in > $SCRIPT_DIR/setup-root-ssh-uvt.sh
-            if [ ! -f $SCRIPT_DIR/setup-root-ssh-uvt.sh ]; then
-                 FATAL "failed to generate setup script"
-            fi
-            case $SPREAD_SYSTEM in
-                ubuntu-18.04)
-                    RELEASE=bionic;;
-                ubuntu-16.04)
-                    RELEASE=xenial;;
-                *)
-                    FATAL "unsupported uvt-kvm release: $SPREAD_SYSTEM";;
-            esac
-            # TODO: fix this for non-amd64 systems
-            uvt-simplestreams-libvirt sync arch=amd64 release=$RELEASE
-            uvt-kvm create $VM_NAME release=$RELEASE --run-script-once $SCRIPT_DIR/setup-root-ssh-uvt.sh
-            # remove the script so we don't leave it lying around with the password in it
-            rm $SCRIPT_DIR/setup-root-ssh-uvt.sh
-            # wait for the machine to come alive
-            uvt-kvm wait $VM_NAME
-            # now get the address
-            ADDRESS $(uvt-kvm ip $VM_NAME)
-        discard: |
-            trap '' 2
-            uvt-kvm destroy docker-snap-spread-kvm-$SPREAD_SYSTEM
-            trap
-        systems:
-            - ubuntu-18.04
-            - ubuntu-16.04
+            ADDRESS "$OUT"
+      fi
+    discard: |
+      # Spread automatically injects /snap/bin to PATH. When we are
+      # running from the image-garden snap then SPREAD_HOST_PATH is the
+      # original path before such modifications were applied. Snap
+      # applications cannot normally run /snap/bin/* entry-points
+      # successfully so re-set PATH to the original value, as provided by
+      # snapcraft.
+      if [ -n "${SPREAD_HOST_PATH-}" ]; then
+          PATH="${SPREAD_HOST_PATH}"
+      fi
 
+      image-garden discard "$SPREAD_SYSTEM_ADDRESS"
+    systems:
+      # Want to add more systems? Look here for a list of available systems: https://gitlab.com/zygoon/image-garden/-/tree/main/data
+      # or look here for an exaustive example: https://gitlab.com/zygoon/image-garden/-/blob/main/spread-demo/spread.yaml
+      - ubuntu-core-24:
+          username: ubuntu
+          password: ubuntu
+      - ubuntu-cloud-24.04:
+          username: ubuntu
+          password: ubuntu
+      - ubuntu-cloud-26.04:
+          username: ubuntu
+          password: ubuntu
 
-# Put this somewhere where we have read-write access
-path: /home/docker
-
+path: /tmp/docker
 exclude:
   - .git
-
-prepare: |
-  . $TESTSLIB/prepare-all.sh
-
-# Fetching the image from dockerhub is time-consuming under some conditions, 
-# e.g network poor/unstable.
-kill-timeout: 30m 
+  - "*.qcow2"
+  - "*.iso"
+  - "*.img"
+  - "*.log"
+  - "*.run"
+  - "*.pid"
+  - ".image-garden/*"
 
 suites:
-    spread/main/:
-        summary: Full-system tests for the docker snap
-        systems:
-            - ubuntu-18.04
-            - ubuntu-16.04
-        prepare: |
-            . $TESTSLIB/prepare.sh
-        restore-each: |
-            . $TESTSLIB/restore-each.sh
+  spread/main/:
+    summary: Full-system tests for the docker snap
+
+environment:
+  SCRIPTS_PATH: $SPREAD_PATH/spread/scripts
+  SNAP_CHANNEL: $(HOST:echo $SNAP_CHANNEL) # The snapstore channel containing the version of docker to test
+
+prepare: |
+  # Invoked in each system before running any test
+  # Learn more about preparing and restoring: https://github.com/canonical/spread?tab=readme-ov-file#preparing
+
+  . "$SCRIPTS_PATH/prepare.sh"

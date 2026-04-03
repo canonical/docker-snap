@@ -1,0 +1,7 @@
+summary: Verifyes that docker can run the hello-world container
+execute: |
+  source "$SCRIPTS_PATH/common.sh"
+
+  wait_for_docker
+  
+  sudo docker run hello-world
