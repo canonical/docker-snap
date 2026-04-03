@@ -1,6 +1,9 @@
 project: demo
 backends:
-  # LXD is currently not supported as a backend, because we need to set lxc instance config to make docker work in an lxc container, see https://ubuntu.com/tutorials/how-to-run-docker-inside-lxd-containers#2-create-lxd-container
+  # LXD is currently not supported as a backend, because we need to set lxc instance 
+  # config to make docker work in an lxc container, 
+  # see https://ubuntu.com/tutorials/how-to-run-docker-inside-lxd-containers#2-create-lxd-container
+
   #lxd:
   #  systems:
   #    - ubuntu-24.04
