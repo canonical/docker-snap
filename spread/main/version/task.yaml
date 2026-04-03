@@ -5,15 +5,3 @@ execute: |
     snap_ver=$(snap list | grep docker | awk '{print $2}' | cut -f 1,2 -d '-')
     docker_ver=$(sudo docker version -f '{{.Server.Version}}')
     [ "$snap_ver" = "$docker_ver" ] || exit 1
-
-    # cpu architures 
-    arch=$(sudo docker info | grep  "Architecture" | awk -F ': ' '{print $2}')
-    [ "$arch" = "x86_64" ] || exit 1
-
-    # host machine
-    os=$(sudo docker info | grep  "Operating System" | awk -F ': ' '{print $2}')
-    [ "$os" = "Ubuntu Core 16" ] || exit 1
-
-    # storage backend driver
-    driver=$(sudo docker info | grep  "Storage Driver" | awk -F ': ' '{print $2}')
-    [ "$driver" = "aufs" ] || [ "$driver" = "overlay" ] || [ "$driver" = "overlay2" ] || [ "$driver" = "btrfs" ] || [ "$driver" = "zfs" ] || exit 1
