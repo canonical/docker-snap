@@ -1,52 +1,76 @@
 # Spread tests
 
-We rely on [spread](https://github.com/snapcore/spread) to run full-system test on Ubuntu Core 16. We also provide a utility script ([run-spread-test.sh](./run-spread-tests.sh)) to launch the spread test. It will
+We rely on [image-garden](https://gitlab.com/zygoon/image-garden) and [spread](https://github.com/snapcore/spread) to run full-system tests using QEMU virtual machines.
 
-1. Fetch primary snaps( kernel, core, gadget) and build custom Ubuntu Core image with them
-2. Boot the image in qemu emulator
-3. Deploy test suits in emulation environment
-4. Execute full-system testing
+## Getting started
 
-Firstly, install ubuntu-image tool since we need to create a custom Ubuntu Core image during test preparation.
+To get started, make sure that **image-garden** is installed on your system:
 
-```shell
-sudo snap install --beta --classic ubuntu-image
+```bash
+sudo snap install image-garden
 ```
 
-Secondly, install qemu-kvm package since we use it as the backend to run the spread test.
+The snap release of image-garden also includes its dependencies, such as `spread` and `qemu`.
 
-```shell
-sudo apt install qemu-kvm
+Optionally, you can create an **alias** so `spread` can be called directly: 
+
+```bash
+sudo snap alias image-garden.spread spread
 ```
 
-Meanwhile, you need a classic-mode supported spread binary to launch kvm from its context. You can either build spread from this [branch](https://github.com/rmescandon/spread/tree/snap-as-classic) or download the spread snap package [here](http://people.canonical.com/~gary-wzl77/spread_2017.05.24_amd64.snap).
+More info about spread and image garden, see: https://github.com/marketplace/actions/run-tests-with-image-garden-and-spread 
 
-```shell
-sudo snap install --classic --dangerous spread_2017.05.24_amd64.snap
+## Running tests
+
+To run the tests, just invoke spread:
+
+```bash
+image-garden.spread
 ```
 
-You may build the docker snap locally in advance and then execute the spread tests with the following commands:
+Once you run the tests, _spread_ will instantiate several virtual machines, as specified in [spread.yaml](./spread.yaml). 
+On each of those, the [prepare.sh](./spread/scripts/prepare.sh) script will run and install the docker snap before launching any test.
+By default, it looks for a `dockere_*.snap` file in **this directory** and installs it in `--dangerous` mode, to more quickly iterate
+on locally-packed snaps. Alternatively, the script can install docker from the **snap store**, you just have to specify the store channel
+to install docker from, by setting the `SNAP_CHANNEL` environment variable:
 
-```shell
-snapcraft
-./run-spread-tests.sh
+```bash
+SNAP_CHANNEL=latest/edge image-garde.spread
 ```
 
-When doing a local build, you can also specify --test-from-channel to fetch the snap from the specific channel of the store. The snap from `candidate` channel is used by default as test target if `--channel` option is not specified.
+The system will download the virtual machine files and place them in the `.image-garden` directory. See [Cleanup](#cleanup) to know how to free disk space.
 
-```shell
-./run-spread-tests.sh --test-from-channel --channel=stable
+In order to run an **individual spread test**, please run the following command:
+
+```bash
+image-garden.spread spread/main/hello-world
 ```
 
-In order to run an individual spread test, please run the following command:
+### Keep test artifacts
 
-```shell
-spread spread/main/installation
+If any spread task need to save a file on disk, you can recover it before the virtual machine gets shut down, just specify the `artifacts` argument, pointing to a local path:
+
+```bash
+image-garden.spread -artifacts artifacts
 ```
 
-This will run the test case under spread/main/installation folder.
-You can specify the `SNAP_CHANNEL` environment variable to install a snap from a specific channel for the testing as well.
+### Ephimeral storage
 
-```shell
-SNAP_CHANNEL=candidate spread spread/main/update_policy
-```
+By default, image garden VMs have ephimeral storage. To start VMs with permanent storage, set `QEMU_SNAPSHOT_OPTION=""` 
+as described in [Persistent Storage Mode](https://gitlab.com/zygoon/image-garden/-/blob/main/README.md?ref_type=heads#persistent-storage-mode).
+
+## Cleanup
+
+Image Garden will use the `.image-garden` directory to store the virtual machine images and drives. You can get rid of those files by manually deleting them or by using:
+
+- **Clean**: to remove all generated images, logs, and support files from the current directory without removing downloaded base images from the cache
+
+    ```bash
+    image-garden make clean
+    ```
+
+- **Distclean**: like `clean`, but also removes downloaded base images from the cache directory. Only use this if you need to reclaim disk space.
+
+    ```bash
+    image-garden make distclean
+    ```
