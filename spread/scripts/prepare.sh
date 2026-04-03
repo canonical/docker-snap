@@ -26,12 +26,17 @@ else
         snap install ./docker_*.comp --dangerous || true
 
         echo "Connecting interfaces"
-        snap connect docker:docker-cli        docker:docker-daemon  
-        snap connect docker:privileged        :docker-support 
-        snap connect docker:support           :docker-support
-        snap connect docker:firewall-control
-        snap connect docker:home
-        snap connect docker:network-control
+
+        sudo snap connect docker:gpu-2404          mesa-2404:gpu-2404
+        sudo snap connect docker:docker-cli        docker:docker-daemon
+        sudo snap connect docker:privileged
+        sudo snap connect docker:support
+        sudo snap connect docker:firewall-control
+        sudo snap connect docker:home
+        sudo snap connect docker:network
+        sudo snap connect docker:network-bind
+        sudo snap connect docker:network-control
+        sudo snap connect docker:opengl
 
         # Restart docker and keep on retrying on failure
         echo "Restarting docker"
