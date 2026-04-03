@@ -35,7 +35,7 @@ on locally-packed snaps. Alternatively, the script can install docker from the *
 to install docker from, by setting the `SNAP_CHANNEL` environment variable:
 
 ```bash
-SNAP_CHANNEL=latest/edge image-garde.spread
+SNAP_CHANNEL=latest/edge image-garden.spread
 ```
 
 The system will download the virtual machine files and place them in the `.image-garden` directory. See [Cleanup](#cleanup) to know how to free disk space.
