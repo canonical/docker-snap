@@ -27,7 +27,7 @@ else
 
         echo "Connecting interfaces"
 
-        sudo snap connect docker:gpu-2404          mesa-2404:gpu-2404
+        sudo snap connect docker:gpu-2404          mesa-2404:gpu-2404 || true
         sudo snap connect docker:docker-cli        docker:docker-daemon
         sudo snap connect docker:privileged
         sudo snap connect docker:support
