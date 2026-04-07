@@ -18,7 +18,7 @@ Optionally, you can create an **alias** so `spread` can be called directly:
 sudo snap alias image-garden.spread spread
 ```
 
-More info about spread and image garden, see: https://github.com/marketplace/actions/run-tests-with-image-garden-and-spread
+For more info about spread and image garden, see [Image Garden, Spread integration tests as GitHub Action](https://github.com/marketplace/actions/run-tests-with-image-garden-and-spread).
 
 ## Running tests
 
@@ -48,7 +48,10 @@ image-garden.spread spread/main/hello-world
 
 ### Keep test artifacts
 
-To recover artifacts from VMs before they shut down, set `artifacts` argument:
+To recover artifacts from VMs before they shut down, set the `artifacts` argument:
+
+```bash
+image-garden.spread -artifacts artifacts
 ```
 
 ### Ephimeral storage
