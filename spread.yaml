@@ -78,7 +78,8 @@ suites:
 
 environment:
   SCRIPTS_PATH: $SPREAD_PATH/spread/scripts
-  SNAP_CHANNEL: $(HOST:echo $SNAP_CHANNEL) # The snapstore channel containing the version of docker to test
+  SNAP_CHANNEL: $(HOST:echo $SNAP_CHANNEL) # The Snap Store channel containing the version of docker to test
+  SNAP_FILE: $(HOST:echo $SNAP_FILE) # The filename of the docker artifact to test
 
 prepare: |
   # Invoked in each system before running any test
