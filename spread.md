@@ -22,35 +22,46 @@ For more info about spread and image garden, see [Image Garden, Spread integrati
 
 ## Running tests
 
-To run the tests, just invoke spread:
-
-```bash
-image-garden.spread
-```
-
 Once you run the tests, _spread_ will instantiate several virtual machines, as specified in [spread.yaml](./spread.yaml).
 On each of those, the [prepare.sh](./spread/scripts/prepare.sh) script will run and install the docker snap before launching any test.
-By default, it looks for a `docker_*.snap` file in **the current directory** and installs it in `--dangerous` mode.
 
-If multiple files match the `docker_*.snap` pattern, you have to specify which one to use:
+Before running any test, you have to choose which docker snap to test
 
-```bash
-SNAP_FILE=docker_29.3.1_amd64.snap image-garden.spread
-```
+- To test a version from the **Snap Store**, set the snap channel:
 
-To install docker from the **snap store** instead, set the snap channel:
+  ```bash
+  SNAP_CHANNEL=latest/edge image-garden.spread
+  ```
 
-```bash
-SNAP_CHANNEL=latest/edge image-garden.spread
-```
+- To test a local snap file, specify the `SNAP_FILE` variable:
+
+  ```bash
+  SNAP_FILE=docker_29.3.1_amd64.snap image-garden.spread
+  ```
 
 The system will download the virtual machine files and place them in the `.image-garden` directory. See [Cleanup](#cleanup) to know how to free disk space.
 
-In order to run an **individual spread test**, use:
+### Running individual tests
 
-```bash
-image-garden.spread spread/main/hello-world
-```
+To save time you can select a subset of systems and tests to run.
+
+- To run tests on **only one system**, e.g. `ubuntu-cloud-24.04`, use:
+
+  ```bash
+  image-garden.spread ubuntu-cloud-24.04:
+  ```
+
+- To run an **individual spread test** on all system, use:
+
+  ```bash
+  image-garden.spread spread/main/hello-world
+  ```
+
+- To run only **one test** on only **one system**, combine the two:
+
+  ```bash
+  image-garden.spread ubuntu-cloud-24.04:spread/main/hello-world
+  ```
 
 ### Keep test artifacts
 
