@@ -22,9 +22,6 @@ else
         echo "Snap found, installing it"
         snap install ./docker_*.snap --dangerous
 
-        # Also install components, if any
-        snap install ./docker_*.comp --dangerous || true
-
         echo "Connecting interfaces"
 
         # sudo snap connect docker:gpu-2404 mesa-2404:gpu-2404 || true # not connected because we don't do any graphics tests
