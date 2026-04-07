@@ -1,3 +1,3 @@
-summary: Verifyes that docker can run the hello-world container
+summary: Verifies that docker can run the hello-world container
 execute: |
   sudo docker run hello-world
