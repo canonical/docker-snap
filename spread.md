@@ -32,7 +32,13 @@ Once you run the tests, _spread_ will instantiate several virtual machines, as s
 On each of those, the [prepare.sh](./spread/scripts/prepare.sh) script will run and install the docker snap before launching any test.
 By default, it looks for a `docker_*.snap` file in **the current directory** and installs it in `--dangerous` mode.
 
-To install docker from the **snap store**, set the snap channel:
+If multiple files match the `docker_*.snap` pattern, you have to specify which one to use:
+
+```bash
+SNAP_FILE=docker_29.3.1_amd64.snap image-garden.spread
+```
+
+To install docker from the **snap store** instead, set the snap channel:
 
 ```bash
 SNAP_CHANNEL=latest/edge image-garden.spread
