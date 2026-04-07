@@ -40,7 +40,7 @@ SNAP_CHANNEL=latest/edge image-garden.spread
 
 The system will download the virtual machine files and place them in the `.image-garden` directory. See [Cleanup](#cleanup) to know how to free disk space.
 
-In order to run an **individual spread test**, please run the following command:
+In order to run an **individual spread test**, use:
 
 ```bash
 image-garden.spread spread/main/hello-world
