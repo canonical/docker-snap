@@ -37,7 +37,7 @@ else
 
         # Restart docker and keep on retrying on failure
         echo "Restarting docker"
-        until snap restart docker; do sleep 1; done
+        restart_docker # from common.sh
     else
         ERROR "\
 Could not install docker because SNAP_CHANNEL was not provided and no docker_*.snap file was found in the project directory.\n\
