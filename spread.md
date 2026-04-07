@@ -60,14 +60,14 @@ To recover artifacts from VMs before they shut down, set the `artifacts` argumen
 image-garden.spread -artifacts artifacts
 ```
 
-### Ephimeral storage
+### Ephemeral storage
 
 By default, image garden VMs have ephimeral storage. To start VMs with permanent storage, set `QEMU_SNAPSHOT_OPTION=""`
 as described in [Persistent Storage Mode](https://gitlab.com/zygoon/image-garden/-/blob/main/README.md?ref_type=heads#persistent-storage-mode).
 
 ## Cleanup
 
-Image Garden will use the `.image-garden` directory to store the virtual machine images and drives. You can get rid of those files by manually deleting them or by using:
+Image Garden will use the `.image-garden` directory to store virtual machine images and drives. You can get rid of those files by manually deleting them or by using:
 
 - **Clean**: to remove all generated images, logs, and support files from the current directory without removing downloaded base images from the cache
 
