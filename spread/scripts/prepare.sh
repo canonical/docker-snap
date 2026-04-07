@@ -44,7 +44,7 @@ else
     else
         ERROR "\
 Could not install docker because SNAP_CHANNEL was not provided and no docker_*.snap file was found in the project directory.\n\
-Please compile docker before running tests by executing\n\
+Please build docker before running tests by executing\n\
     $ snapcraft pack\n\
 Or specify a store channel, e.g. \n\
     $ export SNAP_CHANNEL=latest/edge\
