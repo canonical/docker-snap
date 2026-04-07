@@ -17,7 +17,7 @@ restart_docker() {
     num_tries=0
 	MAX_TRIES=5
 
-    until snap restart docker;; do
+    until snap restart docker; do
         num_tries=$((num_tries+1))
         if (( num_tries > MAX_TRIES )); then
             ERROR "docker daemon failed to restart"
