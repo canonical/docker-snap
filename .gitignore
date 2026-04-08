@@ -8,3 +8,7 @@ snap/.snapcraft/*
 *.img
 *.snap
 .spread-reuse.*.yaml
+
+# Ignore image garden artifacts, but not the README.md file
+.image-garden/*
+!.image-garden/README.md
