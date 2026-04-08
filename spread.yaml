@@ -51,7 +51,14 @@ backends:
     systems:
       # Want to add more systems? Look here for a list of available systems: https://gitlab.com/zygoon/image-garden/-/tree/main/data
       # or look here for an exhaustive example: https://gitlab.com/zygoon/image-garden/-/blob/main/spread-demo/spread.yaml
+      # Note: ubuntu core images are prepared via this script: https://gitlab.com/zygoon/image-garden/-/blob/main/mk/050-ubuntu-core.mk
+      - ubuntu-core-22:
+          username: ubuntu
+          password: ubuntu
       - ubuntu-core-24:
+          username: ubuntu
+          password: ubuntu
+      - ubuntu-cloud-22.04:
           username: ubuntu
           password: ubuntu
       - ubuntu-cloud-24.04:
