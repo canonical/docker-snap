@@ -95,17 +95,3 @@ Image Garden will use the `.image-garden` directory to store virtual machine ima
 ## Developing
 
 Spread uses YAML files to define its architecture and individual tasks. You can integrate schemas such as [lengau's spread schemas](https://github.com/lengau/spread-schema) into your IDE to enable helpful features like auto-completion, validation, and documentation tooltips.
-To enable language support in VS Code, ensure you have a [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) installed and add the following configuration to the `.vscode/settings.json` file:
-
-```json
-{
-  "yaml.schemas": {
-    "https://raw.githubusercontent.com/lengau/spread-schema/main/schema/spread.json": "spread.yaml",
-    "https://raw.githubusercontent.com/lengau/spread-schema/main/schema/task.json": "spread/**/task.yaml"
-  },
-  "yaml.schemaStore.enable": false,
-  "yaml.validate": true,
-  "yaml.completion": true,
-  "yaml.format.enable": true
-}
-```
