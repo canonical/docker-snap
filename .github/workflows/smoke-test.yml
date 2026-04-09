@@ -113,13 +113,43 @@ jobs:
           # Give time for the daemon to startup
           sleep 5
 
-          # Run latest versions of well known applications
-          sudo docker run --restart=always -d redis
-          sudo docker run --restart=always -d rabbitmq
-          sudo docker run --restart=always -d grafana/grafana
-          sudo docker run --restart=always -d jenkins/jenkins
-          sudo docker run --restart=always -d nginx
-          sudo docker run --restart=always -d -e POSTGRES_HOST_AUTH_METHOD=trust postgres
+          # Exponential backoff retry for registry pulls (Docker Hub flakes with 5xx sometimes)
+          pull_with_retry() {
+            local image="$1"
+            local max_attempts=5
+            local attempt=1
+            local wait_time=5
+            while [ "$attempt" -le "$max_attempts" ]; do
+              if sudo docker pull "$image"; then
+                return 0
+              fi
+              echo "Pull failed (attempt $attempt/$max_attempts) for $image, retrying in ${wait_time}s..."
+              sleep "$wait_time"
+              wait_time=$((wait_time * 2))
+              attempt=$((attempt + 1))
+            done
+            echo "Failed to pull $image after $max_attempts attempts"
+            return 1
+          }
+
+          # Run containers with pinned tags (avoid :latest drift)
+          pull_with_retry redis:7
+          sudo docker run --restart=always -d redis:7
+
+          pull_with_retry rabbitmq:3.13
+          sudo docker run --restart=always -d rabbitmq:3.13
+
+          pull_with_retry grafana/grafana:11
+          sudo docker run --restart=always -d grafana/grafana:11
+
+          pull_with_retry jenkins/jenkins:2.462
+          sudo docker run --restart=always -d jenkins/jenkins:2.462
+
+          pull_with_retry nginx:1.27
+          sudo docker run --restart=always -d nginx:1.27
+
+          pull_with_retry postgres:17
+          sudo docker run --restart=always -d -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17
           # NOTE: adjust this accordingly with the commands above if needed
           STARTED_CONTAINERS=6
 
