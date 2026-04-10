@@ -67,17 +67,23 @@ backends:
       - ubuntu-core-24:
           username: ubuntu
           password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
       - ubuntu-cloud-24.04:
           username: ubuntu
           password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
       - ubuntu-cloud-26.04:
           username: ubuntu
           password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
       - ubuntu-cloud-24.04.aarch64:
           username: ubuntu
           password: ubuntu
           environment:
-            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64) # overrides the default $SNAP_FILE_AMD64
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
 
 path: /tmp/docker
 exclude:
@@ -97,7 +103,6 @@ suites:
 environment:
   SCRIPTS_PATH: $SPREAD_PATH/spread/scripts
   SNAP_CHANNEL: $(HOST:echo $SNAP_CHANNEL) # The Snap Store channel containing the version of docker to test
-  SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64) # default value of SNAP_FILE, to be overridden by non-amd64 architectures
 
 prepare: |
   # Invoked in each system before running any test
