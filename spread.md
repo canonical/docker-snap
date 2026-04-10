@@ -34,6 +34,10 @@ Before running any test, you have to choose which docker snap to test
   SNAP_CHANNEL=latest/edge image-garden.spread
   ```
 
+  This runs the tests for both amd64 and arm64 architectures.
+  For testing a single architecture, download the snap and use the local snap file method.
+  To download the snap on a different architecture, e.g. arm64 on amd64, run: `UBUNTU_STORE_ARCH=arm64 snap download docker`.
+
 - To test a local snap file, specify the `SNAP_FILE_AMD64` and/or `SNAP_FILE_ARM64` variables:
 
   ```bash
