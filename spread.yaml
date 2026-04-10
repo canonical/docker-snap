@@ -69,17 +69,28 @@ backends:
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-core-24.aarch64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
       - ubuntu-cloud-24.04:
           username: ubuntu
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-cloud-24.04.aarch64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+
       - ubuntu-cloud-26.04:
           username: ubuntu
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
-      - ubuntu-cloud-24.04.aarch64:
+      - ubuntu-cloud-26.04.aarch64:
           username: ubuntu
           password: ubuntu
           environment:
