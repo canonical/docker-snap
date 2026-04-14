@@ -89,6 +89,8 @@ backends:
       - ubuntu-core-24:
           username: ubuntu
           password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
       - ubuntu-core-24.aarch64:
           username: ubuntu
           password: ubuntu
