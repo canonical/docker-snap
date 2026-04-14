@@ -19,22 +19,35 @@ backends:
       # successfully so re-set PATH to the original value, as provided by
       # snapcraft.
       if [ -n "${SPREAD_HOST_PATH-}" ]; then
-          PATH="${SPREAD_HOST_PATH}"
+        PATH="${SPREAD_HOST_PATH}"
       fi
 
-      export QEMU_SMP_OPTION="-smp 2"
+      export QEMU_SMP_OPTION="-smp 4"
       export QEMU_MEM_OPTION="-m 3072"
 
-      ARCH="${ARCH:-$(uname -m)}"
-      if OUT="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}"."$ARCH")"; then
-            if [ "$ARCH" != "$(uname -m)" ]; then
-                  # Spread has a fixed, 5-minute timeout for ssh to become ready.
-                  # When emulating across architectures this may not be sufficient
-                  # for the system to become ready. Sleep for a while to give things
-                  # a chance to finish.
-                  sleep 3m
-            fi
-            ADDRESS "$OUT"
+      HOST_ARCH="${ARCH:-$(uname -m)}"
+      SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
+
+      # If SPREAD_SYSTEM does not already end with a valid architecture suffix,
+      # append the host architecture.
+      case "$SYSTEM_ARCH" in
+        x86_64|aarch64|amd64|arm64|armhf|i386|ppc64el|riscv64|s390x)
+          ;;
+        *)
+          SPREAD_SYSTEM="${SPREAD_SYSTEM}.${HOST_ARCH}"
+          SYSTEM_ARCH="$HOST_ARCH"
+          ;;
+      esac
+
+      if OUT="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}")"; then
+        if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ]; then
+          # Spread has a fixed, 5-minute timeout for ssh to become ready.
+          # When emulating across architectures this may not be sufficient
+          # for the system to become ready. Sleep for a while to give things
+          # a chance to finish.
+          sleep 3m
+        fi
+        ADDRESS "$OUT"
       fi
     discard: |
       # Spread automatically injects /snap/bin to PATH. When we are
@@ -44,7 +57,7 @@ backends:
       # successfully so re-set PATH to the original value, as provided by
       # snapcraft.
       if [ -n "${SPREAD_HOST_PATH-}" ]; then
-          PATH="${SPREAD_HOST_PATH}"
+        PATH="${SPREAD_HOST_PATH}"
       fi
 
       image-garden discard "$SPREAD_SYSTEM_ADDRESS"
@@ -54,12 +67,34 @@ backends:
       - ubuntu-core-24:
           username: ubuntu
           password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-core-24.aarch64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
       - ubuntu-cloud-24.04:
           username: ubuntu
           password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-cloud-24.04.aarch64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+
       - ubuntu-cloud-26.04:
           username: ubuntu
           password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-cloud-26.04.aarch64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
 
 path: /tmp/docker
 exclude:
@@ -79,7 +114,6 @@ suites:
 environment:
   SCRIPTS_PATH: $SPREAD_PATH/spread/scripts
   SNAP_CHANNEL: $(HOST:echo $SNAP_CHANNEL) # The Snap Store channel containing the version of docker to test
-  SNAP_FILE: $(HOST:echo $SNAP_FILE) # The filename of the docker artifact to test
 
 prepare: |
   # Invoked in each system before running any test
