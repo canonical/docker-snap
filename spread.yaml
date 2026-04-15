@@ -1,4 +1,5 @@
 project: docker
+kill-timeout: 30m
 backends:
   # LXD is currently not supported as a backend, because we need to set lxc instance
   # config to make docker work in an lxc container,
@@ -64,6 +65,28 @@ backends:
     systems:
       # Want to add more systems? Look here for a list of available systems: https://gitlab.com/zygoon/image-garden/-/tree/main/data
       # or look here for an exhaustive example: https://gitlab.com/zygoon/image-garden/-/blob/main/spread-demo/spread.yaml
+      # Note: ubuntu core images are prepared via this script: https://gitlab.com/zygoon/image-garden/-/blob/main/mk/050-ubuntu-core.mk
+      - ubuntu-core-22:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-core-22.aarch64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+      - ubuntu-cloud-22.04:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-cloud-22.04.aarch64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+
       - ubuntu-core-24:
           username: ubuntu
           password: ubuntu
