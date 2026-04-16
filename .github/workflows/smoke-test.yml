@@ -43,6 +43,43 @@ jobs:
           name: docker_${{ github.run_id}}_${{ matrix.runner.arch }}.snap
           path: ${{ steps.snapcraft.outputs.snap }}
 
+  spread-tests:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - arch: amd64
+            os: ubuntu-latest
+          - arch: arm64
+            os: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: docker_${{ github.run_id }}_${{ matrix.runner.arch }}.snap
+
+      - name: Prep
+        run: |
+          sudo snap install image-garden
+
+      - name: Spread tests
+        run: |
+          if [ "${{ matrix.runner.arch }}" = "amd64" ]; then
+            export SNAP_FILE_AMD64="docker_${{ github.run_id }}_${{ matrix.runner.arch }}.snap"
+            image-garden.spread -v ubuntu...x86-64
+          elif [ "${{ matrix.runner.arch }}" = "arm64" ]; then
+            export SNAP_FILE_ARM64="docker_${{ github.run_id }}_${{ matrix.runner.arch }}.snap"
+            image-garden.spread -v ubuntu...aarch64
+          else
+            echo "Unexpected runner architecture: ${{ matrix.runner.arch }}"
+            exit 1
+          fi
+
   smoke-test:
     needs: build
     strategy:
@@ -238,7 +275,7 @@ jobs:
       - name: Hello World (init)
         run: sudo docker run --rm --init hello-world
 
-      # NOTE: regression test for aa default profile reload issue 
+      # NOTE: regression test for aa default profile reload issue
       # see: https://github.com/canonical/docker-snap/issues/36
       - name: Stop container
         timeout-minutes: 1
