@@ -28,11 +28,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Prep
-        run: |
-          sudo snap install image-garden
-
-      - name: Spread tests
-        run: |
-          test_filter="ubuntu...${{ matrix.runner.spread_target_arch }}"
-          SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "$test_filter"
+      - name: Run spread tests
+        uses: zyga/image-garden-action@3a6aa9042a0b994707108d1b205c4ac1845cebe5 # v0.3
+        with:
+          garden-system: "ubuntu...${{ matrix.runner.spread_target_arch }}"
+        env:
+          SNAP_CHANNEL: ${{ github.event.inputs.snap_channel }}
