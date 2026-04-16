@@ -8,8 +8,6 @@ on:
         description: 'Snap Store channel containing the version of docker to test'
         required: true
         type: string
-  push:
-    branches: [ IENG-2307-run-spread-tests-on-pr ]
 
 defaults:
   run:
@@ -36,10 +34,5 @@ jobs:
 
       - name: Spread tests
         run: |
-          export SNAP_CHANNEL="${{ inputs.snap_channel }}"
-          if [ -z "$SNAP_CHANNEL" ]; then
-            echo "Defaulting to 'edge' channel since no SNAP_CHANNEL input was provided"
-            export SNAP_CHANNEL="edge"
-          fi
           test_filter="ubuntu...${{ matrix.runner.spread_target_arch }}"
-          image-garden.spread -v -vv "$test_filter"
+          SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "$test_filter"
