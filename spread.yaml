@@ -41,12 +41,12 @@ backends:
       esac
 
       if OUT="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}")"; then
-        if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ]; then
+        if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
           # Spread has a fixed, 5-minute timeout for ssh to become ready.
           # When emulating across architectures this may not be sufficient
           # for the system to become ready. Sleep for a while to give things
           # a chance to finish.
-          sleep 3m
+          sleep 5m
         fi
         ADDRESS "$OUT"
       fi
