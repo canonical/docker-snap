@@ -32,7 +32,10 @@ jobs:
         run: |
           sudo snap install image-garden
 
-      - name: Spread tests
+          # We need write access to /dev/kvm for better performance.
+          # Since this is an ephemeral CI/CD environment, we can grant everyone access to /dev/kvm.
+          sudo chmod -v 666 /dev/kvm || true
+
         run: |
           test_filter="ubuntu...${{ matrix.runner.spread_target_arch }}"
           SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "$test_filter"
