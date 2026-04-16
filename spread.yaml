@@ -26,14 +26,9 @@ backends:
       export QEMU_SMP_OPTION="-smp 4"
       export QEMU_MEM_OPTION="-m 3072"
 
-      # Patch spread system architecture.
-      # Spread system names can't contain underscores, so we can't include
-      # the "x86_64" suffix. We replace "x86-64" -> "x86_64",
-      # but also "amd64" -> "x86_64" and "arm64" -> "aarch64"
-      # for easy of use
-      SPREAD_SYSTEM=${SPREAD_SYSTEM/%x86-64/x86_64}
-      SPREAD_SYSTEM=${SPREAD_SYSTEM/%amd64/x86_64}
-      SPREAD_SYSTEM=${SPREAD_SYSTEM/%arm64/aarch64}
+      # Map spread system architecture
+      SPREAD_SYSTEM=${SPREAD_SYSTEM/%amd64/x86_64}  # maps "amd64" to "x86_64"
+      SPREAD_SYSTEM=${SPREAD_SYSTEM/%arm64/aarch64} # maps "arm64" to "aarch64"
 
       if OUT="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}")"; then
         HOST_ARCH="${ARCH:-$(uname -m)}"
@@ -64,54 +59,54 @@ backends:
       # Want to add more systems? Look here for a list of available systems: https://gitlab.com/zygoon/image-garden/-/tree/main/data
       # or look here for an exhaustive example: https://gitlab.com/zygoon/image-garden/-/blob/main/spread-demo/spread.yaml
       # Note: ubuntu core images are prepared via this script: https://gitlab.com/zygoon/image-garden/-/blob/main/mk/050-ubuntu-core.mk
-      - ubuntu-core-22.x86-64:
+      - ubuntu-core-22.amd64:
           username: ubuntu
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
-      - ubuntu-core-22.aarch64:
+      - ubuntu-core-22.arm64:
           username: ubuntu
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
-      - ubuntu-cloud-22.04.x86-64:
+      - ubuntu-cloud-22.04.amd64:
           username: ubuntu
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
-      - ubuntu-cloud-22.04.aarch64:
-          username: ubuntu
-          password: ubuntu
-          environment:
-            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
-
-      - ubuntu-core-24.x86-64:
-          username: ubuntu
-          password: ubuntu
-          environment:
-            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
-      - ubuntu-core-24.aarch64:
-          username: ubuntu
-          password: ubuntu
-          environment:
-            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
-      - ubuntu-cloud-24.04.x86-64:
-          username: ubuntu
-          password: ubuntu
-          environment:
-            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
-      - ubuntu-cloud-24.04.aarch64:
+      - ubuntu-cloud-22.04.arm64:
           username: ubuntu
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
 
-      - ubuntu-cloud-26.04.x86-64:
+      - ubuntu-core-24.amd64:
           username: ubuntu
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
-      - ubuntu-cloud-26.04.aarch64:
+      - ubuntu-core-24.arm64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+      - ubuntu-cloud-24.04.amd64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-cloud-24.04.arm64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+
+      - ubuntu-cloud-26.04.amd64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-cloud-26.04.arm64:
           username: ubuntu
           password: ubuntu
           environment:
