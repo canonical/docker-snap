@@ -52,10 +52,16 @@ The system will download the virtual machine files and place them in the `.image
 
 To save time you can select a subset of systems and tests to run.
 
-- To run tests on **only one system**, e.g. `ubuntu-cloud-26.04` or `ubuntu-cloud-24.04.aarch64`, use:
+- To run tests on **only one system**, e.g. `ubuntu-cloud-26.04.amd64` or `ubuntu-cloud-24.04.arm64`, use:
 
   ```bash
-  image-garden.spread ubuntu-cloud-24.04:
+  image-garden.spread ubuntu-cloud-24.04.amd64:
+  ```
+
+- To run tests on only **one system architecture**, e.g. `arm64`, use the `...` wildcard:
+
+  ```bash
+  image-garden.spread garden:...arm64:
   ```
 
 - To run an **individual spread test**, e.g. `hello-world`, on all system, use:
@@ -67,7 +73,7 @@ To save time you can select a subset of systems and tests to run.
 - To run only **one test** on only **one system**, combine the two:
 
   ```bash
-  image-garden.spread ubuntu-cloud-24.04:spread/main/hello-world
+  image-garden.spread ubuntu-cloud-24.04.amd64:spread/main/hello-world
   ```
 
 ### Keep test artifacts
