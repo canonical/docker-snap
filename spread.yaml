@@ -1,5 +1,5 @@
 project: docker
-kill-timeout: 30m
+kill-timeout: 3h
 backends:
   # LXD is currently not supported as a backend, because we need to set lxc instance
   # config to make docker work in an lxc container,
