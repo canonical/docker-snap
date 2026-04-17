@@ -46,3 +46,12 @@ jobs:
         run: |
           test_filter="ubuntu...${{ matrix.runner.spread_target_arch }}"
           SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "$test_filter"
+
+      - name: Upload logs as artifacts
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: boot-logs
+          path: .image-garden/*.log
+          if-no-files-found: ignore
+          overwrite: true
