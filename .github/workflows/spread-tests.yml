@@ -21,7 +21,7 @@ jobs:
         runner:
           - os: ubuntu-latest
             spread_target_arch: amd64
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
             spread_target_arch: arm64
     runs-on: ${{ matrix.runner.os }}
     steps:
