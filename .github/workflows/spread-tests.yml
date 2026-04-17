@@ -5,9 +5,14 @@ on:
   workflow_dispatch:
     inputs:
       snap_channel:
-        description: 'Snap Store channel containing the version of docker to test'
+        description: "Snap Store channel containing the version of docker to test"
         required: true
         type: string
+      spread_test_filter:
+        description: "Spread test selection filter; use '...' as a wildcard"
+        required: false
+        type: string
+        default: ''
 
 defaults:
   run:
@@ -45,6 +50,11 @@ jobs:
       - name: Run spread tests
         run: |
           test_filter="ubuntu...${{ matrix.runner.spread_target_arch }}"
+
+          if [ -n "$test_filter" ]; then
+            test_filter="${{ inputs.spread_test_filter }}"
+          fi
+
           SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "$test_filter"
 
       - name: Print directory structure
