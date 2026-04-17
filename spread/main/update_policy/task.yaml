@@ -7,7 +7,7 @@ execute: |
   # read docker file from stdin and build the image
   dockerfile=$(cat <<EOF
     FROM alpine
-    CMD sleep 5; exit 1
+    CMD sleep 1m; exit 1
   EOF
   )
   echo "$dockerfile" | sudo docker build -t image -
@@ -33,8 +33,8 @@ execute: |
   restart_policy=$(sudo docker inspect  -f '{{.HostConfig.RestartPolicy.Name}}' $id)
   [ $restart_policy = "no" ] || exit 1
 
-  # wait a bit and check if service restarts
-  sleep 10
+  # wait enough for the container to exit, and verify that it didn't restart
+  sleep 1.5m
 
   function verify_restart_counter() {
     restart_count=$(sudo docker inspect -f '{{.RestartCount}}' $id)
