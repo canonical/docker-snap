@@ -37,7 +37,7 @@ jobs:
           sudo chmod -v 666 /dev/kvm || true
 
       - name: Cache pristine virtual machine images
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/snap/image-garden/common/cache/dl
           key: image-garden-dl-${{ matrix.runner.spread_target_arch }}
