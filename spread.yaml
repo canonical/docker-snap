@@ -1,5 +1,5 @@
 project: docker
-kill-timeout: 30m
+kill-timeout: 3h
 backends:
   # LXD is currently not supported as a backend, because we need to set lxc instance
   # config to make docker work in an lxc container,
@@ -26,27 +26,20 @@ backends:
       export QEMU_SMP_OPTION="-smp 4"
       export QEMU_MEM_OPTION="-m 3072"
 
-      HOST_ARCH="${ARCH:-$(uname -m)}"
-      SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
-
-      # If SPREAD_SYSTEM does not already end with a valid architecture suffix,
-      # append the host architecture.
-      case "$SYSTEM_ARCH" in
-        x86_64|aarch64|amd64|arm64|armhf|i386|ppc64el|riscv64|s390x)
-          ;;
-        *)
-          SPREAD_SYSTEM="${SPREAD_SYSTEM}.${HOST_ARCH}"
-          SYSTEM_ARCH="$HOST_ARCH"
-          ;;
-      esac
+      # Map spread system architecture
+      SPREAD_SYSTEM=${SPREAD_SYSTEM/%amd64/x86_64}  # maps "amd64" to "x86_64"
+      SPREAD_SYSTEM=${SPREAD_SYSTEM/%arm64/aarch64} # maps "arm64" to "aarch64"
 
       if OUT="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}")"; then
-        if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ]; then
+        HOST_ARCH="${ARCH:-$(uname -m)}"
+        SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
+
+        if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
           # Spread has a fixed, 5-minute timeout for ssh to become ready.
           # When emulating across architectures this may not be sufficient
           # for the system to become ready. Sleep for a while to give things
           # a chance to finish.
-          sleep 3m
+          sleep 5m
         fi
         ADDRESS "$OUT"
       fi
@@ -66,54 +59,54 @@ backends:
       # Want to add more systems? Look here for a list of available systems: https://gitlab.com/zygoon/image-garden/-/tree/main/data
       # or look here for an exhaustive example: https://gitlab.com/zygoon/image-garden/-/blob/main/spread-demo/spread.yaml
       # Note: ubuntu core images are prepared via this script: https://gitlab.com/zygoon/image-garden/-/blob/main/mk/050-ubuntu-core.mk
-      - ubuntu-core-22:
+      - ubuntu-core-22.amd64:
           username: ubuntu
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
-      - ubuntu-core-22.aarch64:
+      - ubuntu-core-22.arm64:
           username: ubuntu
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
-      - ubuntu-cloud-22.04:
+      - ubuntu-cloud-22.04.amd64:
           username: ubuntu
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
-      - ubuntu-cloud-22.04.aarch64:
-          username: ubuntu
-          password: ubuntu
-          environment:
-            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
-
-      - ubuntu-core-24:
-          username: ubuntu
-          password: ubuntu
-          environment:
-            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
-      - ubuntu-core-24.aarch64:
-          username: ubuntu
-          password: ubuntu
-          environment:
-            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
-      - ubuntu-cloud-24.04:
-          username: ubuntu
-          password: ubuntu
-          environment:
-            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
-      - ubuntu-cloud-24.04.aarch64:
+      - ubuntu-cloud-22.04.arm64:
           username: ubuntu
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
 
-      - ubuntu-cloud-26.04:
+      - ubuntu-core-24.amd64:
           username: ubuntu
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
-      - ubuntu-cloud-26.04.aarch64:
+      - ubuntu-core-24.arm64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+      - ubuntu-cloud-24.04.amd64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-cloud-24.04.arm64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+
+      - ubuntu-cloud-26.04.amd64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-cloud-26.04.arm64:
           username: ubuntu
           password: ubuntu
           environment:
