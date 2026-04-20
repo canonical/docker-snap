@@ -63,5 +63,6 @@ jobs:
         with:
           name: boot-logs
           path: .image-garden/*.log
+          include-hidden-files: true
           if-no-files-found: ignore
           overwrite: true
