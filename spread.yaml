@@ -33,7 +33,17 @@ backends:
       image_garden_output="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}")" || true
 
       if [ -z "$image_garden_output" ]; then
-        ERROR "Image garden allocation failed for system: $SPREAD_SYSTEM"
+        echo "Image garden allocation failed for system: $SPREAD_SYSTEM"
+
+        # Guard against corrupt EFI vars image (0 bytes).
+        efi_vars_img=".image-garden/${SPREAD_SYSTEM}.efi-vars.img"
+        if [ -f "$efi_vars_img" ] && [ ! -s "$efi_vars_img" ]; then
+          echo "Found zero-byte EFI vars image: $efi_vars_img"
+          rm -f "$efi_vars_img"
+          image-garden make "${SPREAD_SYSTEM/-plus-/+}.efi-vars.img"
+        fi
+
+        ERROR "Image garden allocation failed"
       fi
 
       HOST_ARCH="${ARCH:-$(uname -m)}"
