@@ -51,7 +51,7 @@ jobs:
         run: |
           test_filter="ubuntu...${{ matrix.runner.spread_target_arch }}"
 
-          if [ -n "$test_filter" ]; then
+          if [ -n "${{ inputs.spread_test_filter }}" ]; then
             test_filter="${{ inputs.spread_test_filter }}"
           fi
 
