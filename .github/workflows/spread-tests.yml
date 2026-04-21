@@ -35,7 +35,7 @@ jobs:
 
       - name: Prep
         run: |
-          sudo snap install image-garden image-garden+qemu-aarch64 image-garden+qemu-riscv64
+          sudo snap install image-garden image-garden+qemu-aarch64 image-garden+qemu-riscv64 --channel=latest/edge
 
           # We need write access to /dev/kvm for better performance.
           # Since this is an ephemeral CI/CD environment, we can grant everyone access to /dev/kvm.
