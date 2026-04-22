@@ -30,24 +30,50 @@ backends:
       SPREAD_SYSTEM=${SPREAD_SYSTEM/%amd64/x86_64}  # maps "amd64" to "x86_64"
       SPREAD_SYSTEM=${SPREAD_SYSTEM/%arm64/aarch64} # maps "arm64" to "aarch64"
 
+      HOST_ARCH="${ARCH:-$(uname -m)}"
+      SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
+
       image_garden_output="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}")" || true
 
       if [ -z "$image_garden_output" ]; then
         echo "Image garden allocation failed for system: $SPREAD_SYSTEM"
 
-        # Guard against corrupt EFI vars image (0 bytes).
+        # Guard against corrupt EFI vars image.
         efi_vars_img=".image-garden/${SPREAD_SYSTEM}.efi-vars.img"
-        if [ -f "$efi_vars_img" ] && [ ! -s "$efi_vars_img" ]; then
-          echo "Found zero-byte EFI vars image: $efi_vars_img"
-          rm -f "$efi_vars_img"
-          image-garden make "${SPREAD_SYSTEM/-plus-/+}.efi-vars.img"
+
+        if [ -f "$efi_vars_img" ]; then
+          recreate_efi_vars_img="false"
+          if [ ! -s "$efi_vars_img" ]; then
+            echo "Found zero-byte EFI vars image: $efi_vars_img"
+            recreate_efi_vars_img="true"
+          else
+            required_efi_vars_img_size=""
+            case "$SYSTEM_ARCH" in
+              x86_64)
+                required_efi_vars_img_size="540672"
+                ;;
+              aarch64)
+                required_efi_vars_img_size="67108864"
+                ;;
+            esac
+
+            if [ -n "$required_efi_vars_img_size" ]; then
+              efi_vars_img_size="$(stat -c %s "$efi_vars_img")"
+              if [ "$efi_vars_img_size" != "$required_efi_vars_img_size" ]; then
+                echo "Found unexpected EFI vars image size ($efi_vars_img_size), expected $required_efi_vars_img_size: $efi_vars_img"
+                recreate_efi_vars_img="true"
+              fi
+            fi
+          fi
+
+          if [ "$recreate_efi_vars_img" = "true" ]; then
+            rm -f "$efi_vars_img"
+            image-garden make "${SPREAD_SYSTEM/-plus-/+}.efi-vars.img"
+          fi
         fi
 
         ERROR "Image garden allocation failed"
       fi
-
-      HOST_ARCH="${ARCH:-$(uname -m)}"
-      SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
 
       if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
         # Spread has a fixed, 5-minute timeout for ssh to become ready.
