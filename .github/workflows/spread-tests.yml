@@ -24,11 +24,11 @@ jobs:
       fail-fast: false
       matrix:
         runner:
-          - os: ubuntu-latest
+          - label: [ self-hosted-linux-amd64-noble-large ]
             spread_target_arch: amd64
-          - os: ubuntu-latest
+          - label: [ self-hosted-linux-arm64-noble-large ]
             spread_target_arch: arm64
-    runs-on: ${{ matrix.runner.os }}
+    runs-on: ${{ matrix.runner.label }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
