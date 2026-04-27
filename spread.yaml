@@ -30,19 +30,23 @@ backends:
       SPREAD_SYSTEM=${SPREAD_SYSTEM/%amd64/x86_64}  # maps "amd64" to "x86_64"
       SPREAD_SYSTEM=${SPREAD_SYSTEM/%arm64/aarch64} # maps "arm64" to "aarch64"
 
-      if OUT="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}")"; then
-        HOST_ARCH="${ARCH:-$(uname -m)}"
-        SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
+      image_garden_output="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}")"
 
-        if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ]; then
-          # Spread has a fixed, 5-minute timeout for ssh to become ready.
-          # When emulating across architectures this may not be sufficient
-          # for the system to become ready. Sleep for a while to give things
-          # a chance to finish.
-          sleep 3m
-        fi
-        ADDRESS "$OUT"
+      if [ -z "$image_garden_output" ]; then
+        ERROR "Image garden allocation failed for system $SPREAD_SYSTEM"
       fi
+
+      HOST_ARCH="${ARCH:-$(uname -m)}"
+      SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
+      if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
+        # Spread has a fixed, 5-minute timeout for ssh to become ready.
+        # When emulating across architectures this may not be sufficient
+        # for the system to become ready. Sleep for a while to give things
+        # a chance to finish.
+        sleep 5m
+      fi
+
+      ADDRESS "$image_garden_output"
     discard: |
       # Spread automatically injects /snap/bin to PATH. When we are
       # running from the image-garden snap then SPREAD_HOST_PATH is the
