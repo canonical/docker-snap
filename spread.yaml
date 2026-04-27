@@ -171,6 +171,7 @@ suites:
 environment:
   SCRIPTS_PATH: $SPREAD_PATH/spread/scripts
   SNAP_CHANNEL: $(HOST:echo $SNAP_CHANNEL) # The Snap Store channel containing the version of docker to test
+  DOCKERHUB_MIRROR: $(HOST:echo $DOCKERHUB_MIRROR)
 
 prepare: |
   # Invoked in each system before running any test
