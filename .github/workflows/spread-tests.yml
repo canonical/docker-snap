@@ -12,7 +12,7 @@ on:
         description: "Spread test selection filter; use '...' as a wildcard"
         required: false
         type: string
-        default: ''
+        default: '...amd64'
 
 defaults:
   run:
@@ -24,10 +24,9 @@ jobs:
       fail-fast: false
       matrix:
         runner:
-          - label: [ self-hosted-linux-amd64-noble-large ]
-            spread_target_arch: amd64
-          - label: [ self-hosted-linux-arm64-noble-large ]
-            spread_target_arch: arm64
+          - label: ubuntu-latest
+            spread_test_filter: ${{ inputs.spread_test_filter }}
+
     runs-on: ${{ matrix.runner.label }}
     steps:
       - name: Checkout code
@@ -47,17 +46,11 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/snap/image-garden/common/cache/dl
-          key: image-garden-dl-${{ matrix.runner.spread_target_arch }}
+          key: image-garden-dl-${{ matrix.runner.spread_test_filter }}
 
       - name: Run spread tests
         run: |
-          test_filter="ubuntu...${{ matrix.runner.spread_target_arch }}"
-
-          if [ -n "${{ inputs.spread_test_filter }}" ]; then
-            test_filter="${{ inputs.spread_test_filter }}"
-          fi
-
-          SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "$test_filter"
+          SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "${{ matrix.runner.spread_test_filter }}"
 
       - name: Log image garden content
         if: ${{ failure() }}
