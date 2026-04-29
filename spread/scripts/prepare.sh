@@ -18,14 +18,14 @@ function setup_dockerhub_mirror() {
             echo "Updating existing docker config at $docker_config_path"
 
             old_docker_config_path="$docker_config_path.bak"
-            sudo mv $docker_config_path $old_docker_config_path
+            sudo mv "$docker_config_path" "$old_docker_config_path"
 
             sudo jq --arg mirror "$DOCKERHUB_MIRROR" \
                 '.["registry-mirrors"] = [$mirror]' \
-                $old_docker_config_path | sudo tee $docker_config_path
+                "$old_docker_config_path" | sudo tee "$docker_config_path"
         else
             echo "Creating new docker config at $docker_config_path"
-            echo "{\"registry-mirrors\": [\"$DOCKERHUB_MIRROR\"]}" | sudo tee $docker_config_path
+            echo "{\"registry-mirrors\": [\"$DOCKERHUB_MIRROR\"]}" | sudo tee "$docker_config_path"
         fi
     else
         echo "No DOCKERHUB_MIRROR provided"
@@ -65,7 +65,7 @@ else
     ERROR "No SNAP_CHANNEL nor SNAP_FILE provided"
 fi
 
-setup_dockerhub_mirror()
+setup_dockerhub_mirror
 
 # Restart docker and keep on retrying on failure
 echo "Restarting docker"
