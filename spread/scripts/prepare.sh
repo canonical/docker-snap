@@ -17,6 +17,8 @@ function setup_dockerhub_mirror() {
         if [ -f "$docker_config_path" ]; then
             echo "Updating existing docker config at $docker_config_path"
 
+            sudo snap install jq --channel edge
+
             old_docker_config_path="$docker_config_path.bak"
             sudo mv "$docker_config_path" "$old_docker_config_path"
 
