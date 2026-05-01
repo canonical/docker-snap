@@ -36,7 +36,6 @@ jobs:
         run: |
           sudo snap install image-garden --channel=latest/edge
           sudo snap install image-garden+qemu-aarch64 || true
-          sudo snap install image-garden+qemu-riscv64 || true
 
           # We need write access to /dev/kvm for better performance.
           # Since this is an ephemeral CI/CD environment, we can grant everyone access to /dev/kvm.
