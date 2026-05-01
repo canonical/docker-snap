@@ -113,13 +113,48 @@ jobs:
           # Give time for the daemon to startup
           sleep 5
 
-          # Run latest versions of well known applications
-          sudo docker run --restart=always -d redis
-          sudo docker run --restart=always -d rabbitmq
-          sudo docker run --restart=always -d grafana/grafana
-          sudo docker run --restart=always -d jenkins/jenkins
-          sudo docker run --restart=always -d nginx
-          sudo docker run --restart=always -d -e POSTGRES_HOST_AUTH_METHOD=trust postgres
+          pull_with_retry() {
+            local image=$1
+            local max_attempts=5
+            local attempt=1
+            local wait_time=5
+
+            while [ $attempt -le $max_attempts ]; do
+              if sudo docker pull "$image"; then
+                return 0
+              fi
+              echo "Pull failed (attempt $attempt/$max_attempts), retrying in ${wait_time}s..."
+              sleep $wait_time
+              wait_time=$((wait_time * 2))
+              attempt=$((attempt + 1))
+            done
+            echo "Failed to pull $image after $max_attempts attempts"
+            return 1
+          }
+
+          REDIS_IMAGE="redis:7"
+          pull_with_retry "$REDIS_IMAGE"
+          sudo docker run --restart=always -d "$REDIS_IMAGE"
+
+          RABBIT_IMAGE="rabbitmq:3.13"
+          pull_with_retry "$RABBIT_IMAGE"
+          sudo docker run --restart=always -d "$RABBIT_IMAGE"
+
+          GRAFANA_IMAGE="grafana/grafana:11"
+          pull_with_retry "$GRAFANA_IMAGE"
+          sudo docker run --restart=always -d "$GRAFANA_IMAGE"
+
+          JENKINS_IMAGE="jenkins/jenkins:2.462"
+          pull_with_retry "$JENKINS_IMAGE"
+          sudo docker run --restart=always -d "$JENKINS_IMAGE"
+
+          NGINX_IMAGE="nginx:1.27"
+          pull_with_retry "$NGINX_IMAGE"
+          sudo docker run --restart=always -d "$NGINX_IMAGE"
+
+          POSTGRES_IMAGE="postgres:16"
+          pull_with_retry "$POSTGRES_IMAGE"
+          sudo docker run --restart=always -d -e POSTGRES_HOST_AUTH_METHOD=trust "$POSTGRES_IMAGE"
           # NOTE: adjust this accordingly with the commands above if needed
           STARTED_CONTAINERS=6
 
