@@ -100,6 +100,11 @@ backends:
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+      - ubuntu-cloud-24.04.riscv64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_RISCV64)
 
       - ubuntu-cloud-26.04.amd64:
           username: ubuntu
@@ -111,6 +116,11 @@ backends:
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+      - ubuntu-cloud-26.04.riscv64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_RISCV64)
 
 path: /tmp/docker
 exclude:
