@@ -340,3 +340,29 @@ jobs:
           COUNT="$(sudo iptables -L | grep -i docker | wc -l)"
           set -e
           [ "$COUNT" -gt 0 ]
+
+  publish:
+    needs: smoke-test
+    if: github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - snap_arch: amd64
+          - snap_arch: arm64
+    runs-on: ubuntu-latest
+    steps:
+      # Download snap artifact from the previous build job in this workflow run
+      - name: Download snap artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: docker_${{ github.run_id }}_${{ matrix.runner.snap_arch }}.snap
+      
+      # Publish snap to Store
+      - name: Publish snap to Store
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
+        with:
+          snap: docker_${{ github.run_id }}_${{ matrix.runner.snap_arch }}.snap
+          release: latest/edge/pr-${{ github.event.pull_request.number }}
