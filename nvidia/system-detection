@@ -16,7 +16,7 @@ else
     exit_inf "No NVIDIA support detected. For NVIDIA support, please refer to https://github.com/canonical/docker-snap"
 fi
 
-## Running gpu-2404 wrapper for Core systems only ##
+## Running gpu wrapper for Core systems only ##
 
 # Classic does not require this wrapper #
 if nvidia_support_classic; then
@@ -24,6 +24,10 @@ if nvidia_support_classic; then
 fi
 
 if nvidia_support_core; then
+    if snapctl is-connected gpu-2604; then
+        exec "${SNAP}/gpu-2604/bin/gpu-2604-provider-wrapper" "$@"
+    fi
+
     if snapctl is-connected gpu-2404; then
         exec "${SNAP}/gpu-2404/bin/gpu-2404-provider-wrapper" "$@"
     fi

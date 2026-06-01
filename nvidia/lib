@@ -13,7 +13,7 @@ nvidia_support_disabled() {
 }
 
 nvidia_support_core() {
-    snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22
+    snapctl is-connected gpu-2604 || snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22
 }
 
 nvidia_support_classic() {
@@ -67,7 +67,7 @@ cdi_generate () {
     CONTENT_PATH="/usr"
     
     if [ -n "${NVIDIA_DRIVER_ROOT:-}" ]; then # UC24
-        # NVIDIA_DRIVER_ROOT comes from the pc-kernel snap, through mesa-2404
+        # NVIDIA_DRIVER_ROOT comes from the pc-kernel snap, through mesa-2404/mesa-2604
         CONTENT_PATH="${NVIDIA_DRIVER_ROOT}/usr"
     elif [ -d "${SNAP}/graphics/lib/${ARCH_TRIPLET}" ]; then # UC22
         CONTENT_PATH="${SNAP}/graphics"

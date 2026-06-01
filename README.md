@@ -139,6 +139,28 @@ The provider and environment setup differs depending on the Ubuntu Core release.
 > [!NOTE]
 > It is possible to connect multiple graphic providers to the Docker snap. In such a case, the Docker snap will only utilize the content provided by the `gpu-2404` content provider. Do not connect more than one `gpu-2404` provider at the same time as the content may partially override each other.
 
+#### Ubuntu Core 26
+
+The required NVIDIA kernel objects and user-space libraries are available as optional components in the [pc-kernel](https://snapcraft.io/pc-kernel) snap (24/stable channel). These libraries can be provided to the Docker snap via the [mesa-2604](https://snapcraft.io/mesa-2604) snap.
+
+```shell
+# Install kernel components
+sudo snap install pc-kernel+nvidia-580-erd-ko
+sudo snap install pc-kernel+nvidia-580-erd-user
+
+# Install the content provider snap
+sudo snap install mesa-2604
+```
+
+Once installed, Docker snap's gpu-2604 plug automatically connects to mesa-2604:
+```console
+$ snap connections docker 
+Interface          Plug                     Slot                                 Notes
+...
+content[gpu-2604]  docker:gpu-2604          mesa-2604:gpu-2604                   -
+...
+```
+
 #### Ubuntu Core 24
 
 The required NVIDIA kernel objects and user-space libraries are available as optional components in the [pc-kernel](https://snapcraft.io/pc-kernel) snap (24/stable channel). These libraries can be provided to the Docker snap via the [mesa-2404](https://snapcraft.io/mesa-2404) snap.
