@@ -8,6 +8,7 @@ Tested distros:
 - `noble`
 - `core22-latest`
 - `core24-latest`
+- `core26-latest`
 
 ## Run on remote machine over SSH
 
