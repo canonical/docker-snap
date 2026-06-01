@@ -42,6 +42,11 @@ plugs:
     interface: docker
   opengl:
   # For nvidia userspace libs support #
+  gpu-2604:
+    interface: content
+    target: $SNAP/gpu-2604
+    # This is the only relevant provider, but leaving unspecified to prevent auto-installing of the providing snap #
+    # default-provider: mesa-2604
   gpu-2404:
     interface: content
     target: $SNAP/gpu-2404
@@ -94,6 +99,7 @@ apps:
       - network-control
       - privileged
       - support
+      - gpu-2604
       - gpu-2404
       - graphics-core22
     slots:
@@ -113,6 +119,7 @@ apps:
     command: bin/nvidia-container-toolkit
     daemon: oneshot
     plugs:
+      - gpu-2604
       - gpu-2404
       - graphics-core22
     before:
@@ -131,6 +138,7 @@ parts:
       nvidia/nvidia-container-toolkit-connect-hook: bin/
       nvidia/system-detection: bin/
       nvidia/gpu-2404-optional-wrapper: bin/
+      nvidia/gpu-2604-optional-wrapper: bin/
     stage:
       - bin/*
       - usr/sbin/*
