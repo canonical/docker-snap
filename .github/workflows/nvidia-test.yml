@@ -27,6 +27,7 @@ jobs:
               uses: actions/download-artifact@v7
               with:
                 run-id: ${{ inputs.run_id }}
+                github-token: ${{ github.token }} # required for downloading from another workflow run
                 name: docker_${{ inputs.run_id }}_amd64.snap
             
             # Publish snap to Store so it can be installed on the test devices
