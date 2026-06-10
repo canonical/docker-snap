@@ -79,7 +79,7 @@ setup_classic() (
   set -x
 
   apt_update
-  run_retry_command sudo apt-get -qqy install nvidia-driver-570
+  run_retry_command sudo apt-get -qqy install nvidia-driver-580
 )
 
 setup_core22() (
