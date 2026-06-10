@@ -95,7 +95,7 @@ setup_core24() (
 
   # Install kernel components.
   PARENT_SNAP="pc-kernel"
-  COMPONENTS="nvidia-570-erd-ko nvidia-570-erd-user"
+  COMPONENTS="nvidia-580-erd-ko nvidia-580-erd-user"
   install_components $PARENT_SNAP "$COMPONENTS"
 
   install_snap mesa-2404
