@@ -34,7 +34,7 @@ jobs:
 
       - name: Prep
         run: |
-          sudo snap install image-garden --channel=latest/edge
+          sudo snap install image-garden
           sudo snap install image-garden+qemu-aarch64 || true
 
           # We need write access to /dev/kvm for better performance.
