@@ -20,7 +20,7 @@ smi_test() (
       ;;
     ubuntu-core-26)
       # Run nvidia-smi from the kernel snap
-      LD_LIBRARY_PATH=/var/snap/pc-kernel/common/kernel-gpu-2604/usr/lib/x86_64-linux-gnu/ /var/snap/pc-kernel/common/kernel-gpu-2604/usr/bin/nvidia-smi || true
+      LD_LIBRARY_PATH=/var/snap/pc-kernel/common/nvidia-active/usr/lib/x86_64-linux-gnu/ /var/snap/pc-kernel/common/nvidia-active/usr/bin/nvidia-smi || true
       ;;
     *)
       echo "Unsupported OS / version: $ID $VERSION_ID"
