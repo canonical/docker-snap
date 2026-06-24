@@ -35,7 +35,7 @@ jobs:
         uses: snapcore/action-build@v1
         id: snapcraft
         with:
-          snapcraft-args: snap --output docker_${{ github.run_id }}_${{ matrix.runner.arch }}.snap
+          snapcraft-args: pack --output docker_${{ github.run_id }}_${{ matrix.runner.arch }}.snap
 
       - name: Upload
         uses: actions/upload-artifact@v7
