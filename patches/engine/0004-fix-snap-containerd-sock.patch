@@ -1,7 +1,7 @@
-From 14498fbf7f299641bf576cec3c19884b509aeded Mon Sep 17 00:00:00 2001
+From f01565b0c0645419f8459e5ff4b88d0ccd5bddf5 Mon Sep 17 00:00:00 2001
 From: Lincoln Wallace <lincoln.wallace@canonical.com>
 Date: Thu, 26 Jun 2025 15:01:00 -0300
-Subject: [PATCH] fix snap containerd sock
+Subject: [PATCH 4/6] fix snap containerd sock
 
 Signed-off-by: Lincoln Wallace <lincoln.wallace@canonical.com>
 ---

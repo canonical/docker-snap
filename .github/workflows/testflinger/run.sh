@@ -9,11 +9,7 @@ echo "Distro: $DISTRO"
 echo "Snap channel: $SNAP_CHANNEL"
 
 # Replace env vars with inputs
-envsubst '$JOB_QUEUE $DISTRO' < nvidia-job.yaml > $temp_job
-envsubst '$SNAP_CHANNEL' < scripts/setup.sh > scripts/$temp_setup
-
-# Switch to use the modified script
-sed -i "s|setup.sh|$temp_setup|" $temp_job
+envsubst '$JOB_QUEUE $DISTRO $SNAP_CHANNEL' < nvidia-job.yaml > $temp_job
 
 if [[ $1 == "--dryrun" ]]; then
   echo "Dry-run complete"
