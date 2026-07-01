@@ -8,6 +8,8 @@ To get started, make sure that **image-garden** is installed on your system:
 
 ```bash
 sudo snap install image-garden
+sudo snap install image-garden+qemu-aarch64 # for arm64 emulation
+sudo snap install image-garden+qemu-riscv64 # for riscv64 emulation
 ```
 
 The snap release of image-garden also includes its dependencies, such as `spread` and `qemu`.
@@ -33,10 +35,17 @@ Before running any test, you have to choose which docker snap to test
   SNAP_CHANNEL=latest/edge image-garden.spread
   ```
 
-- To test a local snap file, specify the `SNAP_FILE` variable:
+  This runs the tests for both amd64 and arm64 architectures.
+  For testing a single architecture, download the snap and use the local snap file method.
+  To download the snap on a different architecture, e.g. arm64 on amd64, run: `UBUNTU_STORE_ARCH=arm64 snap download docker`.
+
+- To test a local snap file, specify the `SNAP_FILE_AMD64`, `SNAP_FILE_ARM64` and/or `SNAP_FILE_RISCV64`:
 
   ```bash
-  SNAP_FILE=docker_29.3.1_amd64.snap image-garden.spread
+  SNAP_FILE_AMD64=docker_29.3.1_amd64.snap \
+    SNAP_FILE_ARM64=docker_29.3.1_arm64.snap \
+    SNAP_FILE_RISCV64=docker_29.3.1_riscv.snap \
+    image-garden.spread
   ```
 
 The system will download the virtual machine files and place them in the `.image-garden` directory. See [Cleanup](#cleanup) to know how to free disk space.
@@ -45,13 +54,19 @@ The system will download the virtual machine files and place them in the `.image
 
 To save time you can select a subset of systems and tests to run.
 
-- To run tests on **only one system**, e.g. `ubuntu-cloud-24.04`, use:
+- To run tests on **only one system**, e.g. `ubuntu-cloud-26.04.amd64` or `ubuntu-cloud-24.04.arm64`, use:
 
   ```bash
-  image-garden.spread ubuntu-cloud-24.04:
+  image-garden.spread ubuntu-cloud-24.04.amd64:
   ```
 
-- To run an **individual spread test** on all system, use:
+- To run tests on only **one system architecture**, e.g. `arm64`, use the `...` wildcard:
+
+  ```bash
+  image-garden.spread garden:...arm64:
+  ```
+
+- To run an **individual spread test**, e.g. `hello-world`, on all system, use:
 
   ```bash
   image-garden.spread spread/main/hello-world
@@ -60,7 +75,7 @@ To save time you can select a subset of systems and tests to run.
 - To run only **one test** on only **one system**, combine the two:
 
   ```bash
-  image-garden.spread ubuntu-cloud-24.04:spread/main/hello-world
+  image-garden.spread ubuntu-cloud-24.04.amd64:spread/main/hello-world
   ```
 
 ### Keep test artifacts

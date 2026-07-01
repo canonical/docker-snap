@@ -1,4 +1,5 @@
 project: docker
+kill-timeout: 30m
 backends:
   # LXD is currently not supported as a backend, because we need to set lxc instance
   # config to make docker work in an lxc container,
@@ -19,22 +20,28 @@ backends:
       # successfully so re-set PATH to the original value, as provided by
       # snapcraft.
       if [ -n "${SPREAD_HOST_PATH-}" ]; then
-          PATH="${SPREAD_HOST_PATH}"
+        PATH="${SPREAD_HOST_PATH}"
       fi
 
-      export QEMU_SMP_OPTION="-smp 2"
+      export QEMU_SMP_OPTION="-smp 4"
       export QEMU_MEM_OPTION="-m 3072"
 
-      ARCH="${ARCH:-$(uname -m)}"
-      if OUT="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}"."$ARCH")"; then
-            if [ "$ARCH" != "$(uname -m)" ]; then
-                  # Spread has a fixed, 5-minute timeout for ssh to become ready.
-                  # When emulating across architectures this may not be sufficient
-                  # for the system to become ready. Sleep for a while to give things
-                  # a chance to finish.
-                  sleep 3m
-            fi
-            ADDRESS "$OUT"
+      # Map spread system architecture
+      SPREAD_SYSTEM=${SPREAD_SYSTEM/%amd64/x86_64}  # maps "amd64" to "x86_64"
+      SPREAD_SYSTEM=${SPREAD_SYSTEM/%arm64/aarch64} # maps "arm64" to "aarch64"
+
+      if OUT="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}")"; then
+        HOST_ARCH="${ARCH:-$(uname -m)}"
+        SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
+
+        if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ]; then
+          # Spread has a fixed, 5-minute timeout for ssh to become ready.
+          # When emulating across architectures this may not be sufficient
+          # for the system to become ready. Sleep for a while to give things
+          # a chance to finish.
+          sleep 3m
+        fi
+        ADDRESS "$OUT"
       fi
     discard: |
       # Spread automatically injects /snap/bin to PATH. When we are
@@ -44,22 +51,76 @@ backends:
       # successfully so re-set PATH to the original value, as provided by
       # snapcraft.
       if [ -n "${SPREAD_HOST_PATH-}" ]; then
-          PATH="${SPREAD_HOST_PATH}"
+        PATH="${SPREAD_HOST_PATH}"
       fi
 
       image-garden discard "$SPREAD_SYSTEM_ADDRESS"
     systems:
       # Want to add more systems? Look here for a list of available systems: https://gitlab.com/zygoon/image-garden/-/tree/main/data
       # or look here for an exhaustive example: https://gitlab.com/zygoon/image-garden/-/blob/main/spread-demo/spread.yaml
-      - ubuntu-core-24:
+      # Note: ubuntu core images are prepared via this script: https://gitlab.com/zygoon/image-garden/-/blob/main/mk/050-ubuntu-core.mk
+      - ubuntu-core-22.amd64:
           username: ubuntu
           password: ubuntu
-      - ubuntu-cloud-24.04:
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-core-22.arm64:
           username: ubuntu
           password: ubuntu
-      - ubuntu-cloud-26.04:
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+      - ubuntu-cloud-22.04.amd64:
           username: ubuntu
           password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-cloud-22.04.arm64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+
+      - ubuntu-core-24.amd64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-core-24.arm64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+      - ubuntu-cloud-24.04.amd64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-cloud-24.04.arm64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+      - ubuntu-cloud-24.04.riscv64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_RISCV64)
+
+      - ubuntu-cloud-26.04.amd64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-cloud-26.04.arm64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+      - ubuntu-cloud-26.04.riscv64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_RISCV64)
 
 path: /tmp/docker
 exclude:
@@ -79,7 +140,6 @@ suites:
 environment:
   SCRIPTS_PATH: $SPREAD_PATH/spread/scripts
   SNAP_CHANNEL: $(HOST:echo $SNAP_CHANNEL) # The Snap Store channel containing the version of docker to test
-  SNAP_FILE: $(HOST:echo $SNAP_FILE) # The filename of the docker artifact to test
 
 prepare: |
   # Invoked in each system before running any test
