@@ -24,9 +24,10 @@ jobs:
         steps:
             # Download snap artifact from a previous smoke-test/build GitHub Workflow run
             - name: Download snap artifact
-              uses: dawidd6/action-download-artifact@v11
+              uses: actions/download-artifact@v8
               with:
-                run_id: ${{ inputs.run_id }}
+                run-id: ${{ inputs.run_id }}
+                github-token: ${{ github.token }} # required for downloading from another workflow run
                 name: docker_${{ inputs.run_id }}_amd64.snap
             
             # Publish snap to Store so it can be installed on the test devices
