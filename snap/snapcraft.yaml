@@ -1,5 +1,5 @@
 name: docker
-version: '29.6.0'
+version: '29.6.1'
 summary: Docker container runtime
 description: Refer to https://snapcraft.io/docker
 license: (Apache-2.0 AND MIT AND GPL-2.0)
@@ -154,7 +154,7 @@ parts:
   engine:
     plugin: make
     source: https://github.com/moby/moby.git
-    source-tag: docker-v29.6.0
+    source-tag: docker-v29.6.1
     source-depth: 1
     override-build: |
       $CRAFT_STAGE/patches/patch.sh
@@ -214,7 +214,7 @@ parts:
   containerd:
     plugin: make
     source: https://github.com/containerd/containerd.git
-    source-tag: v2.3.2
+    source-tag: v2.3.3
     source-depth: 1
     override-build: |
       make GIT_COMMIT= GIT_BRANCH= LDFLAGS=
@@ -230,7 +230,7 @@ parts:
   runc:
     plugin: make
     source: https://github.com/opencontainers/runc.git
-    source-tag: v1.5.0
+    source-tag: v1.5.1
     source-depth: 1
     override-build: |
       make BUILDTAGS='seccomp apparmor selinux' COMMIT=
@@ -307,7 +307,7 @@ parts:
     plugin: make
     build-snaps: *go
     source: https://github.com/docker/cli.git
-    source-tag: v29.6.0
+    source-tag: v29.6.1
     source-depth: 1
     override-build: |
       # docker build specific environment variables
