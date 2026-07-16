@@ -334,7 +334,7 @@ parts:
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
-    source-tag: v0.34.1
+    source-tag: v0.35.0
     source-depth: 1
     override-build: |
       export DESTDIR="$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
@@ -354,7 +354,7 @@ parts:
   compose:
     plugin: make
     source: https://github.com/docker/compose.git
-    source-tag: v5.1.4
+    source-tag: v5.3.1
     source-depth: 1
     override-build: |
       make build
