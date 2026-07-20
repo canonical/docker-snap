@@ -37,6 +37,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Prep
+        id: prep
         run: |
           sudo snap install image-garden
           sudo snap install image-garden+qemu-aarch64 || true
@@ -45,11 +46,30 @@ jobs:
           # Since this is an ephemeral CI/CD environment, we can grant everyone access to /dev/kvm.
           sudo chmod -v 666 /dev/kvm || true
 
-      - name: Cache pristine virtual machine images
-        uses: actions/cache@v5
+          # Provisioned images are a function of the image-garden version, so
+          # its snap revision is part of the cache key below.
+          echo "image_garden_rev=$(snap list image-garden | awk 'NR==2 {print $3}')" >> "$GITHUB_OUTPUT"
+
+      - name: Restore cached virtual machine images
+        id: restore-images
+        # Pristine downloads and the provisioned overlays derived from them
+        # are cached as a single entry: the overlays are qcow2 files backed by
+        # the pristine images (by absolute path, with no content check), so
+        # restoring them from different saves could silently corrupt guests.
+        # Deliberately excludes .image-garden logs and pid files: logs are
+        # uploaded as failure artifacts and must come from the current run.
+        uses: actions/cache/restore@v5
         with:
-          path: ~/snap/image-garden/common/cache/dl
-          key: image-garden-dl-${{ matrix.runner.spread_test_filter }}
+          path: |
+            ~/snap/image-garden/common/cache/dl
+            .image-garden/*.qcow2
+            .image-garden/*.img
+            .image-garden/*.iso
+            .image-garden/*.run
+          key: image-garden-${{ matrix.runner.spread_test_filter }}-r${{ steps.prep.outputs.image_garden_rev }}
+          restore-keys: |
+            image-garden-${{ matrix.runner.spread_test_filter }}-
+            image-garden-dl-${{ matrix.runner.spread_test_filter }}
 
       - name: Run spread tests
         run: |
@@ -73,3 +93,28 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
           overwrite: true
+
+      - name: Log cache sizes
+        if: ${{ success() || failure() }}
+        run: |
+          du -sh ~/snap/image-garden/common/cache/dl/ || true
+          du -sh .image-garden/ || true
+          du -h .image-garden/*.qcow2 .image-garden/*.img .image-garden/*.iso 2>/dev/null || true
+
+      - name: Save cached virtual machine images
+        # Save explicitly rather than relying on the actions/cache post step,
+        # which only fires on job success: arm64 runs have historically always
+        # failed, so the cache never persisted and every run re-downloaded and
+        # re-provisioned everything from scratch. Failed runs still produce
+        # valid images; cancelled runs are excluded since a kill mid-provision
+        # can leave a half-written overlay behind.
+        if: ${{ (success() || failure()) && steps.restore-images.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            ~/snap/image-garden/common/cache/dl
+            .image-garden/*.qcow2
+            .image-garden/*.img
+            .image-garden/*.iso
+            .image-garden/*.run
+          key: image-garden-${{ matrix.runner.spread_test_filter }}-r${{ steps.prep.outputs.image_garden_rev }}
