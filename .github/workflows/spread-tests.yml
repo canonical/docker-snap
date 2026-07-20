@@ -28,6 +28,10 @@ jobs:
             spread_test_filter: ${{ inputs.spread_test_filter }}
 
     runs-on: ${{ matrix.runner.label }}
+    # Backstop only. The spread allocate script fails fast on unreachable VMs,
+    # so a healthy run finishes far sooner; this just prevents a pathological
+    # hang from burning the full 6h GitHub ceiling.
+    timeout-minutes: 90
     steps:
       - name: Checkout code
         uses: actions/checkout@v6

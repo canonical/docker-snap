@@ -1,5 +1,8 @@
 project: docker
-kill-timeout: 30m
+# Headroom for slow, emulated cross-architecture boots. Failures are bounded
+# well below this by the per-attempt timeout and FATAL in the allocate script,
+# so this only ever caps a genuinely slow (but progressing) boot.
+kill-timeout: 45m
 backends:
   # LXD is currently not supported as a backend, because we need to set lxc instance
   # config to make docker work in an lxc container,
@@ -30,19 +33,54 @@ backends:
       SPREAD_SYSTEM=${SPREAD_SYSTEM/%amd64/x86_64}  # maps "amd64" to "x86_64"
       SPREAD_SYSTEM=${SPREAD_SYSTEM/%arm64/aarch64} # maps "arm64" to "aarch64"
 
-      if OUT="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}")"; then
-        HOST_ARCH="${ARCH:-$(uname -m)}"
-        SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
+      GARDEN_SYSTEM="${SPREAD_SYSTEM/-plus-/+}"
 
-        if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ]; then
-          # Spread has a fixed, 5-minute timeout for ssh to become ready.
-          # When emulating across architectures this may not be sufficient
-          # for the system to become ready. Sleep for a while to give things
-          # a chance to finish.
-          sleep 3m
+      # The qemu 'virt' machine used for aarch64 requires the EFI variable store
+      # (pflash unit 1) to be exactly 64 MiB. image-garden has been observed to
+      # emit a wrong-sized (or empty) vars image, which makes qemu refuse to
+      # start with:
+      #   cfi.pflash01 device '/machine/virt.flash1' requires 67108864 bytes,
+      #   pflash1 block backend provides <N> bytes
+      # Regenerate and pad it to the required size before giving up.
+      EFI_VARS_SIZE=67108864 # 64 MiB
+      efi_vars_img=".image-garden/${SPREAD_SYSTEM}.efi-vars.img"
+
+      repair_efi_vars() {
+        [ -f "$efi_vars_img" ] || return 1
+        [ "$(stat -c%s "$efi_vars_img")" = "$EFI_VARS_SIZE" ] && return 1
+        echo "Repairing wrong-sized EFI vars image: $efi_vars_img"
+        rm -f "$efi_vars_img"
+        image-garden make "${GARDEN_SYSTEM}.efi-vars.img" || true
+        [ -f "$efi_vars_img" ] && truncate -s "$EFI_VARS_SIZE" "$efi_vars_img"
+      }
+
+      # Bound each attempt. A VM that never becomes reachable (for example one
+      # that boots into systemd emergency mode under emulation) would otherwise
+      # hang the allocation until GitHub kills the whole job at its 6h ceiling.
+      # Failing fast lets the workflow's failure() steps capture the boot logs.
+      allocate() { timeout --kill-after=30s 30m image-garden allocate "$GARDEN_SYSTEM"; }
+
+      if ! OUT="$(allocate)" || [ -z "$OUT" ]; then
+        echo "Allocation failed for $SPREAD_SYSTEM"
+        # Retry once if we could repair a bad EFI vars image; otherwise abort.
+        if repair_efi_vars && OUT="$(allocate)" && [ -n "$OUT" ]; then
+          echo "Allocation recovered after repairing EFI vars image"
+        else
+          # FATAL (not ERROR) so spread does not retry into the 6h ceiling.
+          FATAL "image-garden could not allocate $SPREAD_SYSTEM"
         fi
-        ADDRESS "$OUT"
       fi
+
+      HOST_ARCH="${ARCH:-$(uname -m)}"
+      SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
+      if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
+        # Spread's ssh-ready timeout is a fixed 5 minutes. Emulated or non-KVM
+        # boots can take longer, so give the system extra time to settle before
+        # handing its address to spread.
+        sleep 5m
+      fi
+
+      ADDRESS "$OUT"
     discard: |
       # Spread automatically injects /snap/bin to PATH. When we are
       # running from the image-garden snap then SPREAD_HOST_PATH is the
