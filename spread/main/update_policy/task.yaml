@@ -1,10 +1,14 @@
 summary: Test update container's restart policy
 
 execute: |
- # read docker file from stdin and build the image
+ # read docker file from stdin and build the image.
+ # The container must not exit before the pause/update/unpause sequence
+ # below completes, or it restarts under the initial "always" policy and
+ # the final restart-count check fails. Slow emulated systems can take
+ # tens of seconds to get there, hence the generous lifetime.
  dockerfile=$(cat <<EOF
    FROM alpine
-   CMD sleep 5; exit 1
+   CMD sleep 1m; exit 1
  EOF
  )
  echo "$dockerfile" | sudo docker build -t image -
@@ -30,8 +34,10 @@ execute: |
  restart_policy=$(sudo docker inspect  -f '{{.HostConfig.RestartPolicy.Name}}' $id)
  [ $restart_policy = "no" ] || exit 1
 
- # wait a bit and check if service restarts
- sleep 10
+ # wait long enough for the container to exit, then verify it did not
+ # restart. This is a negative assertion, so retrying cannot help; the
+ # sleep must outlast the container's lifetime with margin.
+ sleep 1.5m
 
  # check the actual restart count
  restart_count=$(sudo docker inspect -f '{{.RestartCount}}' $id)

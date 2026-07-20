@@ -1,6 +1,7 @@
 summary: Test container restart policy with on_failure applied
 
 execute: |
+ source "$SCRIPTS_PATH/common.sh"
 
  # read docker file from stdin and build the image
  dockerfile=$(cat <<EOF
@@ -23,9 +24,11 @@ execute: |
  # wait a bit and let service restarts several times
  sleep 6
 
- # check the actual restart count
- restart_count=$(sudo docker inspect -f '{{.RestartCount}}' $id)
- [ $restart_count = 2 ] || exit 1
+ # check the actual restart count, retrying until both restarts happened
+ verify_restart_count() {
+     [ "$(sudo docker inspect -f '{{.RestartCount}}' $id)" = 2 ]
+ }
+ run_retry_command verify_restart_count
 
  # remove the container
  sudo docker rm -f $id

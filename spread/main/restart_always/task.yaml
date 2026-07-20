@@ -1,6 +1,8 @@
 summary: Test container restart policy with always applied
 
 execute: |
+ source "$SCRIPTS_PATH/common.sh"
+
  # read docker file from stdin and build the image
  dockerfile=$(cat <<EOF
    FROM alpine
@@ -20,9 +22,11 @@ execute: |
  # wait a bit and let service restarts several times
  sleep 6
 
- # check the actual restart count
- restart_count=$(sudo docker inspect -f '{{.RestartCount}}' $id)
- [ $restart_count -gt 1 ] || exit 1
+ # check the actual restart count, retrying while restarts accumulate
+ verify_restart_count() {
+     [ "$(sudo docker inspect -f '{{.RestartCount}}' $id)" -gt 1 ]
+ }
+ run_retry_command verify_restart_count
 
  # remove the container
  sudo docker rm -f $id
