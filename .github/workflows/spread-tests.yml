@@ -72,6 +72,11 @@ jobs:
             image-garden-dl-${{ matrix.runner.spread_test_filter }}
 
       - name: Run spread tests
+        # Step-level timeout, deliberately below the job-level one: a step
+        # timeout marks the step as failed, so the boot-log upload and cache
+        # save below still run. The job-level timeout is a cancellation,
+        # which would skip them all.
+        timeout-minutes: 75
         run: |
           SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "${{ matrix.runner.spread_test_filter }}"
 
