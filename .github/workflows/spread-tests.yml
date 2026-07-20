@@ -89,6 +89,13 @@ jobs:
           echo "Image Garden cache content:"
           ls -lah ~/snap/image-garden/common/cache/dl/
 
+          # Full kernel log rides along in the boot-logs artifact (the upload
+          # step globs .image-garden/*.log). Suspected OOM kills of qemu or
+          # the allocate scripts are the main thing to look for in it.
+          sudo dmesg > .image-garden/dmesg.host.log || true
+          echo "OOM check:"
+          sudo dmesg | grep -iE "out of memory|oom[-_ ]kill|killed process" || echo "no OOM traces in dmesg"
+
       - name: Upload logs as artifacts
         if: ${{ failure() }}
         uses: actions/upload-artifact@v7
