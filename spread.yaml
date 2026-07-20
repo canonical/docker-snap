@@ -132,8 +132,14 @@ backends:
             [ "$banner" = "SSH-" ]
           ) 2>/dev/null
         }
+        # Cap of 120 x 5s = 10 minutes. Falling through with sshd still down
+        # is worse than waiting: spread only grants one minute of connection
+        # attempts after ADDRESS, then discards the whole system (observed
+        # with ubuntu-cloud-26.04 booting alongside four other guests).
+        # Budget-wise this still fits: one 30m30s allocate attempt plus 10m
+        # of polling stays under the 45m kill-timeout.
         attempts=0
-        while [ "$attempts" -lt 60 ]; do
+        while [ "$attempts" -lt 120 ]; do
           if ssh_banner_ready; then
             echo "ssh is answering on $OUT"
             break
