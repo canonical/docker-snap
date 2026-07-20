@@ -41,23 +41,27 @@ backends:
       # start with:
       #   cfi.pflash01 device '/machine/virt.flash1' requires 67108864 bytes,
       #   pflash1 block backend provides <N> bytes
-      # Regenerate and pad it to the required size before giving up.
+      # Check and repair this *before* attempting to boot, not after a slow
+      # failed attempt: building the vars image doesn't require booting
+      # anything, so this costs seconds rather than eating into the allocate
+      # watchdog below.
       EFI_VARS_SIZE=67108864 # 64 MiB
       efi_vars_img=".image-garden/${SPREAD_SYSTEM}.efi-vars.img"
 
-      repair_efi_vars() {
-        [ -f "$efi_vars_img" ] || return 1
-        [ "$(stat -c%s "$efi_vars_img")" = "$EFI_VARS_SIZE" ] && return 1
+      image-garden make "${GARDEN_SYSTEM}.efi-vars.img" || true
+      if [ -f "$efi_vars_img" ] && [ "$(stat -c%s "$efi_vars_img")" != "$EFI_VARS_SIZE" ]; then
         echo "Repairing wrong-sized EFI vars image: $efi_vars_img"
         rm -f "$efi_vars_img"
         image-garden make "${GARDEN_SYSTEM}.efi-vars.img" || true
         [ -f "$efi_vars_img" ] && truncate -s "$EFI_VARS_SIZE" "$efi_vars_img"
-      }
+      fi
 
-      # Bound each attempt. A VM that never becomes reachable (for example one
+      # Bound the attempt. A VM that never becomes reachable (for example one
       # that boots into systemd emergency mode under emulation) would otherwise
       # hang the allocation until GitHub kills the whole job at its 6h ceiling.
       # Failing fast lets the workflow's failure() steps capture the boot logs.
+      # Kept comfortably under kill-timeout (45m) together with the settle
+      # sleep below, so spread's own timeout never preempts our FATAL.
       allocate() {
         local allocate_pid
         local sleep_pid
@@ -70,7 +74,7 @@ backends:
         (
           trap 'kill "$sleep_pid" 2>/dev/null || true; exit 0' TERM
 
-          sleep 30m &
+          sleep 20m &
           sleep_pid=$!
           wait "$sleep_pid"
           kill "$allocate_pid" 2>/dev/null || exit 0
@@ -94,14 +98,8 @@ backends:
       }
 
       if ! OUT="$(allocate)" || [ -z "$OUT" ]; then
-        echo "Allocation failed for $SPREAD_SYSTEM"
-        # Retry once if we could repair a bad EFI vars image; otherwise abort.
-        if repair_efi_vars && OUT="$(allocate)" && [ -n "$OUT" ]; then
-          echo "Allocation recovered after repairing EFI vars image"
-        else
-          # FATAL (not ERROR) so spread does not retry into the 6h ceiling.
-          FATAL "image-garden could not allocate $SPREAD_SYSTEM"
-        fi
+        # FATAL (not ERROR) so spread does not retry into the 6h ceiling.
+        FATAL "image-garden could not allocate $SPREAD_SYSTEM"
       fi
 
       HOST_ARCH="${ARCH:-$(uname -m)}"
