@@ -74,7 +74,7 @@ backends:
         (
           trap 'kill "$sleep_pid" 2>/dev/null || true; exit 0' TERM
 
-          sleep 20m &
+          sleep 30m &
           sleep_pid=$!
           wait "$sleep_pid"
           kill "$allocate_pid" 2>/dev/null || exit 0
