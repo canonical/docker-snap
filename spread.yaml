@@ -105,10 +105,33 @@ backends:
       HOST_ARCH="${ARCH:-$(uname -m)}"
       SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
       if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
-        # Spread's ssh-ready timeout is a fixed 5 minutes. Emulated or non-KVM
-        # boots can take longer, so give the system extra time to settle before
-        # handing its address to spread.
-        sleep 5m
+        # Spread's ssh-ready timeout is a fixed 5 minutes, which emulated or
+        # non-KVM boots can overrun. This used to be a flat "sleep 5m", but
+        # image-garden tends to hand out the address only once sshd is already
+        # answering, making most of that sleep pure waste. Poll for an ssh
+        # banner instead and hand over as soon as the daemon responds, keeping
+        # the old 5 minutes as the upper bound. Uses bash /dev/tcp and the
+        # read builtin rather than external tools (the timeout binary, for
+        # one, is denied by confinement in the image-garden snap environment).
+        ssh_host="${OUT%:*}"
+        ssh_port="${OUT##*:}"
+        ssh_banner_ready() {
+          (
+            exec 3<>"/dev/tcp/${ssh_host}/${ssh_port}" || exit 1
+            banner=""
+            IFS= read -r -t 10 -n 4 banner <&3 || true
+            [ "$banner" = "SSH-" ]
+          ) 2>/dev/null
+        }
+        attempts=0
+        while [ "$attempts" -lt 60 ]; do
+          if ssh_banner_ready; then
+            echo "ssh is answering on $OUT"
+            break
+          fi
+          attempts=$((attempts + 1))
+          sleep 5
+        done
       fi
 
       ADDRESS "$OUT"
