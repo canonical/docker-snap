@@ -58,7 +58,40 @@ backends:
       # that boots into systemd emergency mode under emulation) would otherwise
       # hang the allocation until GitHub kills the whole job at its 6h ceiling.
       # Failing fast lets the workflow's failure() steps capture the boot logs.
-      allocate() { timeout --kill-after=30s 30m image-garden allocate "$GARDEN_SYSTEM"; }
+      allocate() {
+        local allocate_pid
+        local sleep_pid
+        local status
+        local watchdog_pid
+
+        image-garden allocate "$GARDEN_SYSTEM" &
+        allocate_pid=$!
+
+        (
+          trap 'kill "$sleep_pid" 2>/dev/null || true; exit 0' TERM
+
+          sleep 30m &
+          sleep_pid=$!
+          wait "$sleep_pid"
+          kill "$allocate_pid" 2>/dev/null || exit 0
+
+          sleep 30s &
+          sleep_pid=$!
+          wait "$sleep_pid"
+          kill -KILL "$allocate_pid" 2>/dev/null || true
+        ) &
+        watchdog_pid=$!
+
+        if wait "$allocate_pid"; then
+          status=0
+        else
+          status=$?
+        fi
+
+        kill "$watchdog_pid" 2>/dev/null || true
+        wait "$watchdog_pid" 2>/dev/null || true
+        return "$status"
+      }
 
       if ! OUT="$(allocate)" || [ -z "$OUT" ]; then
         echo "Allocation failed for $SPREAD_SYSTEM"
