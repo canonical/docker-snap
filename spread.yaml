@@ -27,7 +27,12 @@ backends:
       fi
 
       export QEMU_SMP_OPTION="-smp 4"
-      export QEMU_MEM_OPTION="-m 3072"
+      # image-garden's default. Anything higher risks the host OOM killer:
+      # spread allocates every matched system concurrently, and five emulated
+      # guests at 3072 MiB plus qemu overhead exceed the 16 GiB of a standard
+      # GitHub runner. The OOM killer then reaps allocate scripts or guests
+      # mid-boot, which surfaces as empty "Cannot allocate" errors.
+      export QEMU_MEM_OPTION="-m 2048"
 
       # Map spread system architecture
       SPREAD_SYSTEM=${SPREAD_SYSTEM/%amd64/x86_64}  # maps "amd64" to "x86_64"
