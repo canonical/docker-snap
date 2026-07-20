@@ -56,9 +56,13 @@ backends:
       image-garden make "${GARDEN_SYSTEM}.efi-vars.img" || true
       if [ -f "$efi_vars_img" ] && [ "$(stat -c%s "$efi_vars_img")" != "$EFI_VARS_SIZE" ]; then
         echo "Repairing wrong-sized EFI vars image: $efi_vars_img"
-        rm -f "$efi_vars_img"
-        image-garden make "${GARDEN_SYSTEM}.efi-vars.img" || true
-        [ -f "$efi_vars_img" ] && truncate -s "$EFI_VARS_SIZE" "$efi_vars_img"
+        # qemu-img rather than truncate: binaries not shipped inside the
+        # image-garden snap (truncate, timeout, ...) cannot be executed from
+        # the host under confinement. qemu-img is what image-garden itself
+        # uses, so it is always available. Guarded so a failed repair falls
+        # through to a normal allocation failure instead of killing the
+        # script under set -e.
+        qemu-img resize -f raw "$efi_vars_img" "$EFI_VARS_SIZE" || true
       fi
 
       # Bound the attempt. A VM that never becomes reachable (for example one
