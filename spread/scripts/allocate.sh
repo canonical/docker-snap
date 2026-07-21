@@ -23,23 +23,9 @@ GARDEN_SYSTEM="${SPREAD_SYSTEM/-plus-/+}"
 HOST_ARCH="${ARCH:-$(uname -m)}"
 SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
 
-# The qemu vm used for aarch64 requires the EFI variable store
-# (pflash unit 1) to be exactly 64 MiB. image-garden has been observed to
-# emit a wrong-sized (or empty) vars image there, which makes qemu refuse
-# to start with:
-#   cfi.pflash01 device '/machine/virt.flash1' requires 67108864 bytes,
-#   pflash1 block backend provides <N> bytes
-# Check and repair this *before* attempting to boot.
-if [ "$SYSTEM_ARCH" = "aarch64" ]; then
-  EFI_VARS_SIZE=67108864 # 64 MiB
-  efi_vars_img=".image-garden/${SPREAD_SYSTEM}.efi-vars.img"
-
-  image-garden make "${GARDEN_SYSTEM}.efi-vars.img" || true
-  if [ -f "$efi_vars_img" ] && [ "$(stat -c%s "$efi_vars_img")" != "$EFI_VARS_SIZE" ]; then
-    echo "Repairing wrong-sized EFI vars image: $efi_vars_img"
-    qemu-img resize -f raw "$efi_vars_img" "$EFI_VARS_SIZE" || true
-  fi
-fi
+# Repair image-garden's wrong-sized aarch64 EFI vars image before booting
+# (see the script for the why). No-op on other arches.
+bash spread/scripts/repair-efi-vars.sh "$GARDEN_SYSTEM"
 
 # Limit concurrent emulated guest boots with a small flock semaphore. This only
 # matters on kvm-less hosts. Otherwise the concurrent emulated boot causes flaky
