@@ -16,9 +16,13 @@ execute: |
   # run the container
   id=$(sudo docker run -dit test)
 
-  # wait a bit and check the status
-  sleep 1
-  run_retry_command [ `sudo docker inspect -f '{{.State.Status}}' $id` = "exited" ]
+  # wait for the container to run and exit. Wrapped in a function so the
+  # docker inspect is re-evaluated on each retry: passed inline, the command
+  # substitution would expand once and retry a frozen value.
+  verify_container_exited() {
+    [ "$(sudo docker inspect -f '{{.State.Status}}' $id)" = "exited" ]
+  }
+  run_retry_command verify_container_exited
 
   #rm the container
   sudo docker rm -f $id
