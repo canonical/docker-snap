@@ -5,11 +5,27 @@ on:
     branches: [ main ]
     paths-ignore:
       - '**/*.md'
+      - 'spread/**'
+      - 'spread.yaml'
+      - '.github/workflows/spread-tests.yml'
+      - '.github/workflows/testflinger/**'
+      - '.github/workflows/nvidia-test.yml'
   pull_request:
     paths-ignore:
       - '**/*.md'
+      - 'spread/**'
+      - 'spread.yaml'
+      - '.github/workflows/spread-tests.yml'
+      - '.github/workflows/testflinger/**'
+      - '.github/workflows/nvidia-test.yml'
   # Manual trigger
   workflow_dispatch:
+
+# Cancel an in-progress run when a newer commit lands on the same ref, so a
+# burst of pushes to a branch or PR only tests the latest one.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 defaults:
   run:
