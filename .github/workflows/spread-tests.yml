@@ -33,10 +33,7 @@ jobs:
             spread_test_filter: ${{ inputs.spread_test_filter }}
 
     runs-on: ${{ matrix.runner.label }}
-    # Backstop against a pathological hang burning the full 6h GitHub ceiling.
-    # A healthy run finishes far sooner; the allocate script fails fast on
-    # unreachable VMs.
-    timeout-minutes: 90
+    timeout-minutes: 180
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -76,6 +73,13 @@ jobs:
             image-garden-${{ matrix.runner.spread_test_filter }}-
 
       - name: Run spread tests
+        # Cache-aware bound: an exact-key (fully warm) restore only needs the
+        # run itself; a cold run or rev-bump fallback also has to provision the
+        # images, so it gets longer. A step timeout is a failure, not a job
+        # cancel, so the save step below still runs and warms the cache for next
+        # time -- provisioning is front-loaded, so even a run that times out
+        # mid-tasks has already produced reusable images.
+        timeout-minutes: ${{ steps.restore-images.outputs.cache-hit == 'true' && 90 || 170 }}
         run: |
           SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "${{ matrix.runner.spread_test_filter }}"
 
