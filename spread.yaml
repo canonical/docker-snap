@@ -80,6 +80,16 @@ backends:
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_PPC64EL)
 
+      - ubuntu-core-26.amd64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-core-26.arm64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
       - ubuntu-cloud-26.04.amd64:
           username: ubuntu
           password: ubuntu
