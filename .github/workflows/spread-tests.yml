@@ -23,17 +23,28 @@ defaults:
   run:
     shell: 'bash -Eeuo pipefail -x {0}'
 
-jobs:
-  spread-tests:
-    strategy:
-      fail-fast: false
-      matrix:
-        runner:
-          - label: ubuntu-latest
-            spread_test_filter: ${{ inputs.spread_test_filter }}
+env:
+  # Both jobs cache the same thing: the pristine downloads plus the provisioned
+  # overlays / firmware / seeds derived from them. They travel as one entry --
+  # the overlays reference the pristine images by absolute path with no content
+  # check, so mixing saves could corrupt guests. Logs and pid files excluded.
+  cache_paths: |
+    ~/snap/image-garden/common/cache/dl
+    .image-garden/*.qcow2
+    .image-garden/*.img
+    .image-garden/*.iso
+    .image-garden/*.run
 
-    runs-on: ${{ matrix.runner.label }}
-    timeout-minutes: 180
+jobs:
+  # Build (or restore) every VM image the filter needs, serially, and save them
+  # to the cache. Provisioning one guest at a time on an idle runner avoids the
+  # boot contention that makes concurrent cold provisioning flaky, and lets the
+  # test job below run against an always-warm cache.
+  prepare-images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    outputs:
+      image_garden_rev: ${{ steps.prep.outputs.image_garden_rev }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -43,45 +54,92 @@ jobs:
         run: |
           sudo snap install image-garden
           sudo snap install image-garden+qemu-aarch64 || true
-
-          # We need write access to /dev/kvm for better performance.
-          # Since this is an ephemeral CI/CD environment, we can grant everyone access to /dev/kvm.
           sudo chmod -v 666 /dev/kvm || true
 
           # Provisioned images are a function of the image-garden version, so
-          # its snap revision keys the cache below.
+          # its snap revision keys the cache.
           echo "image_garden_rev=$(snap list image-garden | awk 'NR==2 {print $3}')" >> "$GITHUB_OUTPUT"
 
       - name: Restore cached virtual machine images
         id: restore-images
         if: ${{ !inputs.force_rebuild }}
-        # Pristine downloads and the provisioned overlays derived from them are
-        # cached as one entry: the overlays are qcow2 files backed by the
-        # pristine images by absolute path with no content check, so restoring
-        # them from different saves could silently corrupt guests. Logs and pid
-        # files are excluded.
         uses: actions/cache/restore@v6
         with:
-          path: |
-            ~/snap/image-garden/common/cache/dl
-            .image-garden/*.qcow2
-            .image-garden/*.img
-            .image-garden/*.iso
-            .image-garden/*.run
-          key: image-garden-${{ matrix.runner.spread_test_filter }}-r${{ steps.prep.outputs.image_garden_rev }}
+          path: ${{ env.cache_paths }}
+          key: image-garden-${{ inputs.spread_test_filter }}-r${{ steps.prep.outputs.image_garden_rev }}
           restore-keys: |
-            image-garden-${{ matrix.runner.spread_test_filter }}-
+            image-garden-${{ inputs.spread_test_filter }}-
+
+      - name: Build images
+        id: build
+        # Below the job timeout so a slow cold build fails the step (not the
+        # job) and the save below still runs, caching whatever provisioned.
+        timeout-minutes: 140
+        run: |
+          # One unique system per line, e.g. garden:ubuntu-cloud-22.04.arm64:...
+          systems=$(image-garden.spread -list "${{ inputs.spread_test_filter }}" | awk -F: '/spread\//{print $2}' | sort -u)
+          echo "systems to provision:"; echo "$systems"
+
+          failed=""
+          for s in $systems; do
+            # spread name -> image-garden (uname-arch) name
+            g=${s/%amd64/x86_64}; g=${g/%arm64/aarch64}; g=${g/-plus-/+}
+            echo "::group::provision $g"
+            # Tolerate a per-image failure so the others still get cached; the
+            # final step reports it. Repair the aarch64 EFI vars first, or the
+            # provision boot inside `make` fails on the pflash size.
+            if bash spread/scripts/repair-efi-vars.sh "$g" && image-garden make "${g}.qcow2"; then
+              echo "provisioned $g"
+            else
+              failed="$failed $g"
+            fi
+            echo "::endgroup::"
+          done
+          echo "failed=${failed# }" >> "$GITHUB_OUTPUT"
+
+      - name: Save cached virtual machine images
+        # Save even on a build-step failure (partial provisioning is still
+        # progress), but not on cancellation, which can leave a half-written
+        # overlay. Skipped when the exact key was already a hit.
+        if: ${{ (success() || failure()) && steps.restore-images.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.cache_paths }}
+          key: image-garden-${{ inputs.spread_test_filter }}-r${{ steps.prep.outputs.image_garden_rev }}
+
+      - name: Fail if any image did not provision
+        if: ${{ steps.build.outputs.failed != '' }}
+        run: |
+          echo "failed to provision:${{ steps.build.outputs.failed }}"
+          exit 1
+
+  spread-tests:
+    needs: prepare-images
+    runs-on: ubuntu-latest
+    # The cache is warm (prepare-images built it), so this only runs the tests.
+    timeout-minutes: 100
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Prep
+        run: |
+          sudo snap install image-garden
+          sudo snap install image-garden+qemu-aarch64 || true
+          sudo chmod -v 666 /dev/kvm || true
+
+      - name: Restore cached virtual machine images
+        # Uses the revision prepare-images resolved, so both jobs share one key.
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.cache_paths }}
+          key: image-garden-${{ inputs.spread_test_filter }}-r${{ needs.prepare-images.outputs.image_garden_rev }}
+          restore-keys: |
+            image-garden-${{ inputs.spread_test_filter }}-
 
       - name: Run spread tests
-        # Cache-aware bound: an exact-key (fully warm) restore only needs the
-        # run itself; a cold run or rev-bump fallback also has to provision the
-        # images, so it gets longer. A step timeout is a failure, not a job
-        # cancel, so the save step below still runs and warms the cache for next
-        # time -- provisioning is front-loaded, so even a run that times out
-        # mid-tasks has already produced reusable images.
-        timeout-minutes: ${{ steps.restore-images.outputs.cache-hit == 'true' && 90 || 170 }}
         run: |
-          SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "${{ matrix.runner.spread_test_filter }}"
+          SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "${{ inputs.spread_test_filter }}"
 
       - name: Log image garden content
         if: ${{ failure() }}
@@ -101,19 +159,3 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
           overwrite: true
-
-      - name: Save cached virtual machine images
-        # Save explicitly rather than via the actions/cache post step, which
-        # only fires on success: emulated runs may fail while still having
-        # produced valid, reusable images. Cancelled runs are excluded, since a
-        # kill mid-provision can leave a half-written overlay.
-        if: ${{ (success() || failure()) && steps.restore-images.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v6
-        with:
-          path: |
-            ~/snap/image-garden/common/cache/dl
-            .image-garden/*.qcow2
-            .image-garden/*.img
-            .image-garden/*.iso
-            .image-garden/*.run
-          key: image-garden-${{ matrix.runner.spread_test_filter }}-r${{ steps.prep.outputs.image_garden_rev }}
