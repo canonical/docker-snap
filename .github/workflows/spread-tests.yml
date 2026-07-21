@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: '...amd64'
+      force_rebuild:
+        description: "Ignore cached images and provision from scratch"
+        required: false
+        type: boolean
+        default: false
 
 defaults:
   run:
@@ -52,6 +57,7 @@ jobs:
 
       - name: Restore cached virtual machine images
         id: restore-images
+        if: ${{ !inputs.force_rebuild }}
         # Pristine downloads and the provisioned overlays derived from them are
         # cached as one entry: the overlays are qcow2 files backed by the
         # pristine images by absolute path with no content check, so restoring
