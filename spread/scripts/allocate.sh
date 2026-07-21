@@ -108,16 +108,19 @@ release_boot_slot() {
 # hang the allocation until GitHub kills the whole job at its 6h ceiling.
 # timeout(1) can't do this here: it isn't shipped in the image-garden
 # snap and the host binary is blocked by confinement, so a background
-# killer stands in. Killing the killer once allocate returns stops it
-# ever firing at a reused pid; its leftover sleep is harmless on the
-# ephemeral runner. Stays under kill-timeout (45m) with the poll below,
-# so spread never preempts our FATAL. The 9>&- closes the boot-slot fd
-# so a daemonized qemu can't inherit and hold it.
+# killer stands in. Killing the killer once allocate returns leaves its
+# sleep orphaned but harmless. Crucially the killer's stdout/stderr are
+# redirected to /dev/null: otherwise the orphaned sleep would inherit
+# and hold spread's output pipe open, and spread waits for that pipe to
+# close before moving on -- hanging the whole allocation for the full
+# sleep. Stays under kill-timeout (45m) with the poll below, so spread
+# never preempts our FATAL. The 9>&- closes the boot-slot fd so a
+# daemonized qemu can't inherit and hold it.
 allocate() {
   local pid killer status=0
   image-garden allocate "$GARDEN_SYSTEM" 9>&- &
   pid=$!
-  ( sleep 30m; kill "$pid" 2>/dev/null ) 9>&- &
+  ( sleep 30m; kill "$pid" 2>/dev/null ) 9>&- >/dev/null 2>&1 &
   killer=$!
   wait "$pid" || status=$?
   kill "$killer" 2>/dev/null || true
