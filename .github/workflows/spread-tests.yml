@@ -30,7 +30,7 @@ jobs:
     runs-on: ${{ matrix.runner.label }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Prep
         run: |
@@ -42,7 +42,7 @@ jobs:
           sudo chmod -v 666 /dev/kvm || true
 
       - name: Cache pristine virtual machine images
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/snap/image-garden/common/cache/dl
           key: image-garden-dl-${{ matrix.runner.spread_test_filter }}
