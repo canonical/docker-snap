@@ -90,6 +90,8 @@ jobs:
           case "${{ matrix.system }}" in
             *.arm64) sudo snap install image-garden+qemu-aarch64 ;;
             *.riscv64) sudo snap install image-garden+qemu-riscv64 ;;
+            *.s390x) sudo snap install image-garden+qemu-s390x ;;
+            *.ppc64el) sudo snap install image-garden+qemu-ppc64 ;;
           esac
 
           sudo chmod -v 666 /dev/kvm || true

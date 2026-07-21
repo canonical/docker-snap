@@ -67,6 +67,18 @@ backends:
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_RISCV64)
+      # No ubuntu-core systems for s390x/ppc64el: Ubuntu Core is not published
+      # for those architectures.
+      - ubuntu-cloud-24.04.s390x:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_S390X)
+      - ubuntu-cloud-24.04.ppc64el:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_PPC64EL)
 
       - ubuntu-cloud-26.04.amd64:
           username: ubuntu
@@ -83,6 +95,16 @@ backends:
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_RISCV64)
+      - ubuntu-cloud-26.04.s390x:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_S390X)
+      - ubuntu-cloud-26.04.ppc64el:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_PPC64EL)
 
 path: /tmp/docker
 exclude:
