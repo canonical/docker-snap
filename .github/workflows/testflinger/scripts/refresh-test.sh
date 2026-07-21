@@ -17,8 +17,7 @@ revert_docker()(
 )
 
 refresh_docker() (
-  # SNAP_CHANNEL may be set by the caller, or replaced in CI
-  DOCKER_SNAP_CHANNEL=$SNAP_CHANNEL
+  DOCKER_SNAP_CHANNEL=$1
   if [[ -z "$DOCKER_SNAP_CHANNEL" ]]; then
     DOCKER_SNAP_CHANNEL="latest/edge"
   fi
@@ -79,7 +78,7 @@ main() {
 
   check_container
 
-  refresh_docker
+  refresh_docker "$1"
 
   check_container
 
@@ -90,4 +89,4 @@ main() {
   echo "Docker snap successfully refreshed and container is still running."
 }
 
-main
+main "$1"

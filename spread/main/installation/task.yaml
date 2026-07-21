@@ -6,4 +6,4 @@ execute: |
     snap interfaces | MATCH ":network +[a-z,-]*docker"
     snap interfaces | MATCH ":home +[a-z,-]*docker"
     snap interfaces | MATCH ":firewall-control +[a-z,-]*docker"
-    snap interfaces | MATCH ":network-bind +[a-z,-]*docker"
+    snap interfaces | MATCH ":network-control +[a-z,-]*docker"

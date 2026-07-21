@@ -144,9 +144,12 @@ The provider and environment setup differs depending on the Ubuntu Core release.
 The required NVIDIA kernel objects and user-space libraries are available as optional components in the [pc-kernel](https://snapcraft.io/pc-kernel) snap (24/stable channel). These libraries can be provided to the Docker snap via the [mesa-2404](https://snapcraft.io/mesa-2404) snap.
 
 ```shell
+# List available pc-kernel components
+snap components pc-kernel
+
 # Install kernel components
-sudo snap install pc-kernel+nvidia-550-erd-ko
-sudo snap install pc-kernel+nvidia-550-erd-user
+sudo snap install pc-kernel+nvidia-XXX-erd-ko
+sudo snap install pc-kernel+nvidia-XXX-erd-user
 
 # Install the content provider snap
 sudo snap install mesa-2404
@@ -185,9 +188,46 @@ In addition to the content provider, install the [nvidia-assemble](https://githu
 
 ### Ubuntu Server / Desktop
 
-The required NVIDIA libraries are available in the NVIDIA Container Toolkit packages.
+The required NVIDIA libraries are available in the NVIDIA driver packages in Ubuntu archives or NVIDIA PPAs. 
 
-Instruction on how to install them can be found [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+To install the NVIDIA drivers from Ubuntu archives:
+
+```shell
+sudo apt update
+sudo apt install nvidia-driver-xxx
+```
+
+Replace `xxx` with the driver version (e.g., `580`, etc.). 
+The latest version is usually recommended and found by running `apt list | grep nvidia-driver`
+
+Reboot after installing or upgrading the NVIDIA driver:
+
+```shell
+sudo reboot
+```
+
+#### NVIDIA Container Toolkit compatibility
+
+Since version `v29.2.0`, Docker snap fails to launch containers with NVIDIA GPUs if NVIDIA Container Toolkit is installed on the host as a Debian package. For more information, refer to [Issue #357](https://github.com/canonical/docker-snap/issues/357).
+
+In order to use the latest version of Docker snap with the GPU, remove NVIDIA Container Toolkit from the host or specify `nvidia.runtime-hook` as the GPU driver for your containers.
+
+- To remove `nvidia-container-toolkit`:
+
+  ```shell
+  sudo apt remove libnvidia-container1 libnvidia-container-tools nvidia-container-toolkit-base nvidia-container-toolkit
+  ```
+
+  After that, reboot your computer:
+  ```shell
+  sudo reboot
+  ```
+
+- To specify `nvidia.runtime-hook` as the GPU driver, set `--gpus="all,driver=nvidia.runtime-hook"` when creating your container. For example:
+
+  ```shell
+  docker run --rm --runtime nvidia --gpus="all,driver=nvidia.runtime-hook" <container-name>
+  ```
 
 ### Custom NVIDIA runtime config
 
@@ -278,6 +318,13 @@ sudo snap connect docker:home
 sudo snap disable docker
 sudo snap enable docker
 ```
+
+### Upgrading the Docker Snap
+
+The [upgrade.sh](./upgrade.sh) script can be used to update the version tags in `snapcraft.yaml` for all parts except the NVIDIA-related ones.
+
+It does so by launching a VM, installing Docker Engine Community Edition from the official Docker archive,
+and extracting version information using `docker version`, `docker compose version`, and `docker buildx version`.
 
 ## Testing
 

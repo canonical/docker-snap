@@ -24,9 +24,10 @@ jobs:
         steps:
             # Download snap artifact from a previous smoke-test/build GitHub Workflow run
             - name: Download snap artifact
-              uses: dawidd6/action-download-artifact@v11
+              uses: actions/download-artifact@v8
               with:
-                run_id: ${{ inputs.run_id }}
+                run-id: ${{ inputs.run_id }}
+                github-token: ${{ github.token }} # required for downloading from another workflow run
                 name: docker_${{ inputs.run_id }}_amd64.snap
             
             # Publish snap to Store so it can be installed on the test devices
@@ -42,7 +43,7 @@ jobs:
         needs: publish
         # Run also when previous job has been skipped (publish not required)
         if: ${{ always() && !failure() && !cancelled() }}
-        runs-on: [self-hosted, testflinger]
+        runs-on: self-hosted-linux-amd64-noble-private-endpoint-medium
         strategy:
           fail-fast: ${{ inputs.fail_fast }}
           matrix:
@@ -58,7 +59,7 @@ jobs:
               run: "echo ::notice::Snap channel: $SNAP_CHANNEL"
 
             - name: Checkout code
-              uses: actions/checkout@v6
+              uses: actions/checkout@v7
 
             - name: Create Testflinger job
               env:
@@ -67,22 +68,10 @@ jobs:
               run: |
 
                 # Prepare job
-                envsubst '$JOB_QUEUE $DISTRO' \
+                envsubst '$JOB_QUEUE $DISTRO $SNAP_CHANNEL' \
                   < $TESTFLINGER_DIR/nvidia-job.yaml \
                   > $TESTFLINGER_DIR/nvidia-job.temp
                 mv $TESTFLINGER_DIR/nvidia-job.temp $TESTFLINGER_DIR/nvidia-job.yaml
-                
-                # Prepare setup script
-                envsubst '$SNAP_CHANNEL' \
-                  < $TESTFLINGER_DIR/scripts/setup.sh \
-                  > $TESTFLINGER_DIR/scripts/setup.temp
-                mv $TESTFLINGER_DIR/scripts/setup.temp $TESTFLINGER_DIR/scripts/setup.sh
-
-                # Prepare refresh-test script
-                envsubst '$SNAP_CHANNEL' \
-                  < $TESTFLINGER_DIR/scripts/refresh-test.sh \
-                  > $TESTFLINGER_DIR/scripts/refresh-test.temp
-                mv $TESTFLINGER_DIR/scripts/refresh-test.temp $TESTFLINGER_DIR/scripts/refresh-test.sh
 
             - name: Run tests
               uses: canonical/testflinger/.github/actions/submit@main
