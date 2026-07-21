@@ -59,6 +59,13 @@ allocate() {
 }
 
 if ! OUT="$(allocate)" || [ -z "$OUT" ]; then
+  # A failed allocation can leave a half-built overlay behind (image-garden's
+  # make creates the qcow2 before the provision boot runs and does not delete
+  # it on failure). Remove it so the CI cache save cannot capture an
+  # unprovisioned image, which a later run would trust as up to date and boot
+  # unseeded. Only here: after the ssh-readiness FATAL below, provisioning has
+  # completed and the overlay is worth caching.
+  rm -f ".image-garden/${GARDEN_SYSTEM}.qcow2"
   FATAL "image-garden could not allocate $SPREAD_SYSTEM"
 fi
 
