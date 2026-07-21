@@ -139,10 +139,10 @@ if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
   # non-KVM boots can overrun. This used to be a flat "sleep 5m", but
   # image-garden tends to hand out the address only once sshd is already
   # answering, making most of that sleep pure waste. Poll for an ssh
-  # banner instead and hand over as soon as the daemon responds, keeping
-  # the old 5 minutes as the upper bound. Uses bash /dev/tcp and the
-  # read builtin rather than external tools (the timeout binary, for
-  # one, is denied by confinement in the image-garden snap environment).
+  # banner instead and hand over as soon as the daemon responds, with a
+  # hard upper bound (currently 10 minutes) to avoid hanging indefinitely.
+  # Uses bash /dev/tcp and the read builtin rather than external tools
+  # (the timeout binary, for one, is denied by confinement in the image-garden snap environment).
   ssh_host="${OUT%:*}"
   ssh_port="${OUT##*:}"
   ssh_banner_ready() {
@@ -168,6 +168,10 @@ if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
     attempts=$((attempts + 1))
     sleep 5
   done
+  if [ "$attempts" -ge 120 ]; then
+    release_boot_slot
+    FATAL "ssh did not become ready on $OUT"
+  fi
 fi
 
 release_boot_slot
