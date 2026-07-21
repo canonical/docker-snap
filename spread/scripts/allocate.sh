@@ -25,9 +25,17 @@ GARDEN_SYSTEM="${SPREAD_SYSTEM/-plus-/+}"
 HOST_ARCH="${ARCH:-$(uname -m)}"
 SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
 
-# Repair image-garden's wrong-sized aarch64 EFI vars image before booting
-# (see the script for the why). No-op on other arches.
-bash spread/scripts/repair-efi-vars.sh "$GARDEN_SYSTEM"
+if [ "$SYSTEM_ARCH" = "ppc64el" ]; then
+  # The snap's qemu-ppc64 component does not ship vgabios-stdvga.bin, which
+  # the pseries machine wants for its default VGA device ("failed to find
+  # romfile"). Disable video entirely; the makefile's display default is
+  # env-overridable.
+  export QEMU_DISPLAY_OPTION="-nographic -vga none"
+fi
+
+# Prepare/repair firmware images image-garden gets wrong under snap
+# confinement (see the script for the why). No-op on other arches.
+bash spread/scripts/prepare-firmware.sh "$GARDEN_SYSTEM"
 
 # A VM that never becomes reachable (for example one that boots into systemd
 # emergency mode under emulation) would otherwise hang the allocation until
