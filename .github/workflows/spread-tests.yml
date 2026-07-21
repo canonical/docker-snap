@@ -28,11 +28,16 @@ jobs:
             spread_test_filter: ${{ inputs.spread_test_filter }}
 
     runs-on: ${{ matrix.runner.label }}
+    # Backstop against a pathological hang burning the full 6h GitHub ceiling.
+    # A healthy run finishes far sooner; the allocate script fails fast on
+    # unreachable VMs.
+    timeout-minutes: 90
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
 
       - name: Prep
+        id: prep
         run: |
           sudo snap install image-garden
           sudo snap install image-garden+qemu-aarch64 || true
@@ -41,11 +46,28 @@ jobs:
           # Since this is an ephemeral CI/CD environment, we can grant everyone access to /dev/kvm.
           sudo chmod -v 666 /dev/kvm || true
 
-      - name: Cache pristine virtual machine images
-        uses: actions/cache@v6
+          # Provisioned images are a function of the image-garden version, so
+          # its snap revision keys the cache below.
+          echo "image_garden_rev=$(snap list image-garden | awk 'NR==2 {print $3}')" >> "$GITHUB_OUTPUT"
+
+      - name: Restore cached virtual machine images
+        id: restore-images
+        # Pristine downloads and the provisioned overlays derived from them are
+        # cached as one entry: the overlays are qcow2 files backed by the
+        # pristine images by absolute path with no content check, so restoring
+        # them from different saves could silently corrupt guests. Logs and pid
+        # files are excluded.
+        uses: actions/cache/restore@v6
         with:
-          path: ~/snap/image-garden/common/cache/dl
-          key: image-garden-dl-${{ matrix.runner.spread_test_filter }}
+          path: |
+            ~/snap/image-garden/common/cache/dl
+            .image-garden/*.qcow2
+            .image-garden/*.img
+            .image-garden/*.iso
+            .image-garden/*.run
+          key: image-garden-${{ matrix.runner.spread_test_filter }}-r${{ steps.prep.outputs.image_garden_rev }}
+          restore-keys: |
+            image-garden-${{ matrix.runner.spread_test_filter }}-
 
       - name: Run spread tests
         run: |
@@ -69,3 +91,19 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
           overwrite: true
+
+      - name: Save cached virtual machine images
+        # Save explicitly rather than via the actions/cache post step, which
+        # only fires on success: emulated runs may fail while still having
+        # produced valid, reusable images. Cancelled runs are excluded, since a
+        # kill mid-provision can leave a half-written overlay.
+        if: ${{ (success() || failure()) && steps.restore-images.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ~/snap/image-garden/common/cache/dl
+            .image-garden/*.qcow2
+            .image-garden/*.img
+            .image-garden/*.iso
+            .image-garden/*.run
+          key: image-garden-${{ matrix.runner.spread_test_filter }}-r${{ steps.prep.outputs.image_garden_rev }}
