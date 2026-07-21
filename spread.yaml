@@ -15,6 +15,13 @@ backends:
   garden:
     type: adhoc
 
+    # Applies to the allocate/discard scripts below. The project-level
+    # kill-timeout does NOT cascade here -- without this, spread's 15-minute
+    # default kills a cold emulated allocation mid-provision (an ubuntu-core
+    # provision boot alone takes ~12 minutes under TCG). Must stay above the
+    # allocate watchdog (30m) plus the ssh poll (10m).
+    kill-timeout: 45m
+
     allocate: source spread/scripts/allocate.sh
     discard: source spread/scripts/discard.sh
     systems:
