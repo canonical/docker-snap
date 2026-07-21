@@ -11,8 +11,10 @@ if [ -n "${SPREAD_HOST_PATH-}" ]; then
   PATH="${SPREAD_HOST_PATH}"
 fi
 
+# One emulated guest per runner (the CI matrix fans systems out into separate
+# jobs), so there is no contention to budget memory against.
 export QEMU_SMP_OPTION="-smp 4"
-export QEMU_MEM_OPTION="-m 2048"
+export QEMU_MEM_OPTION="-m 3072"
 
 # Map spread system architecture
 SPREAD_SYSTEM=${SPREAD_SYSTEM/%amd64/x86_64}  # maps "amd64" to "x86_64"
@@ -27,76 +29,35 @@ SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
 # (see the script for the why). No-op on other arches.
 bash spread/scripts/repair-efi-vars.sh "$GARDEN_SYSTEM"
 
-# Limit concurrent emulated guest boots with a small flock semaphore. This only
-# matters on kvm-less hosts. Otherwise the concurrent emulated boot causes flaky
-# inner systemd boot timeout and drops the guest into the emergency mode. 
-# The slot is held on fd 9 from just before image-garden allocate until
-# sshd answers. The fd is explicitly closed (9>&-) for spawned children:
-# a daemonized qemu inheriting it would hold the slot for the lifetime of
-# the VM. If no slot frees up within the cap, continue anyway. At worst we
-# degrade back to unsynchronised boot, and fail the tests. *This will never
-# result in false-positive tests*.
-BOOT_SLOTS=2
-BOOT_SLOT_WAIT_SECS=900
-
-acquire_boot_slot() {
-  local waited=0
-  local i
-  while [ "$waited" -lt "$BOOT_SLOT_WAIT_SECS" ]; do
-    i=1
-    while [ "$i" -le "$BOOT_SLOTS" ]; do
-      exec 9>"${TMPDIR:-/tmp}/spread-boot-slot-$i.lock"
-      if flock -n 9; then
-        echo "Acquired boot slot $i"
-        return 0
-      fi
-      exec 9>&- || true
-      i=$((i+1))
-    done
-    sleep 10
-    waited=$((waited+10))
-  done
-  echo "No boot slot free after ${BOOT_SLOT_WAIT_SECS}s; booting without one"
-  return 0
-}
-
-release_boot_slot() {
-  exec 9>&- 2>/dev/null || true
-}
-
 # A VM that never becomes reachable (for example one that boots into systemd
 # emergency mode under emulation) would otherwise hang the allocation until
 # GitHub kills the whole job at its 6h ceiling. timeout isn't shipped in the
 # image-garden snap and the host binary is blocked by confinement, so we write
-# our own little watchdog. The timeout stays under spread's kill-timeout (45m)
-# so spread should never preempt our FATAL. The 9>&- closes the boot-slot fd so a
-# daemonized qemu can't inherit and hold it.
+# our own little watchdog, bounding the attempt below spread's kill-timeout so
+# spread never preempts our FATAL.
 #
-# NOTE: The watchdogs's stdout/stderr are redirected to /dev/null. Otherwise the
+# NOTE: the killer's stdout/stderr are redirected to /dev/null. Otherwise its
 #       orphaned sleep would inherit and hold spread's output pipe open, and
 #       spread waits for that pipe to close before moving on.
 allocate() {
   local pid killer status=0
-  image-garden allocate "$GARDEN_SYSTEM" 9>&- &
+  image-garden allocate "$GARDEN_SYSTEM" &
   pid=$!
-  ( sleep 30m; kill "$pid" 2>/dev/null ) 9>&- >/dev/null 2>&1 &
+  ( sleep 30m; kill "$pid" 2>/dev/null ) >/dev/null 2>&1 &
   killer=$!
   wait "$pid" || status=$?
   kill "$killer" 2>/dev/null || true
   return "$status"
 }
 
-if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
-  acquire_boot_slot
-fi
-
 if ! OUT="$(allocate)" || [ -z "$OUT" ]; then
   FATAL "image-garden could not allocate $SPREAD_SYSTEM"
 fi
 
 if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
-  # Poll for an ssh banner and hand over as soon as the daemon responds, with a
-  # hard upper bound (10 min) to avoid hanging indefinitely.
+  # image-garden hands out the address once the port-forward exists, which under
+  # emulation can be well before sshd actually answers. Poll for the banner and
+  # hand over as soon as the daemon responds, with a hard 10-minute upper bound.
   ssh_host="${OUT%:*}"
   ssh_port="${OUT##*:}"
   ssh_banner_ready() {
@@ -117,11 +78,8 @@ if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
     sleep 5
   done
   if [ "$attempts" -ge 120 ]; then
-    release_boot_slot
     FATAL "ssh did not become ready on $OUT"
   fi
 fi
-
-release_boot_slot
 
 ADDRESS "$OUT"
