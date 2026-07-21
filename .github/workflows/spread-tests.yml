@@ -83,7 +83,15 @@ jobs:
       - name: Prep
         run: |
           sudo snap install image-garden
-          sudo snap install image-garden+qemu-aarch64 || true
+
+          # The base snap carries the x86_64 emulator; other arches live in
+          # optional components. Install only the one this system needs --
+          # without it, allocation fails on missing EDK2 firmware.
+          case "${{ matrix.system }}" in
+            *.arm64) sudo snap install image-garden+qemu-aarch64 ;;
+            *.riscv64) sudo snap install image-garden+qemu-riscv64 ;;
+          esac
+
           sudo chmod -v 666 /dev/kvm || true
 
       - name: Restore cached virtual machine image
