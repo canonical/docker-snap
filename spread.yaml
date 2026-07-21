@@ -40,33 +40,37 @@ backends:
 
       GARDEN_SYSTEM="${SPREAD_SYSTEM/-plus-/+}"
 
-      # The qemu 'virt' machine used for aarch64 requires the EFI variable store
-      # (pflash unit 1) to be exactly 64 MiB. image-garden has been observed to
-      # emit a wrong-sized (or empty) vars image, which makes qemu refuse to
-      # start with:
+      HOST_ARCH="${ARCH:-$(uname -m)}"
+      SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
+
+      # The qemu 'virt' machine used for aarch64 -- and only that machine --
+      # requires the EFI variable store (pflash unit 1) to be exactly 64 MiB.
+      # image-garden has been observed to emit a wrong-sized (or empty) vars
+      # image there, which makes qemu refuse to start with:
       #   cfi.pflash01 device '/machine/virt.flash1' requires 67108864 bytes,
       #   pflash1 block backend provides <N> bytes
       # Check and repair this *before* attempting to boot, not after a slow
       # failed attempt: building the vars image doesn't require booting
       # anything, so this costs seconds rather than eating into the allocate
-      # watchdog below.
-      EFI_VARS_SIZE=67108864 # 64 MiB
-      efi_vars_img=".image-garden/${SPREAD_SYSTEM}.efi-vars.img"
+      # watchdog below. Strictly aarch64-scoped: x86_64's q35 machine caps
+      # combined firmware at 8 MiB, so inflating its OVMF vars file to 64 MiB
+      # makes qemu refuse to start instead.
+      if [ "$SYSTEM_ARCH" = "aarch64" ]; then
+        EFI_VARS_SIZE=67108864 # 64 MiB
+        efi_vars_img=".image-garden/${SPREAD_SYSTEM}.efi-vars.img"
 
-      image-garden make "${GARDEN_SYSTEM}.efi-vars.img" || true
-      if [ -f "$efi_vars_img" ] && [ "$(stat -c%s "$efi_vars_img")" != "$EFI_VARS_SIZE" ]; then
-        echo "Repairing wrong-sized EFI vars image: $efi_vars_img"
-        # qemu-img rather than truncate: binaries not shipped inside the
-        # image-garden snap (truncate, timeout, ...) cannot be executed from
-        # the host under confinement. qemu-img is what image-garden itself
-        # uses, so it is always available. Guarded so a failed repair falls
-        # through to a normal allocation failure instead of killing the
-        # script under set -e.
-        qemu-img resize -f raw "$efi_vars_img" "$EFI_VARS_SIZE" || true
+        image-garden make "${GARDEN_SYSTEM}.efi-vars.img" || true
+        if [ -f "$efi_vars_img" ] && [ "$(stat -c%s "$efi_vars_img")" != "$EFI_VARS_SIZE" ]; then
+          echo "Repairing wrong-sized EFI vars image: $efi_vars_img"
+          # qemu-img rather than truncate: binaries not shipped inside the
+          # image-garden snap (truncate, timeout, ...) cannot be executed from
+          # the host under confinement. qemu-img is what image-garden itself
+          # uses, so it is always available. Guarded so a failed repair falls
+          # through to a normal allocation failure instead of killing the
+          # script under set -e.
+          qemu-img resize -f raw "$efi_vars_img" "$EFI_VARS_SIZE" || true
+        fi
       fi
-
-      HOST_ARCH="${ARCH:-$(uname -m)}"
-      SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
 
       # Limit concurrent emulated guest boots with a small flock semaphore.
       # Five TCG guests booting at once starve udev inside the guests badly
