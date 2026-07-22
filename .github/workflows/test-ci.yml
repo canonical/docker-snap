@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/**"
       - ".github/scripts/**"
+      - "spread/scripts/**"
 
 # Cancel an in-progress run when a newer commit lands on the same ref, so a
 # burst of pushes to a branch or PR only tests the latest one.
@@ -28,6 +29,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y bats
 
-      - name: Run spread-matrix tests
+      - name: Run bats tests
         run: |
-          bats .github/scripts/spread-matrix/
+          bats .github/scripts/spread-matrix/ spread/scripts/
