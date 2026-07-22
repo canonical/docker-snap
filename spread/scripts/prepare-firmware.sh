@@ -33,7 +33,7 @@ case "$garden_system" in
     fi
     ;;
   *.riscv64)
-    flash_size=32M # the riscv64 virt machine requires 32 MiB flash images
+    flash_size=32M # the riscv64 vm requires 32 MiB flash images
     mkdir -p .image-garden
     for part in code vars; do
       src="/snap/image-garden/current/components/qemu-riscv64/share/qemu/edk2-riscv-${part}.fd"

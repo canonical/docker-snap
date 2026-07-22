@@ -178,6 +178,13 @@ jobs:
           echo "Image Garden cache content:"
           ls -lah ~/snap/image-garden/common/cache/dl/ || true
 
+      - name: Strip escape sequences from boot logs
+        if: ${{ failure() || inputs.publish_boot_logs }}
+        run: |
+          # Serial-console boot logs are full of ANSI colour/cursor escapes
+          # and carriage returns; strip them so the artefacts read cleanly.
+          sed -i -E 's/\x1b\[[0-9;?]*[a-zA-Z]//g; s/\x1b\][^\x07]*\x07//g; s/\r//g' .image-garden/*.log || true
+
       - name: Upload logs as artifacts
         if: ${{ failure() || inputs.publish_boot_logs }}
         uses: actions/upload-artifact@v7
