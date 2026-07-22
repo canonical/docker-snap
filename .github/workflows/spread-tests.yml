@@ -15,10 +15,10 @@ on:
           - latest/edge
         default: latest/edge
       spread_test_filter:
-        description: "job filter: whitespace-separated regexes, each narrowing the selection; '!' prefix inverts a term; empty = everything (e.g. '!26.04 cloud amd64 build')"
+        description: "job filter (e.g. '!26.10 cloud amd64')"
         required: false
         type: string
-        default: 'amd64'
+        default: ""
       force_rebuild:
         description: "ignore cached vm images"
         required: false
