@@ -30,7 +30,7 @@ setup() {
 
 @test "returns promptly, not when the killer's sleep expires" {
   local start=$SECONDS out
-  out=$(watchdog_run 60 echo prompt-return)
+  out=$(watchdog_run 5 echo prompt-return)
   [ "$out" = prompt-return ]
-  [ $((SECONDS - start)) -lt 10 ]
+  [ $((SECONDS - start)) -lt 4 ]
 }
