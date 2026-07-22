@@ -17,7 +17,11 @@ watchdog_run() {
   local pid killer status=0
   "$@" &
   pid=$!
-  ( sleep "$timeout"; kill "$pid" 2>/dev/null ) >/dev/null 2>&1 &
+  # fd 3 is closed for the same reason stdout/stderr are silenced: the
+  # sleep can outlive us as an orphan, and anything it keeps open, the
+  # caller may sit waiting on (spread reads our stdout; bats waits on its
+  # fd 3).
+  ( sleep "$timeout"; kill "$pid" 2>/dev/null ) >/dev/null 2>&1 3>&- &
   killer=$!
   wait "$pid" || status=$?
   kill "$killer" 2>/dev/null || true
