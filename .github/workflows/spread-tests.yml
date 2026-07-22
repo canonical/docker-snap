@@ -18,6 +18,11 @@ on:
         required: false
         type: boolean
         default: false
+      publish_boot_logs:
+        description: "Publish boot logs even for passing systems (e.g. to collect evidence of slow-but-healthy boots)"
+        required: false
+        type: boolean
+        default: false
 
 defaults:
   run:
@@ -114,7 +119,7 @@ jobs:
           SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "${{ matrix.system }}"
 
       - name: Log image garden content
-        if: ${{ failure() }}
+        if: ${{ failure() || inputs.publish_boot_logs }}
         run: |
           echo "Image Garden directory content:"
           ls -lah .image-garden/
@@ -123,7 +128,7 @@ jobs:
           ls -lah ~/snap/image-garden/common/cache/dl/
 
       - name: Upload logs as artifacts
-        if: ${{ failure() }}
+        if: ${{ failure() || inputs.publish_boot_logs }}
         uses: actions/upload-artifact@v7
         with:
           # Unique per matrix job, or parallel uploads collide.
