@@ -10,7 +10,11 @@ To get started, make sure that **image-garden** is installed on your system:
 sudo snap install image-garden
 sudo snap install image-garden+qemu-aarch64 # for arm64 emulation
 sudo snap install image-garden+qemu-riscv64 # for riscv64 emulation
+sudo snap install image-garden+qemu-s390x   # for s390x emulation
+sudo snap install image-garden+qemu-ppc64   # for ppc64el emulation
 ```
+
+The base snap ships the x86_64 emulator; each other architecture lives in an optional component, needed only if you run that architecture's systems.
 
 The snap release of image-garden also includes its dependencies, such as `spread` and `qemu`.
 
@@ -35,11 +39,11 @@ Before running any test, you have to choose which docker snap to test
   SNAP_CHANNEL=latest/edge image-garden.spread
   ```
 
-  This runs the tests for both amd64 and arm64 architectures.
+  This runs the tests on every system, each guest installing the snap for its own architecture from the store.
   For testing a single architecture, download the snap and use the local snap file method.
   To download the snap on a different architecture, e.g. arm64 on amd64, run: `UBUNTU_STORE_ARCH=arm64 snap download docker`.
 
-- To test a local snap file, specify the `SNAP_FILE_AMD64`, `SNAP_FILE_ARM64` and/or `SNAP_FILE_RISCV64`:
+- To test a local snap file, specify the `SNAP_FILE_<ARCH>` variable for each architecture you run (`AMD64`, `ARM64`, `RISCV64`, `S390X`, `PPC64EL`):
 
   ```bash
   SNAP_FILE_AMD64=docker_29.3.1_amd64.snap \
@@ -90,6 +94,44 @@ image-garden.spread -artifacts artifacts
 
 By default, image garden VMs have ephimeral storage. To start VMs with permanent storage, set `QEMU_SNAPSHOT_OPTION=""`
 as described in [Persistent Storage Mode](https://gitlab.com/zygoon/image-garden/-/blob/main/README.md?ref_type=heads#persistent-storage-mode).
+
+## Running in CI
+
+The [Spread Tests workflow](.github/workflows/spread-tests.yml) runs these tests on GitHub Actions, on manual dispatch only.
+It expands the job filter into the systems it selects and fans them out into one runner per system (one QEMU guest each), with the provisioned VM images cached per system and keyed to the image-garden snap revision.
+
+Dispatch inputs:
+
+- `snap_channel`: the `docker` snap channel to install in the guests
+- `spread_test_filter`: which jobs to run, see below
+- `force_rebuild`: ignore cached VM images and provision from scratch
+- `publish_boot_logs`: always upload guest boot logs as workflow artifacts (they are uploaded on failure regardless)
+- `debug`: run spread with `-vv`
+- `image_garden_channel`: the `image-garden` snap channel to use; the `ubuntu-*-26.10` systems need `latest/candidate` until image-garden v0.6.4 reaches stable
+
+### Job filter
+
+The filter is a chain of whitespace-separated regular expressions, applied as successive greps over the spread job list (`backend:system:suite/task` lines, as printed by `spread -list`).
+Each term narrows the selection, a `!` prefix inverts a term, and `|` inside a term expresses alternatives.
+An empty filter selects every job.
+An Ubuntu Core release counts as part of its paired LTS series: `26.04` also selects `ubuntu-core-26`, `!26.04` also excludes it, while `26.10` leaves Core alone.
+Examples:
+
+- `amd64`: all amd64 systems
+- `core`: only Ubuntu Core systems
+- `core !22`: Ubuntu Core, except the 22 series
+- `26.04`: the 26.04 cloud systems plus `ubuntu-core-26`
+- `ppc64el|amd64`: two architectures
+- `hello-world`: a single task, on every system
+- `!26.04 cloud amd64 build`: the `build` task on non-26.04 cloud amd64 systems
+
+The workflow fails if the filter selects nothing.
+
+The filter expansion lives in [.github/scripts/spread-matrix](.github/scripts/spread-matrix/spread-matrix) and can be dry-run locally:
+
+```bash
+image-garden.spread -list | .github/scripts/spread-matrix/spread-matrix '!26.04 core'
+```
 
 ## Cleanup
 
