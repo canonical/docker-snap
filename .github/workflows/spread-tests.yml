@@ -8,6 +8,7 @@ on:
         description: "Snap Store channel containing the version of docker to test"
         required: true
         type: string
+        default: "latest/edge"
       spread_test_filter:
         description: "Spread test selection filter; use '...' as a wildcard"
         required: false
@@ -19,10 +20,24 @@ on:
         type: boolean
         default: false
       publish_boot_logs:
-        description: "Publish boot logs even for all systems"
+        description: "Publish all boot logs"
         required: false
         type: boolean
         default: false
+      debug:
+        description: "Extra-verbose spread output (-vv)"
+        required: false
+        type: boolean
+        default: false
+      image_garden_channel:
+        description: "Snap Store channel to install image-garden from"
+        required: false
+        type: choice
+        options:
+          - latest/stable
+          - latest/candidate
+          - latest/edge
+        default: latest/stable
 
 defaults:
   run:
@@ -57,9 +72,10 @@ jobs:
       - name: Prep
         id: prep
         run: |
-          sudo snap install image-garden
+          sudo snap install image-garden --channel="${{ inputs.image_garden_channel }}"
           # Provisioned images are a function of the image-garden version, so
-          # its snap revision keys the caches.
+          # its snap revision keys the caches (a channel switch changes the
+          # revision and therefore starts from cold caches automatically).
           echo "image_garden_rev=$(snap list image-garden | awk 'NR==2 {print $3}')" >> "$GITHUB_OUTPUT"
 
       - name: List systems
@@ -89,11 +105,12 @@ jobs:
 
       - name: Prep
         run: |
-          sudo snap install image-garden
+          sudo snap install image-garden --channel="${{ inputs.image_garden_channel }}"
 
           # The base snap carries the x86_64 emulator; other arches live in
-          # optional components. Install only the one this system needs --
-          # without it, allocation fails on missing EDK2 firmware.
+          # optional components (they follow the snap's channel). Install only
+          # the one this system needs -- without it, allocation fails on
+          # missing EDK2 firmware.
           case "${{ matrix.system }}" in
             *.arm64) sudo snap install image-garden+qemu-aarch64 ;;
             *.riscv64) sudo snap install image-garden+qemu-riscv64 ;;
@@ -116,7 +133,7 @@ jobs:
       - name: Run spread tests
         timeout-minutes: 70
         run: |
-          SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "${{ matrix.system }}"
+          SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v ${{ inputs.debug && '-vv' || '' }} "${{ matrix.system }}"
 
       - name: Log image garden content
         if: ${{ failure() || inputs.publish_boot_logs }}
