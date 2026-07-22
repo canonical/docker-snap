@@ -39,26 +39,11 @@ bash spread/scripts/prepare-firmware.sh "$GARDEN_SYSTEM"
 
 # A VM that never becomes reachable (for example one that boots into systemd
 # emergency mode under emulation) would otherwise hang the allocation until
-# GitHub kills the whole job at its 6h ceiling. timeout isn't shipped in the
-# image-garden snap and the host binary is blocked by confinement, so we write
-# our own little watchdog, bounding the attempt below spread's kill-timeout so
-# spread never preempts our FATAL.
-#
-# NOTE: the killer's stdout/stderr are redirected to /dev/null. Otherwise its
-#       orphaned sleep would inherit and hold spread's output pipe open, and
-#       spread waits for that pipe to close before moving on.
-allocate() {
-  local pid killer status=0
-  image-garden allocate "$GARDEN_SYSTEM" &
-  pid=$!
-  ( sleep 30m; kill "$pid" 2>/dev/null ) >/dev/null 2>&1 &
-  killer=$!
-  wait "$pid" || status=$?
-  kill "$killer" 2>/dev/null || true
-  return "$status"
-}
+# GitHub kills the whole job at its 6h ceiling. Bound the attempt below
+# spread's kill-timeout so spread never preempts our FATAL.
+source spread/scripts/watchdog.sh
 
-if ! OUT="$(allocate)" || [ -z "$OUT" ]; then
+if ! OUT="$(watchdog_run 30m image-garden allocate "$GARDEN_SYSTEM")" || [ -z "$OUT" ]; then
   # A failed allocation can leave a half-built overlay behind (image-garden's
   # make creates the qcow2 before the provision boot runs and does not delete
   # it on failure). Remove it so the CI cache save cannot capture an
