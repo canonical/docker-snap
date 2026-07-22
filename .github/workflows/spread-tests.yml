@@ -74,8 +74,10 @@ jobs:
     runs-on: ubuntu-latest
     # One emulated system per runner; a cold system provisions then tests, a
     # warm one just tests. Bound the run step below the job timeout so a slow
-    # cold run fails (and saves its image) rather than being cancelled.
-    timeout-minutes: 75
+    # cold run fails (and saves its image) rather than being cancelled. Sized
+    # for the slowest cold lane observed: dracut-based images (26.04+) on the
+    # slowest emulated targets take just under an hour cold.
+    timeout-minutes: 80
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -107,7 +109,7 @@ jobs:
             image-garden-${{ matrix.system }}-
 
       - name: Run spread tests
-        timeout-minutes: 60
+        timeout-minutes: 70
         run: |
           SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "${{ matrix.system }}"
 
