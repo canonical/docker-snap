@@ -26,10 +26,19 @@ case "$garden_system" in
     efi_vars_size=67108864 # 64 MiB
     efi_vars_img=".image-garden/${garden_system}.efi-vars.img"
 
+    # Best-effort: on a warm cache the make can fail harmlessly while a
+    # correctly sized image already sits there. The size check below is
+    # what decides whether we are actually in trouble.
     image-garden make "${garden_system}.efi-vars.img" || true
     if [ -f "$efi_vars_img" ] && [ "$(stat -c%s "$efi_vars_img")" != "$efi_vars_size" ]; then
       echo "Repairing wrong-sized EFI vars image: $efi_vars_img"
       qemu-img resize -f raw "$efi_vars_img" "$efi_vars_size" || true
+      if [ "$(stat -c%s "$efi_vars_img")" != "$efi_vars_size" ]; then
+        # Fail here with a clear message rather than later as an opaque
+        # boot hang.
+        echo "error: $efi_vars_img is still not $efi_vars_size bytes" >&2
+        exit 1
+      fi
     fi
     ;;
   *.riscv64)
