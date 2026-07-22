@@ -138,6 +138,17 @@ jobs:
           restore-keys: |
             image-garden-${{ matrix.system }}-
 
+      - name: Drop stale images from a cross-revision cache
+        # A prefix (restore-keys) hit restored an older image-garden
+        # revision's cache. The pristine downloads stay useful, but the
+        # provisioned overlays and firmware images may not match the new
+        # revision's recipes -- and make's mtime check would happily reuse
+        # them. Drop everything but the download cache so this revision
+        # provisions from scratch.
+        if: ${{ steps.restore-image.outputs.cache-matched-key != '' && steps.restore-image.outputs.cache-hit != 'true' }}
+        run: |
+          rm -f .image-garden/*.qcow2 .image-garden/*.img .image-garden/*.iso .image-garden/*.run
+
       - name: Run spread tests
         timeout-minutes: 70
         env:
