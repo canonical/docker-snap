@@ -107,10 +107,19 @@ jobs:
           fi
           echo "selected jobs:"; echo "$jobs"
 
-          # One matrix entry per system, carrying that system's selected jobs
+          # Group jobs by system: one "system<TAB>job job job..." line each,
           # so a lane can run a subset of tasks.
-          matrix=$(awk -F: '{g[$2]=g[$2]" "$0} END {for (s in g) print s "\t" substr(g[s],2)}' <<<"$jobs" \
-            | jq -Rsc '{include: [split("\n")[] | select(length>0) | split("\t") | {system: .[0], jobs: .[1]}]}')
+          groups=$(awk -F: '{g[$2]=g[$2]" "$0} END {for (s in g) print s "\t" substr(g[s],2)}' <<<"$jobs")
+
+          # The UI job list shows matrix order and awk's for-in order is
+          # arbitrary, so sort: newest release first, architectures together
+          # within a release. Prepend the bare release number as a sort key
+          # (system name minus flavour prefix and architecture suffix),
+          # version-sort descending on it, then drop the key again.
+          sorted=$(awk -F'\t' '{key=$1; sub(/^[a-z-]+-/, "", key); sub(/\.[a-z0-9]+$/, "", key); print key "\t" $0}' <<<"$groups" \
+            | sort -t"$(printf '\t')" -k1,1Vr -k2,2 | cut -f2-)
+
+          matrix=$(jq -Rsc '{include: [split("\n")[] | select(length>0) | split("\t") | {system: .[0], jobs: .[1]}]}' <<<"$sorted")
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   spread-tests:
