@@ -15,10 +15,10 @@ on:
           - latest/edge
         default: latest/edge
       spread_test_filter:
-        description: "test selection filter ('...' = wildcard)"
+        description: "job filter: whitespace-separated regexes, each narrowing the selection; '!' prefix inverts a term; empty = everything (e.g. '!26.04 cloud amd64 build')"
         required: false
         type: string
-        default: '...amd64'
+        default: 'amd64'
       force_rebuild:
         description: "ignore cached vm images"
         required: false
@@ -84,13 +84,33 @@ jobs:
           # revision and therefore starts from cold caches automatically).
           echo "image_garden_rev=$(snap list image-garden | awk 'NR==2 {print $3}')" >> "$GITHUB_OUTPUT"
 
-      - name: List systems
+      - name: List jobs
         id: list
+        env:
+          FILTER: ${{ inputs.spread_test_filter }}
         run: |
-          # spread -list prints backend:system:suite/task per line.
-          systems=$(image-garden.spread -list "${{ inputs.spread_test_filter }}" | awk -F: '/spread\//{print $2}' | sort -u)
-          echo "systems:"; echo "$systems"
-          matrix=$(printf '%s\n' $systems | jq -R . | jq -sc '{system: .}')
+          # spread -list prints one job per line: backend:system:suite/task.
+          # The filter is a chain of whitespace-separated EREs applied as
+          # successive greps over those lines: each term narrows the selection
+          # ('|' inside a term expresses alternatives) and a '!' prefix
+          # inverts a term. An empty filter selects every job.
+          jobs=$(image-garden.spread -list)
+          for term in $FILTER; do
+            case "$term" in
+              '!'*) jobs=$(grep -vE -- "${term#!}" <<<"$jobs" || true) ;;
+              *)    jobs=$(grep -E -- "$term" <<<"$jobs" || true) ;;
+            esac
+          done
+          if [ -z "$jobs" ]; then
+            echo "error: filter '$FILTER' selected no jobs" >&2
+            exit 1
+          fi
+          echo "selected jobs:"; echo "$jobs"
+
+          # One matrix entry per system, carrying that system's selected jobs
+          # so a lane can run a subset of tasks.
+          matrix=$(awk -F: '{g[$2]=g[$2]" "$0} END {for (s in g) print s "\t" substr(g[s],2)}' <<<"$jobs" \
+            | jq -Rsc '{include: [split("\n")[] | select(length>0) | split("\t") | {system: .[0], jobs: .[1]}]}')
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   spread-tests:
@@ -98,6 +118,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.list-systems.outputs.matrix) }}
+    # Pinned: the default would append the whole jobs list to the name.
+    name: spread-tests (${{ matrix.system }})
     runs-on: ubuntu-latest
     # One emulated system per runner; a cold system provisions then tests, a
     # warm one just tests. Bound the run step below the job timeout so a slow
@@ -138,17 +160,23 @@ jobs:
 
       - name: Run spread tests
         timeout-minutes: 70
+        env:
+          JOBS: ${{ matrix.jobs }}
         run: |
-          SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v ${{ inputs.debug && '-vv' || '' }} "${{ matrix.system }}"
+          # $JOBS is this system's selected spread job names, word-split into
+          # one argument each.
+          SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v ${{ inputs.debug && '-vv' || '' }} $JOBS
 
       - name: Log image garden content
         if: ${{ failure() || inputs.publish_boot_logs }}
         run: |
+          # Tolerate missing directories: an allocation that failed early may
+          # not have created either.
           echo "Image Garden directory content:"
-          ls -lah .image-garden/
+          ls -lah .image-garden/ || true
 
           echo "Image Garden cache content:"
-          ls -lah ~/snap/image-garden/common/cache/dl/
+          ls -lah ~/snap/image-garden/common/cache/dl/ || true
 
       - name: Upload logs as artifacts
         if: ${{ failure() || inputs.publish_boot_logs }}
