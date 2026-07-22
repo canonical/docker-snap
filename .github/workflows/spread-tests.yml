@@ -5,37 +5,43 @@ on:
   workflow_dispatch:
     inputs:
       snap_channel:
-        description: "Snap Store channel containing the version of docker to test"
+        description: "`docker` snap channel to test"
         required: true
         type: string
-        default: "latest/edge"
+        options:
+          - latest/stable
+          - latest/candidate
+          - latest/beta
+          - latest/edge
+        default: latest/edge
       spread_test_filter:
-        description: "Spread test selection filter; use '...' as a wildcard"
+        description: "test selection filter ('...' = wildcard)"
         required: false
         type: string
         default: '...amd64'
       force_rebuild:
-        description: "Ignore cached vm images"
+        description: "ignore cached vm images"
         required: false
         type: boolean
         default: false
       publish_boot_logs:
-        description: "Publish all boot logs"
+        description: "publish all boot logs"
         required: false
         type: boolean
         default: false
       debug:
-        description: "Extra-verbose spread output (-vv)"
+        description: "extra debug output"
         required: false
         type: boolean
         default: false
       image_garden_channel:
-        description: "Snap Store channel to install image-garden from"
+        description: "`image-garden` snap channel"
         required: false
         type: choice
         options:
           - latest/stable
           - latest/candidate
+          - latest/beta
           - latest/edge
         default: latest/stable
 
