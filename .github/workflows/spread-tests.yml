@@ -7,7 +7,7 @@ on:
       snap_channel:
         description: "`docker` snap channel to test"
         required: true
-        type: string
+        type: choice
         options:
           - latest/stable
           - latest/candidate
