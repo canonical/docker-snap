@@ -3,6 +3,7 @@
 # Invoked in each system before running any test
 # Learn more about preparing and restoring: https://github.com/canonical/spread?tab=readme-ov-file#preparing
 
+# shellcheck source=spread/scripts/common.sh
 source "$SCRIPTS_PATH/common.sh"
 
 if command -v apt-get >/dev/null; then
@@ -27,7 +28,7 @@ sudo snap remove docker --purge || true
 if [ -n "$SNAP_CHANNEL" ] ; then
     # If $SNAP_CHANNEL was provided, install docker from the store
     echo "Installing docker from channel: $SNAP_CHANNEL"
-    sudo snap install docker --channel=$SNAP_CHANNEL
+    sudo snap install docker --channel="$SNAP_CHANNEL"
 elif [ -n "$SNAP_FILE" ] ; then
     echo "Installing local snap: $SNAP_FILE"
     sudo snap install "$SNAP_FILE" --dangerous
