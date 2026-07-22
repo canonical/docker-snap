@@ -14,12 +14,12 @@ on:
         type: string
         default: '...amd64'
       force_rebuild:
-        description: "Ignore cached images and provision from scratch"
+        description: "Ignore cached vm images"
         required: false
         type: boolean
         default: false
       publish_boot_logs:
-        description: "Publish boot logs even for passing systems (e.g. to collect evidence of slow-but-healthy boots)"
+        description: "Publish boot logs even for all systems"
         required: false
         type: boolean
         default: false
@@ -103,7 +103,7 @@ jobs:
 
           sudo chmod -v 666 /dev/kvm || true
 
-      - name: Restore cached virtual machine image
+      - name: Restore cached vm image
         id: restore-image
         if: ${{ !inputs.force_rebuild }}
         uses: actions/cache/restore@v6
@@ -138,7 +138,7 @@ jobs:
           if-no-files-found: ignore
           overwrite: true
 
-      - name: Save cached virtual machine image
+      - name: Save cached vm image
         # Save even on a failing run (a provisioned image is still reusable), but
         # not on cancellation, which can leave a half-written overlay. Skipped
         # when the exact key was already a hit.
