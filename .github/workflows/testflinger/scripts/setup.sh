@@ -79,7 +79,7 @@ setup_classic() (
   set -x
 
   apt_update
-  run_retry_command sudo apt-get -qqy install nvidia-driver-570
+  run_retry_command sudo apt-get -qqy install nvidia-driver-580
 )
 
 setup_core22() (
@@ -95,7 +95,7 @@ setup_core24() (
 
   # Install kernel components.
   PARENT_SNAP="pc-kernel"
-  COMPONENTS="nvidia-570-erd-ko nvidia-570-erd-user"
+  COMPONENTS="nvidia-580-erd-ko nvidia-580-erd-user"
   install_components $PARENT_SNAP "$COMPONENTS"
 
   install_snap mesa-2404

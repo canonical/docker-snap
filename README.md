@@ -166,9 +166,12 @@ content[gpu-2604]  docker:gpu-2604          mesa-2604:gpu-2604                  
 The required NVIDIA kernel objects and user-space libraries are available as optional components in the [pc-kernel](https://snapcraft.io/pc-kernel) snap (24/stable channel). These libraries can be provided to the Docker snap via the [mesa-2404](https://snapcraft.io/mesa-2404) snap.
 
 ```shell
+# List available pc-kernel components
+snap components pc-kernel
+
 # Install kernel components
-sudo snap install pc-kernel+nvidia-550-erd-ko
-sudo snap install pc-kernel+nvidia-550-erd-user
+sudo snap install pc-kernel+nvidia-XXX-erd-ko
+sudo snap install pc-kernel+nvidia-XXX-erd-user
 
 # Install the content provider snap
 sudo snap install mesa-2404

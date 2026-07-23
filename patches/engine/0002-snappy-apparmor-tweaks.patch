@@ -1,64 +1,63 @@
-From ae64e3ffa171c7b40e768755fbc0ece9f53e2862 Mon Sep 17 00:00:00 2001
-From: Lincoln Wallace <lincoln.wallace@canonical.com>
-Date: Fri, 5 Sep 2025 08:52:16 -0300
+From bcc63ecfbc2ad8146c43fc24da554fc8d7b39698 Mon Sep 17 00:00:00 2001
+From: Ivano Matrisciano <ivano.matrisciano@canonical.com>
+Date: Mon, 8 Jun 2026 15:32:34 +0200
 Subject: [PATCH 2/6] snappy apparmor tweaks
 
-Signed-off-by: Lincoln Wallace <lincoln.wallace@canonical.com>
 ---
  .../moby/profiles/apparmor/apparmor.go          | 17 +++++++++++++++++
  .../moby/profiles/apparmor/template.go          |  8 ++++++++
  2 files changed, 25 insertions(+)
 
 diff --git a/vendor/github.com/moby/profiles/apparmor/apparmor.go b/vendor/github.com/moby/profiles/apparmor/apparmor.go
-index 445eed64e9..6f0c7b535d 100644
+index 244ae70fb2..5aa7f6aa54 100644
 --- a/vendor/github.com/moby/profiles/apparmor/apparmor.go
 +++ b/vendor/github.com/moby/profiles/apparmor/apparmor.go
-@@ -9,6 +9,7 @@ import (
+@@ -14,6 +14,7 @@ import (
  	"os"
  	"os/exec"
- 	"path"
+ 	"path/filepath"
 +	"strconv"
  	"strings"
  	"text/template"
  )
-@@ -26,6 +27,8 @@ type profileData struct {
+@@ -33,6 +34,8 @@ type profileData struct {
  	Imports []string
- 	// InnerImports defines the apparmor functions to import in the profile.
+ 	// InnerImports defines the AppArmor functions to import in the profile.
  	InnerImports []string
 +	// SnapSecurityLabel is the name of the peer group to use in the snap
-+       SnapSecurityLabel string
++	SnapSecurityLabel string
  }
  
- // generateDefault creates an apparmor profile from ProfileData.
-@@ -45,6 +48,20 @@ func (p *profileData) generateDefault(out io.Writer) error {
+ // generate creates an AppArmor profile from ProfileData.
+@@ -61,6 +64,20 @@ func generate(p *profileData, out io.Writer, macroExistsFn func(string) bool) er
  		p.InnerImports = append(p.InnerImports, "#include <abstractions/base>")
  	}
  
 +	// on snap distributions, we need to determine the name of the peer group
-+       // to use for communication between the container and dockerd
-+       if _, isSnap := os.LookupEnv("SNAP"); isSnap {
-+               // this uses ps to get the systemd unit for the current process
-+               cmd := exec.Command("ps", "-o", "unit=", strconv.Itoa(os.Getpid()))
-+               out, err := cmd.CombinedOutput()
-+               if err != nil {
-+                       return err
-+               }
-+               // the snapd security label, which is the peer group we want, doesn't
-+               // include the suffix ".service"
-+               p.SnapSecurityLabel = strings.TrimSuffix(strings.TrimSpace(string(out)), ".service")
-+       }
++	// to use for communication between the container and dockerd
++	if _, isSnap := os.LookupEnv("SNAP"); isSnap {
++		// this uses ps to get the systemd unit for the current process
++		cmd := exec.Command("ps", "-o", "unit=", strconv.Itoa(os.Getpid()))
++		out, err := cmd.CombinedOutput()
++		if err != nil {
++			return err
++		}
++		// the snapd security label, which is the peer group we want, doesn't
++		// include the suffix ".service"
++		p.SnapSecurityLabel = strings.TrimSuffix(strings.TrimSpace(string(out)), ".service")
++	}
 +
  	return compiled.Execute(out, p)
  }
  
 diff --git a/vendor/github.com/moby/profiles/apparmor/template.go b/vendor/github.com/moby/profiles/apparmor/template.go
-index 2ebcc218a7..0a3ccf8ee9 100644
+index 4694a6c6e1..4428c4c2c8 100644
 --- a/vendor/github.com/moby/profiles/apparmor/template.go
 +++ b/vendor/github.com/moby/profiles/apparmor/template.go
-@@ -54,5 +54,13 @@ profile {{.Name}} flags=(attach_disconnected,mediate_deleted) {
- 
-   # suppress ptrace denials when using 'docker ps' or using 'ps' inside a container
-   ptrace (trace,read,tracedby,readby) peer={{.Name}},
+@@ -70,5 +70,13 @@ profile "{{.Name}}" flags=(attach_disconnected,mediate_deleted) {
+   # allow processes within the container to trace each other,
+   # provided all other LSM and yama setting allow it.
+   ptrace (trace,tracedby,read,readby) peer="{{.Name}}",
 +{{if .SnapSecurityLabel}}
 +  # Snap based docker distribution accesses
 +  #   Allow the daemon to trace/signal containers
@@ -70,5 +69,5 @@ index 2ebcc218a7..0a3ccf8ee9 100644
  }
  `
 -- 
-2.43.0
+2.51.0
 
