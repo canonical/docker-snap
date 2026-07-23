@@ -5,8 +5,10 @@ set -e
 echo "Force refresh all snaps"
 ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
 
-max_iterations=30
-interval=60 # seconds
+# interval kept short so a settle that finishes mid-wait is picked up quickly;
+# max_iterations scaled to preserve the ~30min (1800s) overall ceiling.
+max_iterations=90
+interval=20 # seconds
 iteration=0
 while true; do
   # Check if server is online and there are no snapd changes in progress
