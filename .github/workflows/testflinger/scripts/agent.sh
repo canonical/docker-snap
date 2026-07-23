@@ -31,15 +31,21 @@ $SCRIPTS/update-snapd-beta.sh
 echo "Setup the environment on the target device"
 ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "bash -s -- $SNAP_CHANNEL" < $SCRIPTS/setup.sh
 
+# Record the boot id so we can tell a real reboot from a still-up pre-reboot box.
+# Without this, the wait loop below can succeed before the queued reboot fires
+# and run the tests on a machine that is about to go down.
+BOOT_ID=$(ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "cat /proc/sys/kernel/random/boot_id")
+echo "Boot id before reboot: $BOOT_ID"
+
 # Reboot the machine to activate newly installed kernel components
 # Queue reboot in background to avoid breaking the SSH connection prematurely
 echo "Rebooting the device"
 ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "(sleep 3 && sudo reboot) &"
 
-# Wait for machine to start up, and also wait for docker to start
+# Wait for the machine to actually reboot (boot id changed) and for docker to start.
 ITERATIONS=0
 MAX_ITERATIONS=20 # 30 seconds, 20 times, is 10 minutes
-while ! ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "sudo docker version"; do
+while ! ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "[ \"\$(cat /proc/sys/kernel/random/boot_id)\" != \"$BOOT_ID\" ] && sudo docker version"; do
   ITERATIONS=$((ITERATIONS + 1))
   if [ $ITERATIONS -ge $MAX_ITERATIONS ]; then
     echo "Timeout waiting for ssh server and Docker daemon."
