@@ -26,6 +26,12 @@ export SSH_OPTS
 # Update preinstalled system snaps to latest versions
 "$SCRIPTS/update-snaps.sh"
 
+# TEMPORARY: switch the core26 base to latest/beta for the chroot fix the
+# nvidia component install hooks need; see the script header for the removal
+# condition. No-op on other distros. Must run before setup.sh: the install
+# hooks read the active (booted) base, so the switch has to complete first.
+"$SCRIPTS/update-core26-beta.sh"
+
 # Install dependencies and required docker version
 echo "Setup the environment on the target device"
 # shellcheck disable=SC2086,SC2029  # $SSH_OPTS is an intentional multi-arg split; remote vars expand client-side by design
