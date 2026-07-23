@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
 set -e
 
+# A zero exit from nvidia-smi is not enough: a degenerate success with no GPU
+# visible would still pass. Assert the output carries the real driver banner.
+assert_driver() {
+  echo "$1"
+  echo "$1" | grep -q "Driver Version"
+}
+
 # Test nvidia-smi
 smi_test() (
+  # shellcheck disable=SC1091  # /etc/os-release is provided by the OS at runtime
   source /etc/os-release
 
   set -x
@@ -19,8 +27,14 @@ smi_test() (
       LD_LIBRARY_PATH=/var/snap/pc-kernel/common/kernel-gpu-2404/usr/lib/x86_64-linux-gnu/ /var/snap/pc-kernel/common/kernel-gpu-2404/usr/bin/nvidia-smi || true
       ;;
     ubuntu-core-26)
-      # Run nvidia-smi from the kernel snap
-      LD_LIBRARY_PATH=/var/snap/pc-kernel/common/nvidia-active/usr/lib/x86_64-linux-gnu/ /var/snap/pc-kernel/common/nvidia-active/usr/bin/nvidia-smi || true
+      # In a container, via the nvidia-smi the toolkit mounts from the docker
+      # snap's gpu-2604 component (provided by mesa-2604).
+      smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all ubuntu bash -c "/snap/docker/*/gpu-2604*/usr/bin/nvidia-smi")
+      assert_driver "$smi_out"
+      # And on the host, from the kernel snap. nvidia-active points at the
+      # active nvidia component.
+      smi_out=$(LD_LIBRARY_PATH=/var/snap/pc-kernel/common/nvidia-active/usr/lib/x86_64-linux-gnu/ /var/snap/pc-kernel/common/nvidia-active/usr/bin/nvidia-smi)
+      assert_driver "$smi_out"
       ;;
     *)
       echo "Unsupported OS / version: $ID $VERSION_ID"
