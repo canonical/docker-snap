@@ -35,8 +35,14 @@ smi_test() (
       assert_driver "$smi_out"
       ;;
     ubuntu-core-26)
-      # Run nvidia-smi from the kernel snap
-      LD_LIBRARY_PATH=/var/snap/pc-kernel/common/nvidia-active/usr/lib/x86_64-linux-gnu/ /var/snap/pc-kernel/common/nvidia-active/usr/bin/nvidia-smi || true
+      # In a container, via the nvidia-smi the toolkit mounts from the docker
+      # snap's gpu-2604 component (provided by mesa-2604).
+      smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all ubuntu bash -c "/snap/docker/*/gpu-2604*/usr/bin/nvidia-smi")
+      assert_driver "$smi_out"
+      # And on the host, from the kernel snap. nvidia-active points at the
+      # active nvidia component.
+      smi_out=$(LD_LIBRARY_PATH=/var/snap/pc-kernel/common/nvidia-active/usr/lib/x86_64-linux-gnu/ /var/snap/pc-kernel/common/nvidia-active/usr/bin/nvidia-smi)
+      assert_driver "$smi_out"
       ;;
     *)
       echo "Unsupported OS / version: $ID $VERSION_ID"
