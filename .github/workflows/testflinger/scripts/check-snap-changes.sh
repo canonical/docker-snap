@@ -7,7 +7,7 @@ echo "Get snap changes"
 
 # list the snap changes on the device and store the output in a temp file
 OUTPUT=$(mktemp)
-snap changes > $OUTPUT
+snap changes > "$OUTPUT"
 
 RESULT=$?
 if [ ! "$RESULT" -eq 0 ]; then exit $RESULT; fi
@@ -15,11 +15,12 @@ if [ ! "$RESULT" -eq 0 ]; then exit $RESULT; fi
 # tail -n +2: remove the header
 # awk 'NF {print $2}': print the second column on non-empty lines (i.e. the status)
 # grep -q -E "...": succeed when changes are still ongoing or pending
-cat $OUTPUT | \
+cat "$OUTPUT" | \
 tail -n +2 | \
 awk 'NF {print $2}' | \
 grep -q -E "\b(Doing|Undoing|Wait|Do|Undo)\b"
 
+# shellcheck disable=SC2181  # $? checks the multi-stage pipeline above; folding it into the if would hurt readability
 if [ "$?" -eq 0 ]; then
     # changes are still ongoing or pending: display output as a diagnostic
     cat "$OUTPUT" | grep -E "\b(Doing|Undoing|Wait|Do|Undo)\b"

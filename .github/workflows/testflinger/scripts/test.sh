@@ -10,6 +10,7 @@ assert_driver() {
 
 # Test nvidia-smi, in a container wherever the platform supports it.
 smi_test() (
+  # shellcheck disable=SC1091  # /etc/os-release is provided by the OS at runtime
   source /etc/os-release
 
   set -x
