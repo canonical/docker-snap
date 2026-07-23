@@ -66,7 +66,7 @@ check_container() (
 
 run_workload() (
   set -x
-  sudo docker run --restart=always --detach -v $(pwd)/run-vector.sh:/run-vector.sh:ro --entrypoint=/run-vector.sh --runtime=nvidia --gpus all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda10.2
+  sudo docker run --restart=always --detach -v "$(pwd)/run-vector.sh:/run-vector.sh:ro" --entrypoint=/run-vector.sh --runtime=nvidia --gpus all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda10.2
 )
 
 main() {
