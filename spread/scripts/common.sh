@@ -1,27 +1,25 @@
 #!/bin/bash
 
-wait_for_docker() {
-    num_tries=0
-	MAX_TRIES=60
+run_retry_command() {
+  local RETRIES=30
+  local DELAY=6
+  local n=1
+  until "$@"; do
+    if [[ $n -ge $RETRIES ]]; then
+      ERROR "Command failed after $RETRIES attempts: $*"
+    fi
+    echo "Command failed (attempt $n/$RETRIES): $*. Retrying in $DELAY seconds..."
+    ((n++))
+    sleep $DELAY
+  done
+}
 
-    until docker info; do
-        num_tries=$((num_tries+1))
-        if (( num_tries > MAX_TRIES )); then
-            ERROR "max tries waiting for docker daemon to come online"
-        fi
-        sleep 1
-    done
+wait_for_docker() {
+    echo "Waiting for docker to become available..."
+    run_retry_command docker info
 }
 
 restart_docker() {
-    num_tries=0
-	MAX_TRIES=5
-
-    until snap restart docker; do
-        num_tries=$((num_tries+1))
-        if (( num_tries > MAX_TRIES )); then
-            ERROR "docker daemon failed to restart"
-        fi
-        sleep 5
-    done
+    echo "Restarting docker daemon..."
+    run_retry_command sudo snap restart docker
 }

@@ -1,5 +1,5 @@
 project: docker
-kill-timeout: 30m
+kill-timeout: 3h
 backends:
   # LXD is currently not supported as a backend, because we need to set lxc instance
   # config to make docker work in an lxc container,
@@ -30,19 +30,33 @@ backends:
       SPREAD_SYSTEM=${SPREAD_SYSTEM/%amd64/x86_64}  # maps "amd64" to "x86_64"
       SPREAD_SYSTEM=${SPREAD_SYSTEM/%arm64/aarch64} # maps "arm64" to "aarch64"
 
-      if OUT="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}")"; then
-        HOST_ARCH="${ARCH:-$(uname -m)}"
-        SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
+      image_garden_output="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}")" || true
 
-        if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ]; then
-          # Spread has a fixed, 5-minute timeout for ssh to become ready.
-          # When emulating across architectures this may not be sufficient
-          # for the system to become ready. Sleep for a while to give things
-          # a chance to finish.
-          sleep 3m
+      if [ -z "$image_garden_output" ]; then
+        echo "Image garden allocation failed for system: $SPREAD_SYSTEM"
+
+        # Guard against corrupt EFI vars image (0 bytes).
+        efi_vars_img=".image-garden/${SPREAD_SYSTEM}.efi-vars.img"
+        if [ -f "$efi_vars_img" ] && [ ! -s "$efi_vars_img" ]; then
+          echo "Found zero-byte EFI vars image: $efi_vars_img"
+          rm -f "$efi_vars_img"
+          image-garden make "${SPREAD_SYSTEM/-plus-/+}.efi-vars.img"
         fi
-        ADDRESS "$OUT"
+
+        ERROR "Image garden allocation failed"
       fi
+      
+      HOST_ARCH="${ARCH:-$(uname -m)}"
+      SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
+      if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
+        # Spread has a fixed, 5-minute timeout for ssh to become ready.
+        # When emulating across architectures this may not be sufficient
+        # for the system to become ready. Sleep for a while to give things
+        # a chance to finish.
+        sleep 5m
+      fi
+
+      ADDRESS "$image_garden_output"
     discard: |
       # Spread automatically injects /snap/bin to PATH. When we are
       # running from the image-garden snap then SPREAD_HOST_PATH is the
