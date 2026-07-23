@@ -3,30 +3,30 @@ set -e
 
 # Trigger a refresh of all the snaps. This will likely cause the system to restart a few times.
 echo "Force refresh all snaps"
-ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
+ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
 
 max_iterations=30
 interval=60 # seconds
 iteration=0
 while true; do
   # Check if server is online and there are no snapd changes in progress
-  if ssh $DEVICE_USER@$DEVICE_IP "$(<$SCRIPTS/check-snap-changes.sh)"; then
+  if ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "$(<$SCRIPTS/check-snap-changes.sh)"; then
     echo "Checking snapd version"
-    ssh $DEVICE_USER@$DEVICE_IP "sudo snap list snapd" || true
+    ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "sudo snap list snapd" || true
 
     echo "Checking snapd support for components"
-    if ssh $DEVICE_USER@$DEVICE_IP "snap components"; then
+    if ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "snap components"; then
       echo "Snapd has component support"
       break
     else
       echo "Snapd does not support components"
 
-      if ssh $DEVICE_USER@$DEVICE_IP "[ -f /run/snapd/reboot-required ]"; then
+      if ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "[ -f /run/snapd/reboot-required ]"; then
         echo "A restart is pending"
-        ssh $DEVICE_USER@$DEVICE_IP "(sleep 3 && sudo reboot) &"
+        ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "(sleep 3 && sudo reboot) &"
       else
         echo "Trying to refresh snaps again"
-        ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
+        ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
       fi
     fi
   fi
