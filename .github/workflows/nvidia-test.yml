@@ -78,3 +78,5 @@ jobs:
               with:
                 poll: true
                 job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job.yaml
+                client-id: ${{ secrets.TESTFLINGER_CLIENT_ID }}
+                secret-key: ${{ secrets.TESTFLINGER_SECRET_KEY }}
