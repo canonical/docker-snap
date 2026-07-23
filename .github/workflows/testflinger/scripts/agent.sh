@@ -25,7 +25,6 @@ export SSH_OPTS
 
 # Update preinstalled system snaps to latest versions
 $SCRIPTS/update-snaps.sh
-$SCRIPTS/update-snapd-beta.sh
 
 # Install dependencies and required docker version
 echo "Setup the environment on the target device"
