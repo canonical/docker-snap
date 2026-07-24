@@ -101,6 +101,40 @@ setup_core24() (
   install_snap mesa-2404
 )
 
+# On core26 the nvidia userspace reaches the docker snap through a chain:
+# pc-kernel (nvidia -user component) -> mesa-2604's kernel-gpu-2604 content
+# plug -> mesa-2604's component-monitor mangles it into $SNAP_DATA -> exposed
+# through the gpu-2604 slot -> docker's gpu-2604 plug. The docker<->mesa link
+# auto-connects, but the mesa<->pc-kernel one has been observed dangling, which
+# leaves the container toolkit without NVIDIA_DRIVER_ROOT and breaks CDI spec
+# generation. Connect it explicitly and wait for the mangled content to land.
+connect_kernel_gpu_2604() {
+  # Show both ends of the chain for debugging before touching anything
+  snap connections mesa-2604 || true
+  snap connections pc-kernel | grep -i gpu || true
+
+  if ! snap connections mesa-2604 | grep -qE "mesa-2604:kernel-gpu-2604 +pc-kernel:"; then
+    echo "Connecting mesa-2604:kernel-gpu-2604 to pc-kernel"
+    run_retry_command sudo snap connect mesa-2604:kernel-gpu-2604 pc-kernel:kernel-gpu-2604
+  fi
+
+  # mesa-2604's component-monitor watches the plug content via inotify and
+  # populates $SNAP_DATA/kernel-gpu-2604, writing the sentinel file last.
+  for ((i = 0; i < 30; i++)); do
+    if sudo test -e /var/snap/mesa-2604/current/kernel-gpu-2604/kernel-gpu-2604-sentinel; then
+      echo "kernel-gpu-2604 content mangled and ready"
+      return 0
+    fi
+    sleep 2
+  done
+
+  echo "kernel-gpu-2604 content did not appear; the toolkit would run without the nvidia userspace."
+  echo "Chain state for debugging:"
+  snap connections mesa-2604 || true
+  sudo ls -la /var/snap/mesa-2604/current/kernel-gpu-2604/ || true
+  return 1
+}
+
 setup_core26() (
   set -x
   # List available kernel components for debugging
@@ -112,6 +146,8 @@ setup_core26() (
   install_components $PARENT_SNAP "$COMPONENTS"
 
   install_snap mesa-2604
+
+  connect_kernel_gpu_2604
 )
 
 install_dependencies() {
