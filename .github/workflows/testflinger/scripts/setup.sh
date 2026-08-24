@@ -101,10 +101,24 @@ setup_core24() (
   install_snap mesa-2404
 )
 
+setup_core26() (
+  set -x
+  # List available kernel components for debugging
+  snap components pc-kernel
+
+  # Install kernel components.
+  PARENT_SNAP="pc-kernel"
+  COMPONENTS="nvidia-580-erd-ko nvidia-580-erd-user"
+  install_components $PARENT_SNAP "$COMPONENTS"
+
+  install_snap mesa-2604
+)
+
 install_dependencies() {
   # Source variables that define the version.
   # e.g. core: ID=ubuntu-core, VERSION_ID="24"
   # e.g. desktop: ID=ubuntu, VERSION_ID="25.10"
+  # shellcheck disable=SC1091  # /etc/os-release is provided by the OS at runtime
   source /etc/os-release
 
   case "$ID-$VERSION_ID" in
@@ -116,6 +130,9 @@ install_dependencies() {
     ;;
   ubuntu-core-24)
     setup_core24
+    ;;
+  ubuntu-core-26)
+    setup_core26
     ;;
   *)
     echo "Unsupported OS / version: $ID $VERSION_ID"

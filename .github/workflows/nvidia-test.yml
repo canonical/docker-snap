@@ -51,6 +51,7 @@ jobs:
               - noble
               - core22-latest
               - core24-latest
+              - core26-latest
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger
           SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
