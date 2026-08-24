@@ -21,7 +21,7 @@ smi_test() (
       assert_driver "$smi_out"
       ;;
     ubuntu-core-22)
-      smi_out=$(sudo docker run --rm --runtime nvidia --gpus all ubuntu bash -c "/snap/docker/*/graphics/bin/nvidia-smi")
+      smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all ubuntu bash -c "/snap/docker/*/graphics/bin/nvidia-smi")
       assert_driver "$smi_out"
       ;;
     ubuntu-core-24)
