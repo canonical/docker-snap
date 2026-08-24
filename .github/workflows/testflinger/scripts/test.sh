@@ -25,13 +25,14 @@ smi_test() (
       assert_driver "$smi_out"
       ;;
     ubuntu-core-24)
-      # In a container, via the nvidia-smi the toolkit mounts from the docker
-      # snap's gpu-2404 component.
-      smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all ubuntu bash -c "/snap/docker/*/gpu-2404/usr/bin/nvidia-smi")
-      assert_driver "$smi_out"
-      # And on the host, from the kernel snap, which validates the kernel GPU
-      # component itself.
+      # On the host first, from the kernel snap: the container path mounts the
+      # same GPU stack, so a broken kernel component fails here with a clearer
+      # cause than it would inside a container.
       smi_out=$(LD_LIBRARY_PATH=/var/snap/pc-kernel/common/kernel-gpu-2404/usr/lib/x86_64-linux-gnu/ /var/snap/pc-kernel/common/kernel-gpu-2404/usr/bin/nvidia-smi)
+      assert_driver "$smi_out"
+      # Then in a container, via the nvidia-smi the toolkit mounts from the
+      # docker snap's gpu-2404 component.
+      smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all ubuntu bash -c "/snap/docker/*/gpu-2404/usr/bin/nvidia-smi")
       assert_driver "$smi_out"
       ;;
     *)
