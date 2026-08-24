@@ -83,7 +83,7 @@ jobs:
                 mv $TESTFLINGER_DIR/nvidia-job.temp $TESTFLINGER_DIR/nvidia-job.yaml
 
             - name: Run tests
-              uses: canonical/testflinger/.github/actions/submit@submit/v1.4.8
+              uses: canonical/testflinger/.github/actions/submit@545ed69f17a5e639a2299e325f5fb199ca9f98af  # submit/v1.4.8
               with:
                 poll: true
                 job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job.yaml
