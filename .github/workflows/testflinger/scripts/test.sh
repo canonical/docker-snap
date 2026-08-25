@@ -1,22 +1,39 @@
 #!/usr/bin/env bash
 set -e
 
-# Test nvidia-smi
+# A zero exit from nvidia-smi is not enough: a degenerate success with no GPU
+# visible would still pass. Assert the output carries the real driver banner.
+assert_driver() {
+  echo "$1"
+  echo "$1" | grep -q "Driver Version"
+}
+
+# Test nvidia-smi, in a container wherever the platform supports it.
 smi_test() (
+  # shellcheck disable=SC1091  # /etc/os-release is provided by the OS at runtime
   source /etc/os-release
 
   set -x
 
   case "$ID-$VERSION_ID" in
     ubuntu-24.04)
-      sudo docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin" ubuntu nvidia-smi || true
+      smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin" ubuntu nvidia-smi)
+      assert_driver "$smi_out"
       ;;
     ubuntu-core-22)
-      sudo docker run --rm --runtime nvidia --gpus all ubuntu bash -c "/snap/docker/*/graphics/bin/nvidia-smi" || true
+      smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all ubuntu bash -c "/snap/docker/*/graphics/bin/nvidia-smi")
+      assert_driver "$smi_out"
       ;;
     ubuntu-core-24)
-      # Run nvidia-smi from the kernel snap
-      LD_LIBRARY_PATH=/var/snap/pc-kernel/common/kernel-gpu-2404/usr/lib/x86_64-linux-gnu/ /var/snap/pc-kernel/common/kernel-gpu-2404/usr/bin/nvidia-smi || true
+      # On the host first, from the kernel snap: the container path mounts the
+      # same GPU stack, so a broken kernel component fails here with a clearer
+      # cause than it would inside a container.
+      smi_out=$(LD_LIBRARY_PATH=/var/snap/pc-kernel/common/kernel-gpu-2404/usr/lib/x86_64-linux-gnu/ /var/snap/pc-kernel/common/kernel-gpu-2404/usr/bin/nvidia-smi)
+      assert_driver "$smi_out"
+      # Then in a container, via the nvidia-smi the toolkit mounts from the
+      # docker snap's gpu-2404 component.
+      smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all ubuntu bash -c "/snap/docker/*/gpu-2404/usr/bin/nvidia-smi")
+      assert_driver "$smi_out"
       ;;
     *)
       echo "Unsupported OS / version: $ID $VERSION_ID"
