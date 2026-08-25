@@ -17,10 +17,17 @@ on:
         default: false
         type: boolean
 
+# Least-privilege: publish downloads an artifact from another run (actions: read),
+# and both jobs check out this repo (contents: read).
+permissions:
+  contents: read
+  actions: read
+
 jobs:
     publish:
         if: ${{ inputs.publish == true }}
         runs-on: ubuntu-latest
+        timeout-minutes: 15
         steps:
             # Download snap artifact from a previous smoke-test/build GitHub Workflow run
             - name: Download snap artifact
@@ -43,7 +50,9 @@ jobs:
         needs: publish
         # Run also when previous job has been skipped (publish not required)
         if: ${{ always() && !failure() && !cancelled() }}
-        runs-on: self-hosted-linux-amd64-noble-private-endpoint-medium
+        runs-on: self-hosted-linux-amd64-noble-private-endpoint-small
+        # Testflinger's own global_timeout is 3600s; allow headroom for queue wait.
+        timeout-minutes: 120
         strategy:
           fail-fast: ${{ inputs.fail_fast }}
           matrix:
@@ -74,7 +83,9 @@ jobs:
                 mv $TESTFLINGER_DIR/nvidia-job.temp $TESTFLINGER_DIR/nvidia-job.yaml
 
             - name: Run tests
-              uses: canonical/testflinger/.github/actions/submit@main
+              uses: canonical/testflinger/.github/actions/submit@545ed69f17a5e639a2299e325f5fb199ca9f98af  # submit/v1.4.8
               with:
                 poll: true
                 job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job.yaml
+                client-id: ${{ secrets.TESTFLINGER_CLIENT_ID }}
+                secret-key: ${{ secrets.TESTFLINGER_SECRET_KEY }}
