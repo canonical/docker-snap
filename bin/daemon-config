@@ -67,6 +67,7 @@ apply_user_daemon_config() {
     # Drop every whitelisted key, restore the snap defaults for them, then apply the ones the
     # user has set (user value wins). Keys the snap or nvidia otherwise manage are untouched.
     tmp="$(mktemp "${cfg}.XXXXXX")"
+    chmod 644 "$tmp" # mktemp creates it 0600
     if ! jq --argjson allow "$allow" --argjson base "$base" --argjson overlay "$overlay" \
         'delpaths([ $allow[] | [.] ]) | . + $base + $overlay' "$cfg" > "$tmp" 2>/dev/null; then
         echo "config: failed to merge daemon options; leaving daemon.json unchanged"
