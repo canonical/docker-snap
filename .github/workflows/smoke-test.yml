@@ -88,9 +88,9 @@ jobs:
         # channel it asked for, defaulting to what users actually run.
         snapd_channel: >-
           ${{ fromJSON(
-              github.event_name == 'schedule'
-              && '["latest/stable","latest/beta"]'
-              || format('["{0}"]', inputs.snapd_channel || 'latest/stable')
+          github.event_name == 'schedule'
+          && '["latest/stable","latest/beta"]'
+          || format('["{0}"]', inputs.snapd_channel || 'latest/stable')
           ) }}
         runner:
           - arch: amd64
