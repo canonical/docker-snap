@@ -3,30 +3,39 @@ set -e
 
 # Trigger a refresh of all the snaps. This will likely cause the system to restart a few times.
 echo "Force refresh all snaps"
-ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
+# shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
 
-max_iterations=30
-interval=60 # seconds
+# interval kept short so a settle that finishes mid-wait is picked up quickly;
+# max_iterations scaled to preserve the ~30min (1800s) overall ceiling.
+max_iterations=90
+interval=20 # seconds
 iteration=0
 while true; do
   # Check if server is online and there are no snapd changes in progress
-  if ssh $DEVICE_USER@$DEVICE_IP "$(<$SCRIPTS/check-snap-changes.sh)"; then
+  # shellcheck disable=SC2086,SC2029  # $SSH_OPTS is an intentional multi-arg split; the script is expanded client-side by design
+  if ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "$(<$SCRIPTS/check-snap-changes.sh)"; then
     echo "Checking snapd version"
-    ssh $DEVICE_USER@$DEVICE_IP "sudo snap list snapd" || true
+    # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+    ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "sudo snap list snapd" || true
 
     echo "Checking snapd support for components"
-    if ssh $DEVICE_USER@$DEVICE_IP "snap components"; then
+    # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+    if ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "snap components"; then
       echo "Snapd has component support"
       break
     else
       echo "Snapd does not support components"
 
-      if ssh $DEVICE_USER@$DEVICE_IP "[ -f /run/snapd/reboot-required ]"; then
+      # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+      if ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "[ -f /run/snapd/reboot-required ]"; then
         echo "A restart is pending"
-        ssh $DEVICE_USER@$DEVICE_IP "(sleep 3 && sudo reboot) &"
+        # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+        ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "(sleep 3 && sudo reboot) &"
       else
         echo "Trying to refresh snaps again"
-        ssh $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
+        # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+        ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
       fi
     fi
   fi
