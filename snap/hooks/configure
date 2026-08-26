@@ -8,19 +8,22 @@ exec &> >(tee -a "${HOOK_LOG}")
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
 # Keys a user may set via `snap set docker daemon.<key>=<value>`, which this hook merges
-# into daemon.json. Curated allowlist: excludes daemon options that grant network/root
+# into daemon.json. Allowlist excludes daemon options that could grant network/root
 # access (hosts, tls*, authorization-plugins, runtimes, insecure-registries,
-# registry-mirrors), options the snap passes to dockerd as flags (data-root, group), and
-# options shipped in the base config (log-level). Extend as concrete needs arise.
-USER_DAEMON_KEYS='["default-address-pools","bip","fixed-cidr","fixed-cidr-v6","default-gateway","default-gateway-v6","mtu","dns","dns-search","dns-opts","default-ulimits"]'
+# registry-mirrors) and options the snap passes to dockerd as flags (data-root, group).
+# Keys shipped with a value in the base config (log-level) are restored to that default
+# when unset rather than dropped. Extend as concrete needs arise.
+USER_DAEMON_KEYS='["default-address-pools","bip","fixed-cidr","fixed-cidr-v6","default-gateway","default-gateway-v6","mtu","dns","dns-search","dns-opts","default-ulimits","log-level"]'
 
-# Merge the allowlisted daemon options from snap config into daemon.json. A single,
-# snap-owned writer keeps this race-free with the nvidia setup, and the merged config is
-# validated with `dockerd --validate` before it goes live so an invalid value cannot leave
-# dockerd unable to start.
 apply_user_daemon_config() {
     local cfg="${SNAP_DATA}/config/daemon.json"
-    local doc overlay tmp
+    local base doc overlay tmp
+
+    # Snap-shipped defaults for allowlisted keys (e.g. log-level), so unsetting a key that
+    # has a base default restores that default instead of dockerd's built-in.
+    base="$(jq -c --argjson allow "$USER_DAEMON_KEYS" \
+        'with_entries(select(.key as $k | $allow | index($k)))' "${SNAP}/config/daemon.json" 2>/dev/null || true)"
+    jq -e 'type == "object"' <<<"$base" >/dev/null 2>&1 || base='{}'
 
     doc="$(snapctl get -d daemon 2>/dev/null || true)"
     [ -n "$doc" ] || doc='{}'
@@ -34,10 +37,11 @@ apply_user_daemon_config() {
     fi
 
     tmp="$(mktemp "${cfg}.XXXXXX")"
-    # Drop every allowlisted key first (so `snap unset` removes it), then re-apply the ones
-    # currently set. Keys the snap or nvidia manage (runtimes, log-level, ...) are untouched.
-    if ! jq --argjson allow "$USER_DAEMON_KEYS" --argjson overlay "$overlay" \
-        'delpaths([ $allow[] | [.] ]) | . + $overlay' "$cfg" > "$tmp" 2>/dev/null; then
+    # Drop every allowlisted key, restore the snap defaults for them, then apply the ones the
+    # user has set (user value wins). Keys the snap or nvidia otherwise manage (runtimes, ...)
+    # are untouched.
+    if ! jq --argjson allow "$USER_DAEMON_KEYS" --argjson base "$base" --argjson overlay "$overlay" \
+        'delpaths([ $allow[] | [.] ]) | . + $base + $overlay' "$cfg" > "$tmp" 2>/dev/null; then
         echo "config: failed to merge daemon options; leaving daemon.json unchanged"
         rm -f "$tmp"
         return 0
@@ -46,7 +50,9 @@ apply_user_daemon_config() {
     # dockerd needs $SNAP/bin on PATH to locate docker-proxy during validation.
     if PATH="${SNAP}/bin:${SNAP}/usr/bin:${PATH}" "${SNAP}/bin/dockerd" \
         --validate --config-file="$tmp" >/dev/null 2>&1; then
-        if cmp -s "$cfg" "$tmp"; then
+        # Compare canonically so a pure reformat does not rewrite the file or restart the
+        # daemon; only apply when the effective config actually changed.
+        if jq -S . "$cfg" 2>/dev/null | cmp -s - <(jq -S . "$tmp" 2>/dev/null); then
             rm -f "$tmp"
         else
             mv "$tmp" "$cfg"

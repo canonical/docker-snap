@@ -6,8 +6,15 @@ execute: |
 
   CONFIG=/var/snap/docker/current/config/daemon.json
 
+  # The configure hook restarts the nvidia oneshot on every config change; the rapid
+  # successive changes below would otherwise trip systemd's start-limit, so reset it first.
+  snapcfg() {
+    sudo systemctl reset-failed snap.docker.nvidia-container-toolkit.service 2>/dev/null || true
+    sudo snap "$@"
+  }
+
   # An allowlisted option is merged into daemon.json and takes effect.
-  sudo snap set docker daemon.default-address-pools='[{"base":"10.211.0.0/16","size":24}]'
+  snapcfg set docker daemon.default-address-pools='[{"base":"10.211.0.0/16","size":24}]'
   wait_for_docker
   sudo grep -q '10.211.0.0/16' "$CONFIG"
 
@@ -20,23 +27,33 @@ execute: |
 
   # A daemon-owned / dangerous option is refused by the allowlist: it must not reach
   # daemon.json and must not open a TCP listener.
-  sudo snap set docker daemon.hosts='["tcp://0.0.0.0:2375"]'
+  snapcfg set docker daemon.hosts='["tcp://0.0.0.0:2375"]'
   wait_for_docker
   ! sudo grep -q 'tcp://0.0.0.0:2375' "$CONFIG" || ERROR "disallowed 'hosts' option leaked into daemon.json"
   ! sudo ss -tlnH 'sport = :2375' | grep -q . || ERROR "daemon exposed a TCP port via a disallowed option"
-  sudo snap unset docker daemon.hosts
+  snapcfg unset docker daemon.hosts
 
   # An invalid value is rejected by validation and must not stop the daemon from starting.
-  sudo snap set docker daemon.mtu='not-a-number'
+  snapcfg set docker daemon.mtu='not-a-number'
   wait_for_docker
   ! sudo grep -q 'not-a-number' "$CONFIG" || ERROR "invalid value was written to daemon.json"
-  sudo snap unset docker daemon.mtu
+  snapcfg unset docker daemon.mtu
+
+  # log-level ships a default ("error") in the base config: setting it applies, and
+  # unsetting restores the shipped default rather than dropping the key.
+  snapcfg set docker daemon.log-level=debug
+  wait_for_docker
+  sudo grep -qE '"log-level"[[:space:]]*:[[:space:]]*"debug"' "$CONFIG" || ERROR "log-level was not applied"
+  snapcfg unset docker daemon.log-level
+  wait_for_docker
+  sudo grep -qE '"log-level"[[:space:]]*:[[:space:]]*"error"' "$CONFIG" || ERROR "log-level did not restore the shipped default on unset"
 
   # Unsetting removes the option again.
-  sudo snap unset docker daemon.default-address-pools
+  snapcfg unset docker daemon.default-address-pools
   wait_for_docker
   ! sudo grep -q '10.211.0.0/16' "$CONFIG" || ERROR "option was not removed on unset"
 
 restore: |
-  sudo snap unset docker daemon.default-address-pools daemon.hosts daemon.mtu 2>/dev/null || true
+  sudo systemctl reset-failed snap.docker.nvidia-container-toolkit.service 2>/dev/null || true
+  sudo snap unset docker daemon.default-address-pools daemon.hosts daemon.mtu daemon.log-level 2>/dev/null || true
   sudo docker network rm testpool >/dev/null 2>&1 || true
