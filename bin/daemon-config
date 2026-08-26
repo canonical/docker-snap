@@ -74,19 +74,22 @@ apply_user_daemon_config() {
         return 0
     fi
 
+    # Reject an invalid value so the snap set fails loudly instead of silently not applying.
     # dockerd needs $SNAP/bin on PATH to locate docker-proxy during validation.
-    if PATH="${SNAP}/bin:${SNAP}/usr/bin:${PATH}" "${SNAP}/bin/dockerd" \
-        --validate --config-file="$tmp" >/dev/null 2>&1; then
-        # Only apply when the config actually changed
-        if jq -S . "$cfg" 2>/dev/null | cmp -s - <(jq -S . "$tmp" 2>/dev/null); then
-            rm -f "$tmp"
-        else
-            mv "$tmp" "$cfg"
-            # shellcheck disable=SC2034
-            SVC_RESTART=true
-        fi
-    else
-        echo "config: rejected invalid daemon options from snap config; keeping current daemon.json"
+    local err
+    if ! err="$(PATH="${SNAP}/bin:${SNAP}/usr/bin:${PATH}" "${SNAP}/bin/dockerd" \
+        --validate --config-file="$tmp" 2>&1)"; then
+        echo "error: invalid daemon option value: ${err##*: }" >&2
         rm -f "$tmp"
+        return 1
+    fi
+
+    # Only apply when the config actually changed
+    if jq -S . "$cfg" 2>/dev/null | cmp -s - <(jq -S . "$tmp" 2>/dev/null); then
+        rm -f "$tmp"
+    else
+        mv "$tmp" "$cfg"
+        # shellcheck disable=SC2034
+        SVC_RESTART=true
     fi
 }

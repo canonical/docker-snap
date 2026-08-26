@@ -32,11 +32,11 @@ execute: |
   ! sudo grep -q 'tcp://0.0.0.0:2375' "$CONFIG" || ERROR "'hosts' leaked into daemon.json"
   ! sudo ss -tlnH 'sport = :2375' | grep -q . || ERROR "daemon exposed a TCP port via a disallowed option"
 
-  # An invalid value is rejected by validation and must not stop the daemon from starting.
-  snapcfg set docker daemon.mtu='not-a-number'
+  # An invalid value for an allowlisted key is rejected by validation: the snap set fails
+  # and nothing reaches daemon.json.
+  ! snapcfg set docker daemon.mtu='not-a-number' || ERROR "invalid 'mtu' value was accepted"
   wait_for_docker
   ! sudo grep -q 'not-a-number' "$CONFIG" || ERROR "invalid value was written to daemon.json"
-  snapcfg unset docker daemon.mtu
 
   # log-level ships a default ("error") in the base config: setting it applies, and
   # unsetting restores the shipped default rather than dropping the key.
