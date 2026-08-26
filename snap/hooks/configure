@@ -6,85 +6,7 @@ HOOK_LOG="${SNAP_COMMON}/hooks/${SNAP_REVISION}/$(basename "$0").log" && mkdir -
 exec &> >(tee -a "${HOOK_LOG}")
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
-
-# Keys a user may set via `snap set docker daemon.<key>=<value>`, which this hook
-# merges into daemon.json. Whitelist safe keys. Keys with value in the base config
-# (e.g. log-level) are restored to that default when unset.
-#
-# Known dangerous keys are: hosts, tls*, authorization-plugins, runtimes,
-# insecure-registries, registry-mirrors. We should have a good reason for adding
-# them since they could grant network/root access.
-USER_DAEMON_KEYS=(default-address-pools bip fixed-cidr fixed-cidr-v6 default-gateway default-gateway-v6 mtu dns dns-search dns-opts default-ulimits log-level)
-
-# Reject daemon.<key> options that are not allowlisted, so a typo or unsupported option is
-# a clear `snap set` error instead of a silent no-op.
-reject_unknown_daemon_config() {
-    local doc bad=() k
-    doc="$(snapctl get -d daemon 2>/dev/null || true)"
-    [ -n "$doc" ] || return 0
-    while IFS= read -r k; do
-        [ -n "$k" ] || continue
-        printf '%s\n' "${USER_DAEMON_KEYS[@]}" | grep -qxF "$k" || bad+=("$k")
-    done < <(jq -r '(.daemon // {}) | keys[]' <<<"$doc" 2>/dev/null)
-    if [ "${#bad[@]}" -gt 0 ]; then
-        echo "error: daemon option(s) not configurable via snap: ${bad[*]}" >&2
-        echo "allowed daemon options: ${USER_DAEMON_KEYS[*]}" >&2
-        return 1
-    fi
-}
-
-apply_user_daemon_config() {
-    local cfg="${SNAP_DATA}/config/daemon.json"
-    local allow base doc overlay tmp
-
-    # JSON array form of the allowlist for jq.
-    allow="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
-
-    # Snap-shipped defaults for allowlisted keys, so unsetting a key that
-    # has a base default restores that default instead of dockerd's built-in.
-    base="$(jq -c --argjson allow "$allow" \
-        'with_entries(select(.key as $k | $allow | index($k)))' "${SNAP}/config/daemon.json" 2>/dev/null || true)"
-    jq -e 'type == "object"' <<<"$base" >/dev/null 2>&1 || base='{}'
-
-    doc="$(snapctl get -d daemon 2>/dev/null || true)"
-    [ -n "$doc" ] || doc='{}'
-
-    # Overlay = only the allowlisted keys the user has actually set.
-    overlay="$(jq -c --argjson allow "$allow" \
-        '(.daemon // {}) | with_entries(select(.key as $k | $allow | index($k)))' <<<"$doc" 2>/dev/null || true)"
-    if ! jq -e 'type == "object"' <<<"$overlay" >/dev/null 2>&1; then
-        echo "config: could not read daemon options; leaving daemon.json unchanged"
-        return 0
-    fi
-
-    tmp="$(mktemp "${cfg}.XXXXXX")"
-    # Drop every allowlisted key, restore the snap defaults for them, then apply the ones the
-    # user has set (user value wins). Keys the snap or nvidia otherwise manage (runtimes, ...)
-    # are untouched.
-    if ! jq --argjson allow "$allow" --argjson base "$base" --argjson overlay "$overlay" \
-        'delpaths([ $allow[] | [.] ]) | . + $base + $overlay' "$cfg" > "$tmp" 2>/dev/null; then
-        echo "config: failed to merge daemon options; leaving daemon.json unchanged"
-        rm -f "$tmp"
-        return 0
-    fi
-
-    # validate
-    # dockerd needs $SNAP/bin on PATH to locate docker-proxy during validation.
-    if PATH="${SNAP}/bin:${SNAP}/usr/bin:${PATH}" "${SNAP}/bin/dockerd" \
-        --validate --config-file="$tmp" >/dev/null 2>&1; then
-        # Compare canonically so a pure reformat does not rewrite the file or restart the
-        # daemon; only apply when the effective config actually changed.
-        if jq -S . "$cfg" 2>/dev/null | cmp -s - <(jq -S . "$tmp" 2>/dev/null); then
-            rm -f "$tmp"
-        else
-            mv "$tmp" "$cfg"
-            SVC_RESTART=true
-        fi
-    else
-        echo "config: rejected invalid daemon options from snap config; keeping current daemon.json"
-        rm -f "$tmp"
-    fi
-}
+. "${SNAP}/bin/daemon-config"
 
 # If the user unset the data-root, set it to the default
 data_root="$(snapctl get data-root)"
@@ -95,10 +17,8 @@ fi
 # Flag to trigger service restart if any condition requires it #
 SVC_RESTART=false
 
-# Reject unknown daemon options so `snap set` fails loudly on a typo or unsupported key #
+# Apply user-provided daemon options #
 reject_unknown_daemon_config
-
-# Apply user-provided daemon options set via `snap set docker daemon.<key>=<value>` #
 apply_user_daemon_config
 
 if nvidia_support_disabled; then
