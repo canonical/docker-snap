@@ -6,7 +6,8 @@ HOOK_LOG="${SNAP_COMMON}/hooks/${SNAP_REVISION}/$(basename "$0").log" && mkdir -
 exec &> >(tee -a "${HOOK_LOG}")
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
-. "${SNAP}/bin/daemon-config"
+# shellcheck source=lib/daemon-config
+. "${SNAP}/usr/share/docker/daemon-config"
 
 # If the user unset the data-root, set it to the default
 data_root="$(snapctl get data-root)"
