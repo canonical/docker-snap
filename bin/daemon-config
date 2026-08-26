@@ -30,7 +30,7 @@ reject_unknown_daemon_config() {
     allow="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
     doc="$(snapctl get -d daemon 2>/dev/null || true)"
     [ -n "$doc" ] || return 0
-    # keys the user set that are not in the allowlist
+    # keys the user set that are not in the whitelist
     bad="$(jq -r --argjson allow "$allow" \
         '((.daemon // {}) | keys) - $allow | join(" ")' <<<"$doc" 2>/dev/null)"
     if [ -n "$bad" ]; then
@@ -45,20 +45,18 @@ reject_unknown_daemon_config() {
 apply_user_daemon_config() {
     local cfg="${SNAP_DATA}/config/daemon.json"
     local allow base doc overlay tmp
-
-    # JSON array form of the allowlist for jq.
     allow="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
+    doc="$(snapctl get -d daemon 2>/dev/null || true)"
+    [ -n "$doc" ] || doc='{}'
 
-    # Snap-shipped defaults for allowlisted keys, so unsetting a key that
+    # Defaults for whitelisted keys, so unsetting a key that
     # has a base default restores that default instead of dockerd's built-in.
     base="$(jq -c --argjson allow "$allow" \
         'with_entries(select(.key as $k | $allow | index($k)))' "${SNAP}/config/daemon.json" 2>/dev/null || true)"
     jq -e 'type == "object"' <<<"$base" >/dev/null 2>&1 || base='{}'
 
-    doc="$(snapctl get -d daemon 2>/dev/null || true)"
-    [ -n "$doc" ] || doc='{}'
 
-    # Overlay = only the allowlisted keys the user has actually set.
+    # Overlay = only the whitelisted keys the user has actually set.
     overlay="$(jq -c --argjson allow "$allow" \
         '(.daemon // {}) | with_entries(select(.key as $k | $allow | index($k)))' <<<"$doc" 2>/dev/null || true)"
     if ! jq -e 'type == "object"' <<<"$overlay" >/dev/null 2>&1; then
@@ -66,10 +64,9 @@ apply_user_daemon_config() {
         return 0
     fi
 
+    # Drop every whitelisted key, restore the snap defaults for them, then apply the ones the
+    # user has set (user value wins). Keys the snap or nvidia otherwise manage are untouched.
     tmp="$(mktemp "${cfg}.XXXXXX")"
-    # Drop every allowlisted key, restore the snap defaults for them, then apply the ones the
-    # user has set (user value wins). Keys the snap or nvidia otherwise manage (runtimes, ...)
-    # are untouched.
     if ! jq --argjson allow "$allow" --argjson base "$base" --argjson overlay "$overlay" \
         'delpaths([ $allow[] | [.] ]) | . + $base + $overlay' "$cfg" > "$tmp" 2>/dev/null; then
         echo "config: failed to merge daemon options; leaving daemon.json unchanged"
@@ -80,13 +77,12 @@ apply_user_daemon_config() {
     # dockerd needs $SNAP/bin on PATH to locate docker-proxy during validation.
     if PATH="${SNAP}/bin:${SNAP}/usr/bin:${PATH}" "${SNAP}/bin/dockerd" \
         --validate --config-file="$tmp" >/dev/null 2>&1; then
-        # Compare canonically so a pure reformat does not rewrite the file or restart the
-        # daemon; only apply when the effective config actually changed.
+        # Only apply when the config actually changed
         if jq -S . "$cfg" 2>/dev/null | cmp -s - <(jq -S . "$tmp" 2>/dev/null); then
             rm -f "$tmp"
         else
             mv "$tmp" "$cfg"
-            # shellcheck disable=SC2034  # consumed by the sourcing configure hook
+            # shellcheck disable=SC2034
             SVC_RESTART=true
         fi
     else
