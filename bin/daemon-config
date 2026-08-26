@@ -40,6 +40,18 @@ reject_unknown_daemon_config() {
     fi
 }
 
+# Validate a daemon.json with dockerd. Prints the reason on failure.
+validate_daemon_config() {
+    local err
+    # dockerd needs $SNAP/bin on PATH to locate docker-proxy during validation.
+    if err="$(PATH="${SNAP}/bin:${SNAP}/usr/bin:${PATH}" "${SNAP}/bin/dockerd" \
+        --validate --config-file="$1" 2>&1)"; then
+        return 0
+    fi
+    echo "${err#unable to configure the Docker daemon with file *: }"
+    return 1
+}
+
 # Merge whitelisted daemon options from snap config into daemon.json.
 # Sets SVC_RESTART when the effective config changes.
 apply_user_daemon_config() {
@@ -76,12 +88,15 @@ apply_user_daemon_config() {
     fi
 
     # Reject an invalid value so the snap set fails loudly instead of silently not applying.
-    # dockerd needs $SNAP/bin on PATH to locate docker-proxy during validation.
-    local err
-    if ! err="$(PATH="${SNAP}/bin:${SNAP}/usr/bin:${PATH}" "${SNAP}/bin/dockerd" \
-        --validate --config-file="$tmp" 2>&1)"; then
-        echo "error: invalid daemon option value: ${err##*: }" >&2
+    # A file that already fails on its own is not the option's fault, so say so instead.
+    local err cfg_err
+    if ! err="$(validate_daemon_config "$tmp")"; then
         rm -f "$tmp"
+        if ! cfg_err="$(validate_daemon_config "$cfg")"; then
+            echo "error: existing ${cfg} is invalid: ${cfg_err}" >&2
+        else
+            echo "error: invalid daemon option value: ${err}" >&2
+        fi
         return 1
     fi
 
