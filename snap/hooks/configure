@@ -7,6 +7,57 @@ exec &> >(tee -a "${HOOK_LOG}")
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
+# Keys a user may set via `snap set docker daemon.<key>=<value>`, which this hook merges
+# into daemon.json. Curated allowlist: excludes daemon options that grant network/root
+# access (hosts, tls*, authorization-plugins, runtimes, insecure-registries,
+# registry-mirrors), options the snap passes to dockerd as flags (data-root, group), and
+# options shipped in the base config (log-level). Extend as concrete needs arise.
+USER_DAEMON_KEYS='["default-address-pools","bip","fixed-cidr","fixed-cidr-v6","default-gateway","default-gateway-v6","mtu","dns","dns-search","dns-opts","default-ulimits"]'
+
+# Merge the allowlisted daemon options from snap config into daemon.json. A single,
+# snap-owned writer keeps this race-free with the nvidia setup, and the merged config is
+# validated with `dockerd --validate` before it goes live so an invalid value cannot leave
+# dockerd unable to start.
+apply_user_daemon_config() {
+    local cfg="${SNAP_DATA}/config/daemon.json"
+    local doc overlay tmp
+
+    doc="$(snapctl get -d daemon 2>/dev/null || true)"
+    [ -n "$doc" ] || doc='{}'
+
+    # Overlay = only the allowlisted keys the user has actually set.
+    overlay="$(jq -c --argjson allow "$USER_DAEMON_KEYS" \
+        '(.daemon // {}) | with_entries(select(.key as $k | $allow | index($k)))' <<<"$doc" 2>/dev/null || true)"
+    if ! jq -e 'type == "object"' <<<"$overlay" >/dev/null 2>&1; then
+        echo "config: could not read daemon options; leaving daemon.json unchanged"
+        return 0
+    fi
+
+    tmp="$(mktemp "${cfg}.XXXXXX")"
+    # Drop every allowlisted key first (so `snap unset` removes it), then re-apply the ones
+    # currently set. Keys the snap or nvidia manage (runtimes, log-level, ...) are untouched.
+    if ! jq --argjson allow "$USER_DAEMON_KEYS" --argjson overlay "$overlay" \
+        'delpaths([ $allow[] | [.] ]) | . + $overlay' "$cfg" > "$tmp" 2>/dev/null; then
+        echo "config: failed to merge daemon options; leaving daemon.json unchanged"
+        rm -f "$tmp"
+        return 0
+    fi
+
+    # dockerd needs $SNAP/bin on PATH to locate docker-proxy during validation.
+    if PATH="${SNAP}/bin:${SNAP}/usr/bin:${PATH}" "${SNAP}/bin/dockerd" \
+        --validate --config-file="$tmp" >/dev/null 2>&1; then
+        if cmp -s "$cfg" "$tmp"; then
+            rm -f "$tmp"
+        else
+            mv "$tmp" "$cfg"
+            SVC_RESTART=true
+        fi
+    else
+        echo "config: rejected invalid daemon options from snap config; keeping current daemon.json"
+        rm -f "$tmp"
+    fi
+}
+
 # If the user unset the data-root, set it to the default
 data_root="$(snapctl get data-root)"
 if [ -z "$data_root" ] ; then
@@ -15,6 +66,9 @@ fi
 
 # Flag to trigger service restart if any condition requires it #
 SVC_RESTART=false
+
+# Apply user-provided daemon options set via `snap set docker daemon.<key>=<value>` #
+apply_user_daemon_config
 
 if nvidia_support_disabled; then
 

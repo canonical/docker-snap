@@ -108,6 +108,22 @@ Docker should function normally, with the following caveats:
 
 * Specifying the option `--security-opt="no-new-privileges=true"` with the `docker run` command (or the equivalent in docker-compose) will result in a failure of the container to start. This is due to an an underlying external constraint on AppArmor; see [LP#1908448](https://bugs.launchpad.net/snappy/+bug/1908448) for details.
 
+### Configuring daemon options
+
+Individual `daemon.json` options can be set through snap configuration instead of editing the file directly. This is convenient for unattended and Ubuntu Core deployments, where the values can be provided from a gadget's `defaults`:
+
+```shell
+sudo snap set docker daemon.default-address-pools='[{"base":"10.0.0.0/8","size":24}]'
+```
+
+The value is merged into `/var/snap/docker/current/config/daemon.json` and the daemon is restarted. Unset an option to remove it again:
+
+```shell
+sudo snap unset docker daemon.default-address-pools
+```
+
+Only a curated set of options is accepted (currently `default-address-pools`, `bip`, `fixed-cidr`, `fixed-cidr-v6`, `default-gateway`, `default-gateway-v6`, `mtu`, `dns`, `dns-search`, `dns-opts` and `default-ulimits`); options that would expose or take control of the daemon are rejected. The merged configuration is validated before it is applied, so an invalid value is refused rather than left to prevent the daemon from starting. For any option outside this set, edit `daemon.json` directly.
+
 ### Examples
 
 * [Setup a secure private registry](registry-example.md)
