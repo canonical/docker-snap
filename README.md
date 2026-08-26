@@ -116,7 +116,7 @@ A subset of `daemon.json` options can be set through snap configuration. This is
 sudo snap set docker daemon.default-address-pools='[{"base":"10.0.0.0/8","size":24}]'
 ```
 
-Only a subset of options is accepted: `default-address-pools`, `bip`, `fixed-cidr`, `fixed-cidr-v6`, `default-gateway`, `default-gateway-v6`, `mtu`, `dns`, `dns-search`, `dns-opts` and `default-ulimits`.
+Only a subset of options is accepted: `default-address-pools`, `bip`, `fixed-cidr`, `fixed-cidr-v6`, `default-gateway`, `default-gateway-v6`, `mtu`, `dns`, `dns-search`, `dns-opts`, `default-ulimits` and `log-level`. These options are managed by snap configuration, so set them with `snap set` (and remove them with `snap unset`) rather than editing them directly in `daemon.json`.
 
 ### Examples
 
