@@ -81,6 +81,15 @@ apply_user_daemon_config() {
         return 0
     fi
 
+    # Refuse a daemon.json that is not a JSON object, so the snap set fails instead of
+    # committing an option that never reaches the file.
+    local cfg_err
+    if ! jq -e 'type == "object"' "$cfg" >/dev/null 2>&1; then
+        cfg_err="$(validate_daemon_config "$cfg")" || true
+        echo "error: existing ${cfg} is invalid: ${cfg_err:-not a JSON object}" >&2
+        return 1
+    fi
+
     # Drop the keys applied last time, restore the snap defaults for them, then apply the
     # ones the user has set (user value wins).
     tmp="$(mktemp "${cfg}.XXXXXX")"
@@ -89,14 +98,14 @@ apply_user_daemon_config() {
         'delpaths([ $prev[] | [.] ])
          | . + ($base | with_entries(select(.key as $k | $prev | index($k))))
          | . + $overlay' "$cfg" > "$tmp" 2>/dev/null; then
-        echo "config: failed to merge daemon options; leaving daemon.json unchanged"
         rm -f "$tmp"
-        return 0
+        echo "error: failed to merge daemon options into ${cfg}" >&2
+        return 1
     fi
 
     # Reject an invalid value so the snap set fails loudly instead of silently not applying.
     # A file that already fails on its own is not the option's fault, so say so instead.
-    local err cfg_err
+    local err
     if ! err="$(validate_daemon_config "$tmp")"; then
         rm -f "$tmp"
         if ! cfg_err="$(validate_daemon_config "$cfg")"; then
