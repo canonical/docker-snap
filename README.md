@@ -92,7 +92,7 @@ sudo snap enable docker
 
 Docker should function normally, with the following caveats:
 
-* To configure the `docker` daemon edit `/var/snap/docker/current/config/daemon.json`.
+* To configure the `docker` daemon edit `/var/snap/docker/current/config/daemon.json`. A subset of the options can also be set through snap configuration, see [Configuring daemon options](#configuring-daemon-options).
 
 * All files that `docker` needs access to should live within your `$HOME` folder.
 
@@ -116,7 +116,7 @@ A subset of `daemon.json` options can be set through snap configuration. This is
 sudo snap set docker daemon.default-address-pools='[{"base":"10.0.0.0/8","size":24}]'
 ```
 
-Only a subset of options is accepted: `default-address-pools`, `bip`, `fixed-cidr`, `fixed-cidr-v6`, `default-gateway`, `default-gateway-v6`, `mtu`, `dns`, `dns-search`, `dns-opts`, `default-ulimits` and `log-level`. Setting any other daemon option this way fails with an error. These options are managed by snap configuration, so set them with `snap set` (and remove them with `snap unset`) rather than editing them directly in `daemon.json`.
+Only a subset of options is accepted: `default-address-pools`, `bip`, `fixed-cidr`, `fixed-cidr-v6`, `default-gateway`, `default-gateway-v6`, `mtu`, `dns`, `dns-search`, `dns-opts`, `default-ulimits` and `log-level`. Setting any other daemon option this way fails with an error. An option set this way takes precedence over the same option in `daemon.json` and is written back on every configuration change, so change it with `snap set` and remove it with `snap unset` rather than editing `daemon.json`. Options that were never set through snap configuration are left as they are in the file.
 
 ### Examples
 
