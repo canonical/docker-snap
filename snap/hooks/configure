@@ -33,6 +33,8 @@ if nvidia_support_disabled; then
         rm -f "${SNAP_DATA}/etc/cdi/nvidia.yaml"
         rm -f "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
         SVC_RESTART=true
+    else
+        rm -f "${SNAP_DATA}/config/daemon.json.new"
     fi
 
 fi
