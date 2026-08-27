@@ -47,6 +47,31 @@ execute: |
   wait_for_docker
   sudo grep -qE '"log-level"[[:space:]]*:[[:space:]]*"error"' "$CONFIG" || ERROR "log-level did not restore the shipped default on unset"
 
+  # Options set by hand in daemon.json survive snap config changes: only the keys the hook
+  # applied itself are dropped or reset, even when they are allowlisted (log-level here).
+  # Ubuntu Core has no jq, so edit the file with the snap's copy in the snap's environment.
+  edit_config() {
+    sudo snap run --shell docker.docker -c "jq '$1' \"\$SNAP_DATA/config/daemon.json\" > \"\$SNAP_DATA/config/daemon.json.new\" && mv \"\$SNAP_DATA/config/daemon.json.new\" \"\$SNAP_DATA/config/daemon.json\""
+  }
+  edit_config '. + {"dns-search": ["snap.test"], "log-level": "debug"}'
+  snapcfg set docker daemon.mtu=1400
+  wait_for_docker
+  sudo grep -q '"snap.test"' "$CONFIG" || ERROR "hand-set option was dropped by an unrelated snap set"
+  sudo grep -qE '"log-level"[[:space:]]*:[[:space:]]*"debug"' "$CONFIG" || ERROR "hand-set log-level was reset by an unrelated snap set"
+  sudo grep -qE '"mtu"[[:space:]]*:[[:space:]]*1400' "$CONFIG" || ERROR "mtu was not applied"
+
+  # Once a key has been set through snap config it is managed: unset restores the shipped
+  # default, not the hand-set value.
+  snapcfg set docker daemon.log-level=info
+  wait_for_docker
+  snapcfg unset docker daemon.log-level
+  wait_for_docker
+  sudo grep -qE '"log-level"[[:space:]]*:[[:space:]]*"error"' "$CONFIG" || ERROR "managed log-level did not restore the shipped default on unset"
+  snapcfg unset docker daemon.mtu
+  wait_for_docker
+  ! sudo grep -q '"mtu"' "$CONFIG" || ERROR "mtu was not removed on unset"
+  sudo grep -q '"snap.test"' "$CONFIG" || ERROR "hand-set option was dropped on unset"
+
   # Unsetting removes the option again.
   snapcfg unset docker daemon.default-address-pools
   wait_for_docker
@@ -55,4 +80,5 @@ execute: |
 restore: |
   sudo systemctl reset-failed snap.docker.nvidia-container-toolkit.service 2>/dev/null || true
   sudo snap unset docker daemon.default-address-pools daemon.hosts daemon.mtu daemon.log-level 2>/dev/null || true
+  sudo snap run --shell docker.docker -c "jq 'del(.\"dns-search\")' \"\$SNAP_DATA/config/daemon.json\" > \"\$SNAP_DATA/config/daemon.json.new\" && mv \"\$SNAP_DATA/config/daemon.json.new\" \"\$SNAP_DATA/config/daemon.json\""
   sudo docker network rm testpool >/dev/null 2>&1 || true
