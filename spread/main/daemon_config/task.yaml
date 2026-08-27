@@ -78,7 +78,12 @@ execute: |
   ! sudo grep -q '10.211.0.0/16' "$CONFIG" || ERROR "option was not removed on unset"
 
 restore: |
+  source "$SCRIPTS_PATH/common.sh"
+
   sudo systemctl reset-failed snap.docker.nvidia-container-toolkit.service 2>/dev/null || true
   sudo snap unset docker daemon.default-address-pools daemon.hosts daemon.mtu daemon.log-level 2>/dev/null || true
   sudo snap run --shell docker.docker -c "jq 'del(.\"dns-search\")' \"\$SNAP_DATA/config/daemon.json\" > \"\$SNAP_DATA/config/daemon.json.new\" && mv \"\$SNAP_DATA/config/daemon.json.new\" \"\$SNAP_DATA/config/daemon.json\""
   sudo docker network rm testpool >/dev/null 2>&1 || true
+  # The hand-edited option only leaves the running daemon on a restart.
+  restart_docker
+  wait_for_docker
