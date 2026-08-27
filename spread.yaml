@@ -1,5 +1,8 @@
 project: docker
-kill-timeout: 3h
+# Headroom for slow, emulated cross-architecture boots. Failures are bounded
+# well below this by the per-attempt timeout and FATAL in the allocate script,
+# so this only ever caps a genuinely slow (but progressing) boot.
+kill-timeout: 45m
 backends:
   # LXD is currently not supported as a backend, because we need to set lxc instance
   # config to make docker work in an lxc container,
@@ -12,63 +15,15 @@ backends:
   garden:
     type: adhoc
 
-    allocate: |
-      # Spread automatically injects /snap/bin to PATH. When we are
-      # running from the image-garden snap then SPREAD_HOST_PATH is the
-      # original path before such modifications were applied. Snap
-      # applications cannot normally run /snap/bin/* entry-points
-      # successfully so re-set PATH to the original value, as provided by
-      # snapcraft.
-      if [ -n "${SPREAD_HOST_PATH-}" ]; then
-        PATH="${SPREAD_HOST_PATH}"
-      fi
+    # Applies to the allocate/discard scripts below. The project-level
+    # kill-timeout does NOT cascade here -- without this, spread's 15-minute
+    # default kills a cold emulated allocation mid-provision (an ubuntu-core
+    # provision boot alone takes ~12 minutes under TCG). Must stay above the
+    # allocate watchdog (30m) plus the ssh poll (10m).
+    kill-timeout: 45m
 
-      export QEMU_SMP_OPTION="-smp 4"
-      export QEMU_MEM_OPTION="-m 3072"
-
-      # Map spread system architecture
-      SPREAD_SYSTEM=${SPREAD_SYSTEM/%amd64/x86_64}  # maps "amd64" to "x86_64"
-      SPREAD_SYSTEM=${SPREAD_SYSTEM/%arm64/aarch64} # maps "arm64" to "aarch64"
-
-      image_garden_output="$(image-garden allocate "${SPREAD_SYSTEM/-plus-/+}")" || true
-
-      if [ -z "$image_garden_output" ]; then
-        echo "Image garden allocation failed for system: $SPREAD_SYSTEM"
-
-        # Guard against corrupt EFI vars image (0 bytes).
-        efi_vars_img=".image-garden/${SPREAD_SYSTEM}.efi-vars.img"
-        if [ -f "$efi_vars_img" ] && [ ! -s "$efi_vars_img" ]; then
-          echo "Found zero-byte EFI vars image: $efi_vars_img"
-          rm -f "$efi_vars_img"
-          image-garden make "${SPREAD_SYSTEM/-plus-/+}.efi-vars.img"
-        fi
-
-        ERROR "Image garden allocation failed"
-      fi
-      
-      HOST_ARCH="${ARCH:-$(uname -m)}"
-      SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
-      if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
-        # Spread has a fixed, 5-minute timeout for ssh to become ready.
-        # When emulating across architectures this may not be sufficient
-        # for the system to become ready. Sleep for a while to give things
-        # a chance to finish.
-        sleep 5m
-      fi
-
-      ADDRESS "$image_garden_output"
-    discard: |
-      # Spread automatically injects /snap/bin to PATH. When we are
-      # running from the image-garden snap then SPREAD_HOST_PATH is the
-      # original path before such modifications were applied. Snap
-      # applications cannot normally run /snap/bin/* entry-points
-      # successfully so re-set PATH to the original value, as provided by
-      # snapcraft.
-      if [ -n "${SPREAD_HOST_PATH-}" ]; then
-        PATH="${SPREAD_HOST_PATH}"
-      fi
-
-      image-garden discard "$SPREAD_SYSTEM_ADDRESS"
+    allocate: source spread/scripts/allocate.sh
+    discard: source spread/scripts/discard.sh
     systems:
       # Want to add more systems? Look here for a list of available systems: https://gitlab.com/zygoon/image-garden/-/tree/main/data
       # or look here for an exhaustive example: https://gitlab.com/zygoon/image-garden/-/blob/main/spread-demo/spread.yaml
@@ -119,7 +74,29 @@ backends:
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_RISCV64)
+      # No ubuntu-core systems for s390x/ppc64el: Ubuntu Core is not published
+      # for those architectures.
+      - ubuntu-cloud-24.04.s390x:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_S390X)
+      - ubuntu-cloud-24.04.ppc64el:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_PPC64EL)
 
+      - ubuntu-core-26.amd64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-core-26.arm64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
       - ubuntu-cloud-26.04.amd64:
           username: ubuntu
           password: ubuntu
@@ -135,6 +112,47 @@ backends:
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_RISCV64)
+      - ubuntu-cloud-26.04.s390x:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_S390X)
+      - ubuntu-cloud-26.04.ppc64el:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_PPC64EL)
+
+      # Development series: early warning for the next release's surprises
+      # (image layout, boot stack, snapd behaviour) before they reach an LTS.
+      # Needs an image-garden with 26.10 data (v0.6.4+); until that reaches
+      # latest/stable these systems only allocate when the CI workflow is
+      # dispatched with image_garden_channel=latest/candidate.
+      - ubuntu-cloud-26.10.amd64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - ubuntu-cloud-26.10.arm64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_ARM64)
+      - ubuntu-cloud-26.10.riscv64:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_RISCV64)
+      - ubuntu-cloud-26.10.s390x:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_S390X)
+      - ubuntu-cloud-26.10.ppc64el:
+          username: ubuntu
+          password: ubuntu
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_PPC64EL)
 
 path: /tmp/docker
 exclude:

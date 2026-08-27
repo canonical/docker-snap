@@ -5,67 +5,194 @@ on:
   workflow_dispatch:
     inputs:
       snap_channel:
-        description: "Snap Store channel containing the version of docker to test"
+        description: "`docker` snap channel to test"
         required: true
-        type: string
+        type: choice
+        options:
+          - latest/stable
+          - latest/candidate
+          - latest/beta
+          - latest/edge
+        default: latest/edge
       spread_test_filter:
-        description: "Spread test selection filter; use '...' as a wildcard"
+        description: "job filter (e.g. '!26.10 cloud amd64')"
         required: false
         type: string
-        default: '...amd64'
+        default: ""
+      force_rebuild:
+        description: "ignore cached vm images"
+        required: false
+        type: boolean
+        default: false
+      publish_boot_logs:
+        description: "boot logs as workflow artefacts"
+        required: false
+        type: boolean
+        default: false
+      debug:
+        description: "extra debug output"
+        required: false
+        type: boolean
+        default: false
+      image_garden_channel:
+        description: "`image-garden` snap channel"
+        required: false
+        type: choice
+        options:
+          - latest/stable
+          - latest/candidate
+          - latest/beta
+          - latest/edge
+        default: latest/stable
 
 defaults:
   run:
     shell: 'bash -Eeuo pipefail -x {0}'
 
+env:
+  # Pristine downloads plus the provisioned overlay / firmware / seed for one
+  # system, cached as a single per-system entry. The overlay references the
+  # pristine image by absolute path with no content check, so both must travel
+  # together. Logs and pid files are excluded.
+  cache_paths: |
+    ~/snap/image-garden/common/cache/dl
+    .image-garden/*.qcow2
+    .image-garden/*.img
+    .image-garden/*.iso
+    .image-garden/*.run
+
 jobs:
+  # Expand the filter into the concrete systems it selects, so the test job can
+  # fan them out -- one system per job, one emulated guest per runner. That
+  # removes the boot contention that made running every system on one runner
+  # flaky, and runs them in parallel.
+  list-systems:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.list.outputs.matrix }}
+      image_garden_rev: ${{ steps.prep.outputs.image_garden_rev }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Prep
+        id: prep
+        run: |
+          sudo snap install image-garden --channel="${{ inputs.image_garden_channel }}"
+          # Provisioned images are a function of the image-garden version, so
+          # its snap revision keys the caches (a channel switch changes the
+          # revision and therefore starts from cold caches automatically).
+          echo "image_garden_rev=$(snap list image-garden | awk 'NR==2 {print $3}')" >> "$GITHUB_OUTPUT"
+
+      - name: List jobs
+        id: list
+        env:
+          FILTER: ${{ inputs.spread_test_filter }}
+        run: |
+          # Filter semantics and matrix shape: see the script.
+          matrix=$(image-garden.spread -list | .github/scripts/spread-matrix/spread-matrix "$FILTER")
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
   spread-tests:
+    needs: list-systems
     strategy:
       fail-fast: false
-      matrix:
-        runner:
-          - label: ubuntu-latest
-            spread_test_filter: ${{ inputs.spread_test_filter }}
-
-    runs-on: ${{ matrix.runner.label }}
+      matrix: ${{ fromJSON(needs.list-systems.outputs.matrix) }}
+    # Pinned: the default would append the whole jobs list to the name.
+    name: spread-tests (${{ matrix.system }})
+    runs-on: ubuntu-latest
+    # One emulated system per runner; a cold system provisions then tests, a
+    # warm one just tests. Bound the run step below the job timeout so a slow
+    # cold run fails (and saves its image) rather than being cancelled. Sized
+    # for the slowest cold lane observed: dracut-based images (26.04+) on the
+    # slowest emulated targets take just under an hour cold.
+    timeout-minutes: 80
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
 
       - name: Prep
         run: |
-          sudo snap install image-garden
-          sudo snap install image-garden+qemu-aarch64 || true
+          sudo snap install image-garden --channel="${{ inputs.image_garden_channel }}"
 
-          # We need write access to /dev/kvm for better performance.
-          # Since this is an ephemeral CI/CD environment, we can grant everyone access to /dev/kvm.
+          # The base snap carries the x86_64 emulator; other arches live in
+          # optional components (they follow the snap's channel). Install only
+          # the one this system needs -- without it, allocation fails on
+          # missing EDK2 firmware.
+          case "${{ matrix.system }}" in
+            *.arm64) sudo snap install image-garden+qemu-aarch64 ;;
+            *.riscv64) sudo snap install image-garden+qemu-riscv64 ;;
+            *.s390x) sudo snap install image-garden+qemu-s390x ;;
+            *.ppc64el) sudo snap install image-garden+qemu-ppc64 ;;
+          esac
+
           sudo chmod -v 666 /dev/kvm || true
 
-      - name: Cache pristine virtual machine images
-        uses: actions/cache@v6
+      - name: Restore cached vm image
+        id: restore-image
+        if: ${{ !inputs.force_rebuild }}
+        uses: actions/cache/restore@v6
         with:
-          path: ~/snap/image-garden/common/cache/dl
-          key: image-garden-dl-${{ matrix.runner.spread_test_filter }}
+          path: ${{ env.cache_paths }}
+          key: image-garden-${{ matrix.system }}-r${{ needs.list-systems.outputs.image_garden_rev }}
+          restore-keys: |
+            image-garden-${{ matrix.system }}-
+
+      - name: Drop stale images from a cross-revision cache
+        # A prefix (restore-keys) hit restored an older image-garden
+        # revision's cache. The pristine downloads stay useful, but the
+        # provisioned overlays and firmware images may not match the new
+        # revision's recipes -- and make's mtime check would happily reuse
+        # them. Drop everything but the download cache so this revision
+        # provisions from scratch.
+        if: ${{ steps.restore-image.outputs.cache-matched-key != '' && steps.restore-image.outputs.cache-hit != 'true' }}
+        run: |
+          rm -f .image-garden/*.qcow2 .image-garden/*.img .image-garden/*.iso .image-garden/*.run
 
       - name: Run spread tests
+        timeout-minutes: 70
+        env:
+          JOBS: ${{ matrix.jobs }}
         run: |
-          SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v -vv "${{ matrix.runner.spread_test_filter }}"
+          # $JOBS is this system's selected spread job names, word-split into
+          # one argument each.
+          SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v ${{ inputs.debug && '-vv' || '' }} $JOBS
 
       - name: Log image garden content
-        if: ${{ failure() }}
+        if: ${{ failure() || inputs.publish_boot_logs }}
         run: |
+          # Tolerate missing directories: an allocation that failed early may
+          # not have created either.
           echo "Image Garden directory content:"
-          ls -lah .image-garden/
+          ls -lah .image-garden/ || true
 
           echo "Image Garden cache content:"
-          ls -lah ~/snap/image-garden/common/cache/dl/
+          ls -lah ~/snap/image-garden/common/cache/dl/ || true
+
+      - name: Strip escape sequences from boot logs
+        if: ${{ failure() || inputs.publish_boot_logs }}
+        run: |
+          # Serial-console boot logs are full of ANSI colour/cursor escapes
+          # and carriage returns; strip them so the artefacts read cleanly.
+          sed -i -E 's/\x1b\[[0-9;?]*[a-zA-Z]//g; s/\x1b\][^\x07]*\x07//g; s/\r//g' .image-garden/*.log || true
 
       - name: Upload logs as artifacts
-        if: ${{ failure() }}
+        if: ${{ failure() || inputs.publish_boot_logs }}
         uses: actions/upload-artifact@v7
         with:
-          name: boot-logs
+          # Unique per matrix job, or parallel uploads collide.
+          name: boot-logs-${{ matrix.system }}
           path: .image-garden/*.log
           include-hidden-files: true
           if-no-files-found: ignore
           overwrite: true
+
+      - name: Save cached vm image
+        # Save even on a failing run (a provisioned image is still reusable), but
+        # not on cancellation, which can leave a half-written overlay. Skipped
+        # when the exact key was already a hit.
+        if: ${{ (success() || failure()) && steps.restore-image.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.cache_paths }}
+          key: image-garden-${{ matrix.system }}-r${{ needs.list-systems.outputs.image_garden_rev }}
