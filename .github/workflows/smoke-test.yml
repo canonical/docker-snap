@@ -24,11 +24,27 @@ on:
       - '.github/workflows/nvidia-test.yml'
   # Manual trigger
   workflow_dispatch:
+    inputs:
+      snapd_channel:
+        description: "`snapd` snap channel to test against"
+        required: false
+        type: choice
+        options:
+          - latest/stable
+          - latest/candidate
+          - latest/beta
+          - latest/edge
+        default: latest/stable
+  # Nightly test of latest/stable and latest/beta
+  schedule:
+    - cron: '17 5 * * *'
 
 # Cancel an in-progress run when a newer commit lands on the same ref, so a
-# burst of pushes to a branch or PR only tests the latest one.
+# burst of pushes to a branch or PR only tests the latest one. The event and
+# channel are part of the group so the nightly run and a push to main do not
+# clobber one other, and neither do two dispatches on different channels.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}-${{ inputs.snapd_channel }}
   cancel-in-progress: true
 
 defaults:
@@ -68,6 +84,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # The nightly run covers stable and beta. Everything else tests the one
+        # channel it asked for, defaulting to what users actually run.
+        snapd_channel: >-
+          ${{ fromJSON(
+          github.event_name == 'schedule'
+          && '["latest/stable","latest/beta"]'
+          || format('["{0}"]', inputs.snapd_channel || 'latest/stable')
+          ) }}
         runner:
           - arch: amd64
             os: ubuntu-24.04
@@ -98,11 +122,28 @@ jobs:
           sudo rm -rf /var/lib/docker /etc/docker /run/docker* /var/lib/containerd /run/containerd*
           sudo ip link delete docker0 || :
 
-      # The image comes with a slightly outdated snapd Debian package
+      # NOTE: The image comes with a slightly outdated snapd Debian package
       - name: Install snapd as a snap
+        env:
+          SNAPD_CHANNEL: ${{ matrix.snapd_channel }}
         run: |
-          sudo snap install snapd
+          if snap list snapd >/dev/null 2>&1; then
+            sudo snap refresh snapd --channel="$SNAPD_CHANNEL"
+          else
+            sudo snap install snapd --channel="$SNAPD_CHANNEL"
+          fi
+
+          sudo snap watch --last=refresh || true
+
           sudo snap list
+
+          # Fail loudly if the channel did not take: a run that silently tested
+          # against wrong channel is worse than no run at all.
+          tracking="$(snap list snapd | awk 'NR==2 {print $4}')"
+          if [ "$tracking" != "$SNAPD_CHANNEL" ]; then
+            printf 'Error: snapd tracks %s, expected %s\n' "$tracking" "$SNAPD_CHANNEL" >&2
+            exit 1
+          fi
 
       - name: Collect snap environment info
         run: |
