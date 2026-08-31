@@ -19,7 +19,7 @@ fi
 SVC_RESTART=false
 
 # Apply user-provided daemon options #
-reject_unknown_daemon_config
+reject_unsupported_daemon_config
 apply_user_daemon_config
 
 if nvidia_support_disabled; then

@@ -11,28 +11,28 @@
 # them since they could grant network/root access.
 
 USER_DAEMON_KEYS=(
-    default-address-pools
     bip
-    fixed-cidr
-    fixed-cidr-v6
+    default-address-pools
     default-gateway
     default-gateway-v6
-    mtu
-    dns
-    dns-search
-    dns-opts
     default-ulimits
+    dns
+    dns-opts
+    dns-search
+    fixed-cidr
+    fixed-cidr-v6
     log-level
+    mtu
 )
 
-reject_unknown_daemon_config() {
-    local allow doc bad
+reject_unsupported_daemon_config() {
+    local allow snap_cfg bad
     allow="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
-    doc="$(snapctl get -d daemon 2>/dev/null || true)"
-    [ -n "$doc" ] || return 0
-    # keys the user set that are not in the whitelist
+    snap_cfg="$(snapctl get -d daemon 2>/dev/null || true)"
+    [ -n "$snap_cfg" ] || return 0
+    # keys the user set that the snap does not support
     bad="$(jq -r --argjson allow "$allow" \
-        '((.daemon // {}) | keys) - $allow | join(" ")' <<<"$doc" 2>/dev/null)"
+        '((.daemon // {}) | keys) - $allow | join(" ")' <<<"$snap_cfg" 2>/dev/null)"
     if [ -n "$bad" ]; then
         echo "error: daemon option(s) not configurable via snap: ${bad}" >&2
         echo "allowed daemon options: ${USER_DAEMON_KEYS[*]}" >&2
@@ -59,10 +59,10 @@ apply_user_daemon_config() {
     # Keys applied by the previous run. Only those are dropped or reset on the next one,
     # so values set by hand in daemon.json (or by nvidia) are left alone.
     local managed="${SNAP_DATA}/daemon-config-keys"
-    local allow base doc overlay prev tmp
+    local allow base snap_cfg overlay prev tmp
     allow="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
-    doc="$(snapctl get -d daemon 2>/dev/null || true)"
-    [ -n "$doc" ] || doc='{}'
+    snap_cfg="$(snapctl get -d daemon 2>/dev/null || true)"
+    [ -n "$snap_cfg" ] || snap_cfg='{}'
     prev="$(cat "$managed" 2>/dev/null || true)"
     jq -e 'type == "array" and all(type == "string")' <<<"$prev" >/dev/null 2>&1 || prev='[]'
 
@@ -72,10 +72,9 @@ apply_user_daemon_config() {
         'with_entries(select(.key as $k | $allow | index($k)))' "${SNAP}/config/daemon.json" 2>/dev/null || true)"
     jq -e 'type == "object"' <<<"$base" >/dev/null 2>&1 || base='{}'
 
-
     # Overlay = only the whitelisted keys the user has actually set.
     overlay="$(jq -c --argjson allow "$allow" \
-        '(.daemon // {}) | with_entries(select(.key as $k | $allow | index($k)))' <<<"$doc" 2>/dev/null || true)"
+        '(.daemon // {}) | with_entries(select(.key as $k | $allow | index($k)))' <<<"$snap_cfg" 2>/dev/null || true)"
     if ! jq -e 'type == "object"' <<<"$overlay" >/dev/null 2>&1; then
         echo "config: could not read daemon options; leaving daemon.json unchanged"
         return 0
