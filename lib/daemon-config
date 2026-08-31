@@ -123,5 +123,7 @@ apply_user_daemon_config() {
         # shellcheck disable=SC2034
         SVC_RESTART=true
     fi
+    # The managed list tracks the overlay, not the file. An `unset` that changes
+    # nothing still has to drop the key from the managed list.
     jq -c 'keys' <<<"$overlay" > "${managed}.new" && mv "${managed}.new" "$managed"
 }
