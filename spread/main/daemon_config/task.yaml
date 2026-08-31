@@ -16,36 +16,36 @@ execute: |
   # An allowlisted option is merged into daemon.json and takes effect.
   snapcfg set docker daemon.default-address-pools='[{"base":"10.211.0.0/16","size":24}]'
   wait_for_docker
-  sudo grep -q '10.211.0.0/16' "$CONFIG"
+  sudo cat "$CONFIG" | MATCH '10\.211\.0\.0/16'
 
   sudo docker network rm testpool >/dev/null 2>&1 || true
   sudo docker network create testpool
   subnet=$(sudo docker network inspect testpool -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
   echo "testpool subnet: $subnet"
-  echo "$subnet" | grep -q '^10.211.' || ERROR "created network did not draw from the configured pool"
+  echo "$subnet" | MATCH '^10\.211\.' || ERROR "created network did not draw from the configured pool"
   sudo docker network rm testpool
 
   # A dangerous / unknown option is rejected outright: the configure hook fails the
   # `snap set`, so nothing is stored, nothing reaches daemon.json, and no port is opened.
   ! snapcfg set docker daemon.hosts='["tcp://0.0.0.0:2375"]' || ERROR "disallowed 'hosts' option was accepted"
   wait_for_docker
-  ! sudo grep -q 'tcp://0.0.0.0:2375' "$CONFIG" || ERROR "'hosts' leaked into daemon.json"
-  ! sudo ss -tlnH 'sport = :2375' | grep -q . || ERROR "daemon exposed a TCP port via a disallowed option"
+  sudo cat "$CONFIG" | NOMATCH 'tcp://0\.0\.0\.0:2375' || ERROR "'hosts' leaked into daemon.json"
+  sudo ss -tlnH 'sport = :2375' | NOMATCH ':2375' || ERROR "daemon exposed a TCP port via a disallowed option"
 
   # An invalid value for an allowlisted key is rejected by validation: the snap set fails
   # and nothing reaches daemon.json.
   ! snapcfg set docker daemon.mtu='not-a-number' || ERROR "invalid 'mtu' value was accepted"
   wait_for_docker
-  ! sudo grep -q 'not-a-number' "$CONFIG" || ERROR "invalid value was written to daemon.json"
+  sudo cat "$CONFIG" | NOMATCH 'not-a-number' || ERROR "invalid value was written to daemon.json"
 
   # log-level ships a default ("error") in the base config: setting it applies, and
   # unsetting restores the shipped default rather than dropping the key.
   snapcfg set docker daemon.log-level=debug
   wait_for_docker
-  sudo grep -qE '"log-level"[[:space:]]*:[[:space:]]*"debug"' "$CONFIG" || ERROR "log-level was not applied"
+  sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"debug"' || ERROR "log-level was not applied"
   snapcfg unset docker daemon.log-level
   wait_for_docker
-  sudo grep -qE '"log-level"[[:space:]]*:[[:space:]]*"error"' "$CONFIG" || ERROR "log-level did not restore the shipped default on unset"
+  sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"error"' || ERROR "log-level did not restore the shipped default on unset"
 
   # Options set by hand in daemon.json survive snap config changes: only the keys the hook
   # applied itself are dropped or reset, even when they are allowlisted (log-level here).
@@ -56,9 +56,9 @@ execute: |
   edit_config '. + {"dns-search": ["snap.test"], "log-level": "debug"}'
   snapcfg set docker daemon.mtu=1400
   wait_for_docker
-  sudo grep -q '"snap.test"' "$CONFIG" || ERROR "hand-set option was dropped by an unrelated snap set"
-  sudo grep -qE '"log-level"[[:space:]]*:[[:space:]]*"debug"' "$CONFIG" || ERROR "hand-set log-level was reset by an unrelated snap set"
-  sudo grep -qE '"mtu"[[:space:]]*:[[:space:]]*1400' "$CONFIG" || ERROR "mtu was not applied"
+  sudo cat "$CONFIG" | MATCH '"snap\.test"' || ERROR "hand-set option was dropped by an unrelated snap set"
+  sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"debug"' || ERROR "hand-set log-level was reset by an unrelated snap set"
+  sudo cat "$CONFIG" | MATCH '"mtu"[[:space:]]*:[[:space:]]*1400' || ERROR "mtu was not applied"
 
   # Once a key has been set through snap config it is managed: unset restores the shipped
   # default, not the hand-set value.
@@ -66,16 +66,16 @@ execute: |
   wait_for_docker
   snapcfg unset docker daemon.log-level
   wait_for_docker
-  sudo grep -qE '"log-level"[[:space:]]*:[[:space:]]*"error"' "$CONFIG" || ERROR "managed log-level did not restore the shipped default on unset"
+  sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"error"' || ERROR "managed log-level did not restore the shipped default on unset"
   snapcfg unset docker daemon.mtu
   wait_for_docker
-  ! sudo grep -q '"mtu"' "$CONFIG" || ERROR "mtu was not removed on unset"
-  sudo grep -q '"snap.test"' "$CONFIG" || ERROR "hand-set option was dropped on unset"
+  sudo cat "$CONFIG" | NOMATCH '"mtu"' || ERROR "mtu was not removed on unset"
+  sudo cat "$CONFIG" | MATCH '"snap\.test"' || ERROR "hand-set option was dropped on unset"
 
   # Unsetting removes the option again.
   snapcfg unset docker daemon.default-address-pools
   wait_for_docker
-  ! sudo grep -q '10.211.0.0/16' "$CONFIG" || ERROR "option was not removed on unset"
+  sudo cat "$CONFIG" | NOMATCH '10\.211\.0\.0/16' || ERROR "option was not removed on unset"
 
 restore: |
   source "$SCRIPTS_PATH/common.sh"
