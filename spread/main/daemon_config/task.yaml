@@ -1,10 +1,15 @@
 summary: Set daemon.json options via snap configuration
 
+environment:
+  CONFIG: /var/snap/docker/current/config/daemon.json
+  BACKUP: daemon.json.bak
+
+prepare: |
+  sudo cp "$CONFIG" "$BACKUP"
+
 execute: |
 
   source "$SCRIPTS_PATH/common.sh"
-
-  CONFIG=/var/snap/docker/current/config/daemon.json
 
   # The configure hook restarts the nvidia oneshot on every config change; the rapid
   # successive changes below would otherwise trip systemd's start-limit, so reset it first.
@@ -81,9 +86,11 @@ restore: |
   source "$SCRIPTS_PATH/common.sh"
 
   sudo systemctl reset-failed snap.docker.nvidia-container-toolkit.service 2>/dev/null || true
+  # Unset before restoring the file: each unset runs the configure hook, which rewrites
+  # daemon.json and the managed-key list.
   sudo snap unset docker daemon.default-address-pools daemon.hosts daemon.mtu daemon.log-level 2>/dev/null || true
-  sudo snap run --shell docker.docker -c "jq 'del(.\"dns-search\")' \"\$SNAP_DATA/config/daemon.json\" > \"\$SNAP_DATA/config/daemon.json.new\" && mv \"\$SNAP_DATA/config/daemon.json.new\" \"\$SNAP_DATA/config/daemon.json\""
+  sudo cp "$BACKUP" "$CONFIG"
   sudo docker network rm testpool >/dev/null 2>&1 || true
-  # The hand-edited option only leaves the running daemon on a restart.
+  # The restored file only reaches the running daemon on a restart.
   restart_docker
   wait_for_docker
