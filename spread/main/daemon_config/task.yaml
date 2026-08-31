@@ -32,10 +32,11 @@ execute: |
 
   # A dangerous / unknown option is rejected outright: the configure hook fails the
   # `snap set`, so nothing is stored, nothing reaches daemon.json, and no port is opened.
+  # The port check names dockerd, so an unrelated listener on 2375 does not fail the task.
   ! snapcfg set docker daemon.hosts='["tcp://0.0.0.0:2375"]' || ERROR "disallowed 'hosts' option was accepted"
   wait_for_docker
   sudo cat "$CONFIG" | NOMATCH 'tcp://0\.0\.0\.0:2375' || ERROR "'hosts' leaked into daemon.json"
-  sudo ss -tlnH 'sport = :2375' | NOMATCH ':2375' || ERROR "daemon exposed a TCP port via a disallowed option"
+  sudo ss -tlnpH 'sport = :2375' | NOMATCH 'dockerd' || ERROR "daemon exposed a TCP port via a disallowed option"
 
   # An invalid value for an allowlisted key is rejected by validation: the snap set fails
   # and nothing reaches daemon.json.
