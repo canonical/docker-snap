@@ -12,6 +12,7 @@
 
 USER_DAEMON_KEYS=(
     bip
+    bip6
     default-address-pools
     default-gateway
     default-gateway-v6
@@ -21,6 +22,7 @@ USER_DAEMON_KEYS=(
     dns-search
     fixed-cidr
     fixed-cidr-v6
+    ipv6
     log-level
     mtu
 )
