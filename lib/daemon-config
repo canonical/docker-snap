@@ -39,9 +39,15 @@ reject_unsupported_daemon_config() {
     allow="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
     snap_cfg="$(snapctl get -d daemon 2>/dev/null || true)"
     [ -n "$snap_cfg" ] || return 0
+    # `snap set docker daemon=foo` arrives as a non-object; reject it with a
+    # message instead of letting jq abort the hook silently under set -e.
+    if ! jq -e '(.daemon // {}) | type == "object"' <<<"$snap_cfg" >/dev/null 2>&1; then
+        echo "error: daemon options must be set as daemon.<key>=<value>" >&2
+        return 1
+    fi
     # keys the user set that the snap does not support
     bad="$(jq -r --argjson allow "$allow" \
-        '((.daemon // {}) | keys) - $allow | join(" ")' <<<"$snap_cfg" 2>/dev/null)"
+        '((.daemon // {}) | keys) - $allow | join(" ")' <<<"$snap_cfg" 2>/dev/null || true)"
     if [ -n "$bad" ]; then
         echo "error: daemon option(s) not configurable via snap: ${bad}" >&2
         echo "allowed daemon options: ${USER_DAEMON_KEYS[*]}" >&2
