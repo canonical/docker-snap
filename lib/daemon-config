@@ -84,12 +84,14 @@ validate_daemon_config() {
 #   H: values set by hand in daemon.json: whatever the file holds for keys the
 #      previous run did not write
 #   O: snap config (`snapctl get daemon`)
-# and three more names take part:
+# and four more names take part:
 #   C: the current file, as it is now
-#   P: what the previous run wrote, kept in $DAEMON_CONFIG_STATE as {result}
-#   R: the composed result; stored in the state, it is the next run's P
-# So a key P wrote goes back to B when snap config drops it, and a key P did not
-# write is left as the file has it. Keys outside the whitelist are never touched.
+#   A: what snap config applied in the previous run
+#   P: what the previous run wrote; only crash recovery looks at it here
+#   R: the composed result; A and R are kept in $DAEMON_CONFIG_STATE as
+#      {applied, result} and become the next run's A and P
+# So a key A applied goes back to B when snap config drops it, and a key A did not
+# apply is left as the file has it. Keys outside the whitelist are never touched.
 # Sets SVC_RESTART when the effective config changes.
 apply_user_daemon_config() {
     local cfg="${SNAP_DATA}/config/daemon.json"
@@ -132,19 +134,21 @@ apply_user_daemon_config() {
             <<<"$pending" >/dev/null 2>&1 && state="$pending"
         rm -f "${statef}.new"
     fi
-    jq -e 'type == "object" and ((.result // {}) | type == "object")' <<<"$state" >/dev/null 2>&1 \
-        || state='{"result":{}}'
+    jq -e 'type == "object"
+           and ((.applied // {}) | type == "object")
+           and ((.result  // {}) | type == "object")' <<<"$state" >/dev/null 2>&1 \
+        || state='{"applied":{},"result":{}}'
 
     if ! merged="$(jq -c "$DAEMON_CONFIG_JQ"'
         . as $file
         | slice($allow) as $C
         # only whitelisted keys may be dropped or reset, whatever the state claims
-        | (($state.result // {}) | slice($allow)) as $P
-        # R = (B|P) < (C - P) < O
-        | (($B | slice($P | keys)) + ($C | unslice($P | keys)) + $O) as $R
+        | (($state.applied // {}) | slice($allow) | keys) as $A
+        # R = (B|A) < (C - A) < O
+        | (($B | slice($A)) + ($C | unslice($A)) + $O) as $R
         # file = its non-whitelisted keys + R
         | {file: (($file | unslice($allow)) + $R),
-           state: {result: $R},
+           state: {applied: $O, result: $R},
            changed: ($R != $C)}' \
         --argjson allow "$allow" --argjson B "$base" --argjson O "$overlay" \
         --argjson state "$state" "$cfg" 2>/dev/null)"; then
@@ -182,7 +186,7 @@ apply_user_daemon_config() {
         rm -f "$tmp"
     fi
     # State is committed even when the file did not change: an unset that changes
-    # nothing on disk still has to leave the key out of P.
+    # nothing on disk still has to leave the key out of A.
     mv "${statef}.new" "$statef"
 }
 

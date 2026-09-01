@@ -85,7 +85,7 @@ execute: |
   # A state file naming a key outside the allowlist must not let the hook drop it, and
   # an unreadable one is discarded rather than trusted.
   edit_config '. + {"max-concurrent-downloads": 7}'
-  echo '{"result":{"max-concurrent-downloads":7}}' | sudo tee "$STATE" >/dev/null
+  echo '{"applied":{"max-concurrent-downloads":7}}' | sudo tee "$STATE" >/dev/null
   snapcfg set docker daemon.mtu=1450
   wait_for_docker
   sudo cat "$CONFIG" | MATCH '"max-concurrent-downloads"' || ERROR "corrupt state dropped an unmanaged key"
