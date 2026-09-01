@@ -30,6 +30,8 @@ USER_DAEMON_KEYS=(
 )
 DAEMON_CONFIG_ALLOW="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
 
+DAEMON_CONFIG_FILE="${SNAP_DATA}/config/daemon.json"
+DAEMON_CONFIG_BASE="${SNAP}/config/daemon.json"
 # Merge state carried between runs, see apply_user_daemon_config.
 DAEMON_CONFIG_STATE="${SNAP_DATA}/daemon-config-state"
 DAEMON_CONFIG_ROLLBACK="${SNAP_DATA}/.configure-rollback"
@@ -91,7 +93,7 @@ def unslice($keys): with_entries(select(.key as $k | $keys | index($k) | not));
 # whitelist are never touched.
 # Sets SVC_RESTART when the effective config changes.
 apply_user_daemon_config() {
-    local cfg="${SNAP_DATA}/config/daemon.json"
+    local cfg="${DAEMON_CONFIG_FILE}"
     local statef="${DAEMON_CONFIG_STATE}"
     local allow="${DAEMON_CONFIG_ALLOW}"
     local base overlay snap_cfg state pending file_slice merged tmp
@@ -99,7 +101,7 @@ apply_user_daemon_config() {
     [ -n "$snap_cfg" ] || snap_cfg='{}'
 
     base="$(jq -c "$DAEMON_CONFIG_JQ"'slice($allow)' --argjson allow "$allow" \
-        "${SNAP}/config/daemon.json" 2>/dev/null || true)"
+        "${DAEMON_CONFIG_BASE}" 2>/dev/null || true)"
     jq -e 'type == "object"' <<<"$base" >/dev/null 2>&1 || base='{}'
 
     # Overlay = only the whitelisted keys the user has actually set.
@@ -214,14 +216,14 @@ apply_user_daemon_config() {
 # Copy daemon.json and the merge state aside, for restore_daemon_config.
 snapshot_daemon_config() {
     rm -rf "$DAEMON_CONFIG_ROLLBACK" && mkdir -p "$DAEMON_CONFIG_ROLLBACK"
-    cp "${SNAP_DATA}/config/daemon.json" "${DAEMON_CONFIG_ROLLBACK}/daemon.json"
+    cp "$DAEMON_CONFIG_FILE" "${DAEMON_CONFIG_ROLLBACK}/daemon.json"
     [ ! -f "$DAEMON_CONFIG_STATE" ] || cp "$DAEMON_CONFIG_STATE" "${DAEMON_CONFIG_ROLLBACK}/state"
 }
 
 # Put the snapshot back. Returns 0 iff daemon.json actually changed, so the caller
 # knows a service restart is warranted.
 restore_daemon_config() {
-    local cfg="${SNAP_DATA}/config/daemon.json" changed=1
+    local cfg="${DAEMON_CONFIG_FILE}" changed=1
     [ -f "${DAEMON_CONFIG_ROLLBACK}/daemon.json" ] || return 1
     if ! cmp -s "${DAEMON_CONFIG_ROLLBACK}/daemon.json" "$cfg"; then
         cp "${DAEMON_CONFIG_ROLLBACK}/daemon.json" "$cfg"
