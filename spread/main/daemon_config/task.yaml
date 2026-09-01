@@ -92,6 +92,12 @@ execute: |
   wait_for_docker
   sudo cat "$CONFIG" | MATCH '"max-concurrent-downloads"' || ERROR "corrupt state dropped an unmanaged key"
   sudo cat "$CONFIG" | MATCH '"mtu"[[:space:]]*:[[:space:]]*1450' || ERROR "mtu was not applied after a corrupt state"
+  # ... and a well-formed state naming a disallowed key must not smuggle it into the file.
+  echo '{"result":{},"hand":{"hosts":["tcp://0.0.0.0:2375"]},"tombstone":[]}' | sudo tee "$STATE" >/dev/null
+  snapcfg set docker daemon.mtu=1460
+  wait_for_docker
+  sudo cat "$CONFIG" | NOMATCH '"hosts"' || ERROR "disallowed key in the state reached daemon.json"
+  sudo ss -tlnpH 'sport = :2375' | NOMATCH 'dockerd' || ERROR "daemon exposed a TCP port via a corrupt state"
   snapcfg unset docker daemon.mtu
   wait_for_docker
 
