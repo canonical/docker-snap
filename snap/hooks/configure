@@ -6,6 +6,8 @@ HOOK_LOG="${SNAP_COMMON}/hooks/${SNAP_REVISION}/$(basename "$0").log" && mkdir -
 exec &> >(tee -a "${HOOK_LOG}")
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
+# shellcheck source=lib/daemon-config
+. "${SNAP}/usr/share/docker/daemon-config"
 
 # If the user unset the data-root, set it to the default
 data_root="$(snapctl get data-root)"
@@ -15,6 +17,26 @@ fi
 
 # Flag to trigger service restart if any condition requires it #
 SVC_RESTART=false
+
+# snapd rolls back the snap config transaction when this hook fails, but not file
+# writes; restore the pre-hook daemon.json and merge state so a failure (e.g.
+# a service restart error) cannot leave the file claiming a value that snap get
+# no longer shows.
+snapshot_daemon_config
+on_exit() {
+    rc=$?
+    if [ "$rc" -ne 0 ] && restore_daemon_config; then
+        # the failed restart may have left services stopped or on the new config
+        snapctl restart "${SNAP_NAME}" 2>/dev/null || true
+    fi
+    rm -rf "$DAEMON_CONFIG_ROLLBACK"
+    exit "$rc"
+}
+trap on_exit EXIT
+
+# Apply user-provided daemon options #
+reject_unsupported_daemon_config
+apply_user_daemon_config
 
 if nvidia_support_disabled; then
 
@@ -27,6 +49,8 @@ if nvidia_support_disabled; then
         rm -f "${SNAP_DATA}/etc/cdi/nvidia.yaml"
         rm -f "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
         SVC_RESTART=true
+    else
+        rm -f "${SNAP_DATA}/config/daemon.json.new"
     fi
 
 fi

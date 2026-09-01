@@ -92,7 +92,7 @@ sudo snap enable docker
 
 Docker should function normally, with the following caveats:
 
-* To configure the `docker` daemon edit `/var/snap/docker/current/config/daemon.json`.
+* To configure the `docker` daemon edit `/var/snap/docker/current/config/daemon.json`. A subset of the options can also be set through snap configuration, see [Configuring daemon options](#configuring-daemon-options).
 
 * All files that `docker` needs access to should live within your `$HOME` folder.
 
@@ -107,6 +107,16 @@ Docker should function normally, with the following caveats:
 * Additional certificates used by the Docker daemon to authenticate with registries need to be located in `/var/snap/docker/common/etc/certs.d` instead of `/etc/docker/certs.d`.
 
 * Specifying the option `--security-opt="no-new-privileges=true"` with the `docker run` command (or the equivalent in docker-compose) will result in a failure of the container to start. This is due to an an underlying external constraint on AppArmor; see [LP#1908448](https://bugs.launchpad.net/snappy/+bug/1908448) for details.
+
+### Configuring daemon options
+
+A subset of `daemon.json` options can be set through snap configuration, without editing the file:
+
+```shell
+sudo snap set docker daemon.default-address-pools='[{"base":"10.0.0.0/8","size":24}]'
+```
+
+Only a subset of options is accepted: `bip`, `bip6`, `default-address-pools`, `default-gateway`, `default-gateway-v6`, `default-ulimits`, `dns`, `dns-opts`, `dns-search`, `fixed-cidr`, `fixed-cidr-v6`, `ipv6`, `log-level` and `mtu`. Setting any other daemon option this way fails with an error. An option set this way takes precedence over the same option in `daemon.json`; options set by hand in the file are preserved, and `snap unset` puts back what the option was before: the hand-set value if there was one, otherwise the value shipped with the snap, otherwise the option is removed. An option you deleted from the file by hand stays deleted until you set it again, and writing the shipped value into the file by hand makes the option follow the snap's default again.
 
 ### Examples
 
