@@ -29,6 +29,15 @@ USER_DAEMON_KEYS=(
     log-level
     mtu
 )
+DAEMON_CONFIG_ALLOW="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
+
+# jq helpers shared by the programs below, so the whitelist filter cannot drift
+# between call sites. unslice is slice's complement over any key array.
+# shellcheck disable=SC2016
+DAEMON_CONFIG_JQ='
+def slice($keys): with_entries(select(.key as $k | $keys | index($k)));
+def unslice($keys): with_entries(select(.key as $k | $keys | index($k) | not));
+'
 
 # State carried between runs: the keys applied by the previous run. Only those are
 # dropped or reset on the next one, so values set by hand in daemon.json (or by
@@ -37,8 +46,7 @@ DAEMON_CONFIG_STATE="${SNAP_DATA}/daemon-config-state"
 DAEMON_CONFIG_ROLLBACK="${SNAP_DATA}/.configure-rollback"
 
 reject_unsupported_daemon_config() {
-    local allow snap_cfg bad
-    allow="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
+    local snap_cfg bad
     snap_cfg="$(snapctl get -d daemon 2>/dev/null || true)"
     [ -n "$snap_cfg" ] || return 0
     # `snap set docker daemon=foo` arrives as a non-object; reject it with a
@@ -48,7 +56,7 @@ reject_unsupported_daemon_config() {
         return 1
     fi
     # keys the user set that the snap does not support
-    bad="$(jq -r --argjson allow "$allow" \
+    bad="$(jq -r --argjson allow "$DAEMON_CONFIG_ALLOW" \
         '((.daemon // {}) | keys) - $allow | join(" ")' <<<"$snap_cfg" 2>/dev/null || true)"
     if [ -n "$bad" ]; then
         echo "error: daemon option(s) not configurable via snap: ${bad}" >&2
@@ -74,8 +82,8 @@ validate_daemon_config() {
 apply_user_daemon_config() {
     local cfg="${SNAP_DATA}/config/daemon.json"
     local managed="${DAEMON_CONFIG_STATE}"
-    local allow base snap_cfg overlay prev tmp
-    allow="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
+    local allow="${DAEMON_CONFIG_ALLOW}"
+    local base snap_cfg overlay prev tmp
     snap_cfg="$(snapctl get -d daemon 2>/dev/null || true)"
     [ -n "$snap_cfg" ] || snap_cfg='{}'
     prev="$(cat "$managed" 2>/dev/null || true)"
@@ -86,13 +94,13 @@ apply_user_daemon_config() {
 
     # Defaults for whitelisted keys, so unsetting a key that
     # has a base default restores that default instead of dockerd's built-in.
-    base="$(jq -c --argjson allow "$allow" \
-        'with_entries(select(.key as $k | $allow | index($k)))' "${SNAP}/config/daemon.json" 2>/dev/null || true)"
+    base="$(jq -c "$DAEMON_CONFIG_JQ"'slice($allow)' --argjson allow "$allow" \
+        "${SNAP}/config/daemon.json" 2>/dev/null || true)"
     jq -e 'type == "object"' <<<"$base" >/dev/null 2>&1 || base='{}'
 
     # Overlay = only the whitelisted keys the user has actually set.
-    overlay="$(jq -c --argjson allow "$allow" \
-        '(.daemon // {}) | with_entries(select(.key as $k | $allow | index($k)))' <<<"$snap_cfg" 2>/dev/null || true)"
+    overlay="$(jq -c "$DAEMON_CONFIG_JQ"'(.daemon // {}) | slice($allow)' \
+        --argjson allow "$allow" <<<"$snap_cfg" 2>/dev/null || true)"
     if ! jq -e 'type == "object"' <<<"$overlay" >/dev/null 2>&1; then
         echo "config: could not read daemon options; leaving daemon.json unchanged"
         return 0
@@ -111,10 +119,11 @@ apply_user_daemon_config() {
     # ones the user has set (user value wins).
     tmp="$(mktemp "${cfg}.XXXXXX")"
     chmod 644 "$tmp" # mktemp creates it 0600
-    if ! jq --argjson prev "$prev" --argjson base "$base" --argjson overlay "$overlay" \
-        'delpaths([ $prev[] | [.] ])
-         | . + ($base | with_entries(select(.key as $k | $prev | index($k))))
-         | . + $overlay' "$cfg" > "$tmp" 2>/dev/null; then
+    if ! jq "$DAEMON_CONFIG_JQ"'
+        delpaths([ $prev[] | [.] ])
+        | . + ($base | slice($prev))
+        | . + $overlay' --argjson prev "$prev" --argjson base "$base" --argjson overlay "$overlay" \
+        "$cfg" > "$tmp" 2>/dev/null; then
         rm -f "$tmp"
         echo "error: failed to merge daemon options into ${cfg}" >&2
         return 1
