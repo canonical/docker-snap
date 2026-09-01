@@ -33,6 +33,7 @@ USER_DAEMON_KEYS=(
 # Keys applied by the previous run. Only those are dropped or reset on the next one,
 # so values set by hand in daemon.json (or by nvidia) are left alone.
 DAEMON_CONFIG_KEYS="${SNAP_DATA}/daemon-config-keys"
+DAEMON_CONFIG_ROLLBACK="${SNAP_DATA}/.configure-rollback"
 
 reject_unsupported_daemon_config() {
     local allow snap_cfg bad
@@ -142,4 +143,28 @@ apply_user_daemon_config() {
     # The managed list tracks the overlay, not the file. An `unset` that changes
     # nothing still has to drop the key from the managed list.
     jq -c 'keys' <<<"$overlay" > "${managed}.new" && mv "${managed}.new" "$managed"
+}
+
+# Copy daemon.json and the managed-key list aside, for restore_daemon_config.
+snapshot_daemon_config() {
+    rm -rf "$DAEMON_CONFIG_ROLLBACK" && mkdir -p "$DAEMON_CONFIG_ROLLBACK"
+    cp "${SNAP_DATA}/config/daemon.json" "${DAEMON_CONFIG_ROLLBACK}/daemon.json"
+    [ ! -f "$DAEMON_CONFIG_KEYS" ] || cp "$DAEMON_CONFIG_KEYS" "${DAEMON_CONFIG_ROLLBACK}/daemon-config-keys"
+}
+
+# Put the snapshot back. Returns 0 iff daemon.json actually changed, so the caller
+# knows a service restart is warranted.
+restore_daemon_config() {
+    local cfg="${SNAP_DATA}/config/daemon.json" changed=1
+    [ -f "${DAEMON_CONFIG_ROLLBACK}/daemon.json" ] || return 1
+    if ! cmp -s "${DAEMON_CONFIG_ROLLBACK}/daemon.json" "$cfg"; then
+        cp "${DAEMON_CONFIG_ROLLBACK}/daemon.json" "$cfg"
+        changed=0
+    fi
+    if [ -f "${DAEMON_CONFIG_ROLLBACK}/daemon-config-keys" ]; then
+        cp "${DAEMON_CONFIG_ROLLBACK}/daemon-config-keys" "$DAEMON_CONFIG_KEYS"
+    else
+        rm -f "$DAEMON_CONFIG_KEYS"
+    fi
+    return "$changed"
 }

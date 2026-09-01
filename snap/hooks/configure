@@ -18,34 +18,21 @@ fi
 # Flag to trigger service restart if any condition requires it #
 SVC_RESTART=false
 
-CFG="${SNAP_DATA}/config/daemon.json"
-
 # snapd rolls back the snap config transaction when this hook fails, but not file
 # writes; restore the pre-hook daemon.json and managed-key list so a failure (e.g.
 # a service restart error) cannot leave the file claiming a value that snap get
 # no longer shows.
-ROLLBACK="${SNAP_DATA}/.configure-rollback"
-rm -rf "$ROLLBACK" && mkdir -p "$ROLLBACK"
-cp "$CFG" "$ROLLBACK/daemon.json"
-[ ! -f "$DAEMON_CONFIG_KEYS" ] || cp "$DAEMON_CONFIG_KEYS" "$ROLLBACK/daemon-config-keys"
-rollback_config() {
+snapshot_daemon_config
+on_exit() {
     rc=$?
-    if [ "$rc" -ne 0 ]; then
-        if ! cmp -s "$ROLLBACK/daemon.json" "$CFG"; then
-            cp "$ROLLBACK/daemon.json" "$CFG"
-            # the failed restart may have left services stopped or on the new config
-            snapctl restart "${SNAP_NAME}" 2>/dev/null || true
-        fi
-        if [ -f "$ROLLBACK/daemon-config-keys" ]; then
-            cp "$ROLLBACK/daemon-config-keys" "$DAEMON_CONFIG_KEYS"
-        else
-            rm -f "$DAEMON_CONFIG_KEYS"
-        fi
+    if [ "$rc" -ne 0 ] && restore_daemon_config; then
+        # the failed restart may have left services stopped or on the new config
+        snapctl restart "${SNAP_NAME}" 2>/dev/null || true
     fi
-    rm -rf "$ROLLBACK"
+    rm -rf "$DAEMON_CONFIG_ROLLBACK"
     exit "$rc"
 }
-trap rollback_config EXIT
+trap on_exit EXIT
 
 # Apply user-provided daemon options #
 reject_unsupported_daemon_config
