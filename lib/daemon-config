@@ -78,22 +78,27 @@ validate_daemon_config() {
 }
 
 # Merge whitelisted daemon options from snap config into daemon.json.
+#
+# The whitelisted slice of daemon.json is composed from three layers, later wins:
+#   B: the defaults shipped in $SNAP/config/daemon.json
+#   H: values set by hand in daemon.json: whatever the file holds for keys the
+#      previous run did not write
+#   O: snap config (`snapctl get daemon`)
+# and three more names take part:
+#   C: the current file, as it is now
+#   P: what the previous run wrote, kept in $DAEMON_CONFIG_STATE as {result}
+#   R: the composed result; stored in the state, it is the next run's P
+# So a key P wrote goes back to B when snap config drops it, and a key P did not
+# write is left as the file has it. Keys outside the whitelist are never touched.
 # Sets SVC_RESTART when the effective config changes.
 apply_user_daemon_config() {
     local cfg="${SNAP_DATA}/config/daemon.json"
-    local managed="${DAEMON_CONFIG_STATE}"
+    local statef="${DAEMON_CONFIG_STATE}"
     local allow="${DAEMON_CONFIG_ALLOW}"
-    local base snap_cfg overlay prev tmp
+    local base overlay snap_cfg state merged tmp
     snap_cfg="$(snapctl get -d daemon 2>/dev/null || true)"
     [ -n "$snap_cfg" ] || snap_cfg='{}'
-    prev="$(cat "$managed" 2>/dev/null || true)"
-    jq -e 'type == "array" and all(type == "string")' <<<"$prev" >/dev/null 2>&1 || prev='[]'
-    # Only allowlisted keys may be dropped or reset, whatever the state file claims.
-    prev="$(jq -c --argjson allow "$allow" \
-        'map(select(. as $k | $allow | index($k)))' <<<"$prev" || echo '[]')"
 
-    # Defaults for whitelisted keys, so unsetting a key that
-    # has a base default restores that default instead of dockerd's built-in.
     base="$(jq -c "$DAEMON_CONFIG_JQ"'slice($allow)' --argjson allow "$allow" \
         "${SNAP}/config/daemon.json" 2>/dev/null || true)"
     jq -e 'type == "object"' <<<"$base" >/dev/null 2>&1 || base='{}'
@@ -102,7 +107,7 @@ apply_user_daemon_config() {
     overlay="$(jq -c "$DAEMON_CONFIG_JQ"'(.daemon // {}) | slice($allow)' \
         --argjson allow "$allow" <<<"$snap_cfg" 2>/dev/null || true)"
     if ! jq -e 'type == "object"' <<<"$overlay" >/dev/null 2>&1; then
-        echo "config: could not read daemon options; leaving daemon.json unchanged"
+        echo "config: could not read daemon options; leaving daemon.json unchanged" >&2
         return 0
     fi
 
@@ -115,25 +120,37 @@ apply_user_daemon_config() {
         return 1
     fi
 
-    # Drop the keys applied last time, restore the snap defaults for them, then apply the
-    # ones the user has set (user value wins).
-    tmp="$(mktemp "${cfg}.XXXXXX")"
-    chmod 644 "$tmp" # mktemp creates it 0600
-    if ! jq "$DAEMON_CONFIG_JQ"'
-        delpaths([ $prev[] | [.] ])
-        | . + ($base | slice($prev))
-        | . + $overlay' --argjson prev "$prev" --argjson base "$base" --argjson overlay "$overlay" \
-        "$cfg" > "$tmp" 2>/dev/null; then
-        rm -f "$tmp"
+    state="$(cat "$statef" 2>/dev/null || true)"
+    jq -e 'type == "object" and ((.result // {}) | type == "object")' <<<"$state" >/dev/null 2>&1 \
+        || state='{"result":{}}'
+
+    if ! merged="$(jq -c "$DAEMON_CONFIG_JQ"'
+        . as $file
+        | slice($allow) as $C
+        # only whitelisted keys may be dropped or reset, whatever the state claims
+        | (($state.result // {}) | slice($allow)) as $P
+        # R = (B|P) < (C - P) < O
+        | (($B | slice($P | keys)) + ($C | unslice($P | keys)) + $O) as $R
+        # file = its non-whitelisted keys + R
+        | {file: (($file | unslice($allow)) + $R),
+           state: {result: $R},
+           changed: ($R != $C)}' \
+        --argjson allow "$allow" --argjson B "$base" --argjson O "$overlay" \
+        --argjson state "$state" "$cfg" 2>/dev/null)"; then
         echo "error: failed to merge daemon options into ${cfg}" >&2
         return 1
     fi
+
+    tmp="$(mktemp "${cfg}.XXXXXX")"
+    chmod 644 "$tmp" # mktemp creates it 0600
+    jq '.file' <<<"$merged" > "$tmp"
+    jq -c '.state' <<<"$merged" > "${statef}.new"
 
     # Reject an invalid value so the snap set fails loudly instead of silently not applying.
     # A file that already fails on its own is not the option's fault, so say so instead.
     local err
     if ! err="$(validate_daemon_config "$tmp")"; then
-        rm -f "$tmp"
+        rm -f "$tmp" "${statef}.new"
         if ! cfg_err="$(validate_daemon_config "$cfg")"; then
             echo "error: existing ${cfg} is invalid: ${cfg_err}" >&2
         else
@@ -142,17 +159,18 @@ apply_user_daemon_config() {
         return 1
     fi
 
-    # Only apply when the config actually changed
-    if jq -S . "$cfg" 2>/dev/null | cmp -s - <(jq -S . "$tmp" 2>/dev/null); then
-        rm -f "$tmp"
-    else
+    # Only rewrite the file when its whitelisted slice changed, so hand formatting
+    # survives a no-op run.
+    if [ "$(jq -r '.changed' <<<"$merged")" = true ]; then
         mv "$tmp" "$cfg"
         # shellcheck disable=SC2034
         SVC_RESTART=true
+    else
+        rm -f "$tmp"
     fi
-    # The managed list tracks the overlay, not the file. An `unset` that changes
-    # nothing still has to drop the key from the managed list.
-    jq -c 'keys' <<<"$overlay" > "${managed}.new" && mv "${managed}.new" "$managed"
+    # State is committed even when the file did not change: an unset that changes
+    # nothing on disk still has to leave the key out of P.
+    mv "${statef}.new" "$statef"
 }
 
 # Copy daemon.json and the state aside, for restore_daemon_config.

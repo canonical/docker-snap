@@ -82,10 +82,10 @@ execute: |
   sudo cat "$CONFIG" | NOMATCH '"mtu"' || ERROR "mtu was not removed on unset"
   sudo cat "$CONFIG" | MATCH '"snap\.test"' || ERROR "hand-set option was dropped on unset"
 
-  # A corrupt state file must not let the hook drop keys outside the allowlist, and an
-  # unreadable one is discarded rather than trusted.
+  # A state file naming a key outside the allowlist must not let the hook drop it, and
+  # an unreadable one is discarded rather than trusted.
   edit_config '. + {"max-concurrent-downloads": 7}'
-  echo '["max-concurrent-downloads"]' | sudo tee "$STATE" >/dev/null
+  echo '{"result":{"max-concurrent-downloads":7}}' | sudo tee "$STATE" >/dev/null
   snapcfg set docker daemon.mtu=1450
   wait_for_docker
   sudo cat "$CONFIG" | MATCH '"max-concurrent-downloads"' || ERROR "corrupt state dropped an unmanaged key"
