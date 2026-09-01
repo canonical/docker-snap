@@ -116,7 +116,7 @@ A subset of `daemon.json` options can be set through snap configuration, without
 sudo snap set docker daemon.default-address-pools='[{"base":"10.0.0.0/8","size":24}]'
 ```
 
-Only a subset of options is accepted: `bip`, `bip6`, `default-address-pools`, `default-gateway`, `default-gateway-v6`, `default-ulimits`, `dns`, `dns-opts`, `dns-search`, `fixed-cidr`, `fixed-cidr-v6`, `ipv6`, `log-level` and `mtu`. Setting any other daemon option this way fails with an error. An option set this way takes precedence over the same option in `daemon.json` and is written back on every configuration change, so change it with `snap set` and remove it with `snap unset` rather than editing `daemon.json`. Options that were never set through snap configuration are left as they are in the file. `snap unset` restores the option to the value shipped with the snap, or removes it if the snap ships no value for it. It does not restore a value you had previously set by hand in `daemon.json`.
+Only a subset of options is accepted: `bip`, `bip6`, `default-address-pools`, `default-gateway`, `default-gateway-v6`, `default-ulimits`, `dns`, `dns-opts`, `dns-search`, `fixed-cidr`, `fixed-cidr-v6`, `ipv6`, `log-level` and `mtu`. Setting any other daemon option this way fails with an error. An option set this way takes precedence over the same option in `daemon.json`; options set by hand in the file are preserved, and `snap unset` puts back what the option was before: the hand-set value if there was one, otherwise the value shipped with the snap, otherwise the option is removed. An option you deleted from the file by hand stays deleted until you set it again, and writing the shipped value into the file by hand makes the option follow the snap's default again.
 
 ### Examples
 
