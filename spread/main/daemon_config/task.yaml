@@ -2,6 +2,7 @@ summary: Set daemon.json options via snap configuration
 
 environment:
   CONFIG: /var/snap/docker/current/config/daemon.json
+  SIDECAR: /var/snap/docker/current/daemon-config-keys
   BACKUP: daemon.json.bak
 
 prepare: |
@@ -44,6 +45,9 @@ execute: |
   wait_for_docker
   sudo cat "$CONFIG" | NOMATCH 'not-a-number' || ERROR "invalid value was written to daemon.json"
 
+  # Setting the whole daemon subtree to a scalar fails with an error, not a silent hook crash.
+  ! snapcfg set docker daemon=foo || ERROR "non-object daemon subtree was accepted"
+
   # log-level ships a default ("error") in the base config: setting it applies, and
   # unsetting restores the shipped default rather than dropping the key.
   snapcfg set docker daemon.log-level=debug
@@ -77,6 +81,15 @@ execute: |
   wait_for_docker
   sudo cat "$CONFIG" | NOMATCH '"mtu"' || ERROR "mtu was not removed on unset"
   sudo cat "$CONFIG" | MATCH '"snap\.test"' || ERROR "hand-set option was dropped on unset"
+
+  # A corrupt managed-keys file must not let the hook drop keys outside the allowlist.
+  edit_config '. + {"max-concurrent-downloads": 7}'
+  echo '["max-concurrent-downloads"]' | sudo tee "$SIDECAR" >/dev/null
+  snapcfg set docker daemon.mtu=1450
+  wait_for_docker
+  sudo cat "$CONFIG" | MATCH '"max-concurrent-downloads"' || ERROR "corrupt sidecar dropped an unmanaged key"
+  snapcfg unset docker daemon.mtu
+  wait_for_docker
 
   # Unsetting removes the option again.
   snapcfg unset docker daemon.default-address-pools
