@@ -3,8 +3,7 @@
 # `snap set docker daemon.<key>=<value>`.
 
 # Keys a user may set via `snap set docker daemon.<key>=<value>`, which the configure
-# hook merges into daemon.json. Whitelist safe keys. Keys with a value in the base config
-# (e.g. log-level) are restored to that default when unset.
+# hook merges into daemon.json. Whitelist safe keys.
 #
 # Known dangerous keys are: hosts, tls*, authorization-plugins, runtimes,
 # insecure-registries, registry-mirrors. We should have a good reason for adding
@@ -31,17 +30,7 @@ USER_DAEMON_KEYS=(
 )
 DAEMON_CONFIG_ALLOW="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
 
-# jq helpers shared by the programs below, so the whitelist filter cannot drift
-# between call sites. unslice is slice's complement over any key array.
-# shellcheck disable=SC2016
-DAEMON_CONFIG_JQ='
-def slice($keys): with_entries(select(.key as $k | $keys | index($k)));
-def unslice($keys): with_entries(select(.key as $k | $keys | index($k) | not));
-'
-
-# State carried between runs: the keys applied by the previous run. Only those are
-# dropped or reset on the next one, so values set by hand in daemon.json (or by
-# nvidia) are left alone.
+# Merge state carried between runs, see apply_user_daemon_config.
 DAEMON_CONFIG_STATE="${SNAP_DATA}/daemon-config-state"
 DAEMON_CONFIG_ROLLBACK="${SNAP_DATA}/.configure-rollback"
 
@@ -77,27 +66,35 @@ validate_daemon_config() {
     return 1
 }
 
+# jq helpers shared by the programs below, so the whitelist filter cannot drift
+# between call sites. unslice is slice's complement over any key array.
+# shellcheck disable=SC2016
+DAEMON_CONFIG_JQ='
+def slice($keys): with_entries(select(.key as $k | $keys | index($k)));
+def unslice($keys): with_entries(select(.key as $k | $keys | index($k) | not));
+'
+
 # Merge whitelisted daemon options from snap config into daemon.json.
 #
 # The whitelisted slice of daemon.json is composed from three layers, later wins:
 #   B: the defaults shipped in $SNAP/config/daemon.json
-#   H: values set by hand in daemon.json: whatever the file holds for keys the
-#      previous run did not write
+#   H: values set by hand in daemon.json
 #   O: snap config (`snapctl get daemon`)
 # and four more names take part:
+#   T: tombstones, hand-deleted B keys that composing must not resurrect
 #   C: the current file, as it is now
-#   A: what snap config applied in the previous run
-#   P: what the previous run wrote; only crash recovery looks at it here
-#   R: the composed result; A and R are kept in $DAEMON_CONFIG_STATE as
-#      {applied, result} and become the next run's A and P
-# So a key A applied goes back to B when snap config drops it, and a key A did not
-# apply is left as the file has it. Keys outside the whitelist are never touched.
+#   P: what the previous run wrote
+#   R: the composed result; stored in the state, it is the next run's P
+# H and T are reconstructed each run by diffing C against P. P, H and T live in
+# $DAEMON_CONFIG_STATE as {result, hand, tombstone}. Hand-writing a key back to its
+# shipped value drops it from H, so the key tracks B again. Keys outside the
+# whitelist are never touched.
 # Sets SVC_RESTART when the effective config changes.
 apply_user_daemon_config() {
     local cfg="${SNAP_DATA}/config/daemon.json"
     local statef="${DAEMON_CONFIG_STATE}"
     local allow="${DAEMON_CONFIG_ALLOW}"
-    local base overlay snap_cfg state merged tmp
+    local base overlay snap_cfg state pending file_slice merged tmp
     snap_cfg="$(snapctl get -d daemon 2>/dev/null || true)"
     [ -n "$snap_cfg" ] || snap_cfg='{}'
 
@@ -126,7 +123,6 @@ apply_user_daemon_config() {
     # A crash can land between the daemon.json mv and the state mv below; the staged
     # .new is adopted iff it describes the file as it is now.
     if [ -f "${statef}.new" ]; then
-        local pending file_slice
         pending="$(cat "${statef}.new" 2>/dev/null || true)"
         file_slice="$(jq -c "$DAEMON_CONFIG_JQ"'slice($allow)' --argjson allow "$allow" \
             "$cfg" 2>/dev/null || echo null)"
@@ -135,20 +131,45 @@ apply_user_daemon_config() {
         rm -f "${statef}.new"
     fi
     jq -e 'type == "object"
-           and ((.applied // {}) | type == "object")
-           and ((.result  // {}) | type == "object")' <<<"$state" >/dev/null 2>&1 \
-        || state='{"applied":{},"result":{}}'
+           and ((.result    // {}) | type == "object")
+           and ((.hand      // {}) | type == "object")
+           and ((.tombstone // []) | type == "array" and all(type == "string"))' \
+        <<<"$state" >/dev/null 2>&1 || state=''
+    if [ -z "$state" ]; then
+        # First run, an upgrade from the pre-state format, or a lost state file:
+        # seed P = O where C already agrees, H = {}, T = keys(B) - keys(C)
+        state="$(jq -c "$DAEMON_CONFIG_JQ"'
+            slice($allow) as $C
+            | {result: ($O | with_entries(.key as $k | select($C[$k] == .value))),
+               hand: {},
+               tombstone: (($B | keys) - ($C | keys))}' \
+            --argjson allow "$allow" --argjson B "$base" --argjson O "$overlay" \
+            "$cfg" 2>/dev/null || true)"
+        [ -n "$state" ] || state='{"result":{},"hand":{},"tombstone":[]}'
+    fi
 
     if ! merged="$(jq -c "$DAEMON_CONFIG_JQ"'
         . as $file
         | slice($allow) as $C
-        # only whitelisted keys may be dropped or reset, whatever the state claims
-        | (($state.applied // {}) | slice($allow) | keys) as $A
-        # R = (B|A) < (C - A) < O
-        | (($B | slice($A)) + ($C | unslice($A)) + $O) as $R
+        | ($state.result // {}) as $P
+        # Ingest hand edits since P, one key at a time:
+        | reduce (($C | keys) + ($P | keys) | unique)[] as $k (
+            {hand: ($state.hand // {}), tombstone: ($state.tombstone // [])};
+            if ($C | has($k) | not) then          # gone since P: T if B ships it, else forget
+                {hand: (.hand | del(.[$k])),
+                 tombstone: (if $B | has($k) then (.tombstone + [$k] | unique) else .tombstone end)}
+            elif ($P | has($k)) and $P[$k] == $C[$k] then .   # unchanged since P
+            elif ($B | has($k)) and $B[$k] == $C[$k] then     # back to B: forget
+                {hand: (.hand | del(.[$k])), tombstone: (.tombstone - [$k])}
+            else                                              # hand override
+                {hand: (.hand + {($k): $C[$k]}), tombstone: (.tombstone - [$k])}
+            end)
+        | .hand as $H | .tombstone as $T
+        # R = (B - T) < H < O
+        | (($B | unslice($T)) + $H + $O) as $R
         # file = its non-whitelisted keys + R
         | {file: (($file | unslice($allow)) + $R),
-           state: {applied: $O, result: $R},
+           state: {result: $R, hand: $H, tombstone: ($T | sort)},
            changed: ($R != $C)}' \
         --argjson allow "$allow" --argjson B "$base" --argjson O "$overlay" \
         --argjson state "$state" "$cfg" 2>/dev/null)"; then
@@ -185,12 +206,12 @@ apply_user_daemon_config() {
     else
         rm -f "$tmp"
     fi
-    # State is committed even when the file did not change: an unset that changes
-    # nothing on disk still has to leave the key out of A.
+    # State can move (ingest, adoption) even when the file does not, so it is
+    # committed unconditionally.
     mv "${statef}.new" "$statef"
 }
 
-# Copy daemon.json and the state aside, for restore_daemon_config.
+# Copy daemon.json and the merge state aside, for restore_daemon_config.
 snapshot_daemon_config() {
     rm -rf "$DAEMON_CONFIG_ROLLBACK" && mkdir -p "$DAEMON_CONFIG_ROLLBACK"
     cp "${SNAP_DATA}/config/daemon.json" "${DAEMON_CONFIG_ROLLBACK}/daemon.json"
@@ -211,5 +232,6 @@ restore_daemon_config() {
     else
         rm -f "$DAEMON_CONFIG_STATE"
     fi
+    rm -f "${DAEMON_CONFIG_STATE}.new"
     return "$changed"
 }
