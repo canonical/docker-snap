@@ -137,6 +137,12 @@ apply_user_daemon_config() {
            and ((.hand      // {}) | type == "object")
            and ((.tombstone // []) | type == "array" and all(type == "string"))' \
         <<<"$state" >/dev/null 2>&1 || state=''
+    # Only whitelisted keys may reach the file, whatever the state claims.
+    [ -z "$state" ] || state="$(jq -c "$DAEMON_CONFIG_JQ"'
+        {result: (.result // {} | slice($allow)),
+         hand: (.hand // {} | slice($allow)),
+         tombstone: ((.tombstone // []) - ((.tombstone // []) - $allow))}' \
+        --argjson allow "$allow" <<<"$state" 2>/dev/null || true)"
     if [ -z "$state" ]; then
         # First run, an upgrade from the pre-state format, or a lost state file:
         # seed P = O where C already agrees, H = {}, T = keys(B) - keys(C)
