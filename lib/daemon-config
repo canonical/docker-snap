@@ -30,9 +30,10 @@ USER_DAEMON_KEYS=(
     mtu
 )
 
-# Keys applied by the previous run. Only those are dropped or reset on the next one,
-# so values set by hand in daemon.json (or by nvidia) are left alone.
-DAEMON_CONFIG_KEYS="${SNAP_DATA}/daemon-config-keys"
+# State carried between runs: the keys applied by the previous run. Only those are
+# dropped or reset on the next one, so values set by hand in daemon.json (or by
+# nvidia) are left alone.
+DAEMON_CONFIG_STATE="${SNAP_DATA}/daemon-config-state"
 DAEMON_CONFIG_ROLLBACK="${SNAP_DATA}/.configure-rollback"
 
 reject_unsupported_daemon_config() {
@@ -72,14 +73,14 @@ validate_daemon_config() {
 # Sets SVC_RESTART when the effective config changes.
 apply_user_daemon_config() {
     local cfg="${SNAP_DATA}/config/daemon.json"
-    local managed="${DAEMON_CONFIG_KEYS}"
+    local managed="${DAEMON_CONFIG_STATE}"
     local allow base snap_cfg overlay prev tmp
     allow="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
     snap_cfg="$(snapctl get -d daemon 2>/dev/null || true)"
     [ -n "$snap_cfg" ] || snap_cfg='{}'
     prev="$(cat "$managed" 2>/dev/null || true)"
     jq -e 'type == "array" and all(type == "string")' <<<"$prev" >/dev/null 2>&1 || prev='[]'
-    # Only allowlisted keys may be dropped or reset, whatever the sidecar claims.
+    # Only allowlisted keys may be dropped or reset, whatever the state file claims.
     prev="$(jq -c --argjson allow "$allow" \
         'map(select(. as $k | $allow | index($k)))' <<<"$prev" || echo '[]')"
 
@@ -145,11 +146,11 @@ apply_user_daemon_config() {
     jq -c 'keys' <<<"$overlay" > "${managed}.new" && mv "${managed}.new" "$managed"
 }
 
-# Copy daemon.json and the managed-key list aside, for restore_daemon_config.
+# Copy daemon.json and the state aside, for restore_daemon_config.
 snapshot_daemon_config() {
     rm -rf "$DAEMON_CONFIG_ROLLBACK" && mkdir -p "$DAEMON_CONFIG_ROLLBACK"
     cp "${SNAP_DATA}/config/daemon.json" "${DAEMON_CONFIG_ROLLBACK}/daemon.json"
-    [ ! -f "$DAEMON_CONFIG_KEYS" ] || cp "$DAEMON_CONFIG_KEYS" "${DAEMON_CONFIG_ROLLBACK}/daemon-config-keys"
+    [ ! -f "$DAEMON_CONFIG_STATE" ] || cp "$DAEMON_CONFIG_STATE" "${DAEMON_CONFIG_ROLLBACK}/state"
 }
 
 # Put the snapshot back. Returns 0 iff daemon.json actually changed, so the caller
@@ -161,10 +162,10 @@ restore_daemon_config() {
         cp "${DAEMON_CONFIG_ROLLBACK}/daemon.json" "$cfg"
         changed=0
     fi
-    if [ -f "${DAEMON_CONFIG_ROLLBACK}/daemon-config-keys" ]; then
-        cp "${DAEMON_CONFIG_ROLLBACK}/daemon-config-keys" "$DAEMON_CONFIG_KEYS"
+    if [ -f "${DAEMON_CONFIG_ROLLBACK}/state" ]; then
+        cp "${DAEMON_CONFIG_ROLLBACK}/state" "$DAEMON_CONFIG_STATE"
     else
-        rm -f "$DAEMON_CONFIG_KEYS"
+        rm -f "$DAEMON_CONFIG_STATE"
     fi
     return "$changed"
 }

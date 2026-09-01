@@ -2,7 +2,7 @@ summary: Set daemon.json options via snap configuration
 
 environment:
   CONFIG: /var/snap/docker/current/config/daemon.json
-  SIDECAR: /var/snap/docker/current/daemon-config-keys
+  STATE: /var/snap/docker/current/daemon-config-state
   BACKUP: daemon.json.bak
 
 prepare: |
@@ -82,12 +82,17 @@ execute: |
   sudo cat "$CONFIG" | NOMATCH '"mtu"' || ERROR "mtu was not removed on unset"
   sudo cat "$CONFIG" | MATCH '"snap\.test"' || ERROR "hand-set option was dropped on unset"
 
-  # A corrupt managed-keys file must not let the hook drop keys outside the allowlist.
+  # A corrupt state file must not let the hook drop keys outside the allowlist, and an
+  # unreadable one is discarded rather than trusted.
   edit_config '. + {"max-concurrent-downloads": 7}'
-  echo '["max-concurrent-downloads"]' | sudo tee "$SIDECAR" >/dev/null
+  echo '["max-concurrent-downloads"]' | sudo tee "$STATE" >/dev/null
   snapcfg set docker daemon.mtu=1450
   wait_for_docker
-  sudo cat "$CONFIG" | MATCH '"max-concurrent-downloads"' || ERROR "corrupt sidecar dropped an unmanaged key"
+  sudo cat "$CONFIG" | MATCH '"max-concurrent-downloads"' || ERROR "corrupt state dropped an unmanaged key"
+  echo 'not json' | sudo tee "$STATE" >/dev/null
+  snapcfg set docker daemon.mtu=1460
+  wait_for_docker
+  sudo cat "$CONFIG" | MATCH '"mtu"[[:space:]]*:[[:space:]]*1460' || ERROR "mtu was not applied after an unreadable state"
   snapcfg unset docker daemon.mtu
   wait_for_docker
 
@@ -101,9 +106,10 @@ restore: |
 
   sudo systemctl reset-failed snap.docker.nvidia-container-toolkit.service 2>/dev/null || true
   # Unset before restoring the file: each unset runs the configure hook, which rewrites
-  # daemon.json and the managed-key list.
+  # daemon.json and the state.
   sudo snap unset docker daemon.default-address-pools daemon.hosts daemon.mtu daemon.log-level 2>/dev/null || true
   sudo cp "$BACKUP" "$CONFIG"
+  sudo rm -f "$STATE"
   sudo docker network rm testpool >/dev/null 2>&1 || true
   # The restored file only reaches the running daemon on a restart.
   restart_docker

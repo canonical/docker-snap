@@ -19,7 +19,7 @@ fi
 SVC_RESTART=false
 
 # snapd rolls back the snap config transaction when this hook fails, but not file
-# writes; restore the pre-hook daemon.json and managed-key list so a failure (e.g.
+# writes; restore the pre-hook daemon.json and state so a failure (e.g.
 # a service restart error) cannot leave the file claiming a value that snap get
 # no longer shows.
 snapshot_daemon_config
