@@ -121,6 +121,17 @@ apply_user_daemon_config() {
     fi
 
     state="$(cat "$statef" 2>/dev/null || true)"
+    # A crash can land between the daemon.json mv and the state mv below; the staged
+    # .new is adopted iff it describes the file as it is now.
+    if [ -f "${statef}.new" ]; then
+        local pending file_slice
+        pending="$(cat "${statef}.new" 2>/dev/null || true)"
+        file_slice="$(jq -c "$DAEMON_CONFIG_JQ"'slice($allow)' --argjson allow "$allow" \
+            "$cfg" 2>/dev/null || echo null)"
+        jq -e --argjson slice "$file_slice" '(.result // null) == $slice' \
+            <<<"$pending" >/dev/null 2>&1 && state="$pending"
+        rm -f "${statef}.new"
+    fi
     jq -e 'type == "object" and ((.result // {}) | type == "object")' <<<"$state" >/dev/null 2>&1 \
         || state='{"result":{}}'
 
@@ -144,6 +155,8 @@ apply_user_daemon_config() {
     tmp="$(mktemp "${cfg}.XXXXXX")"
     chmod 644 "$tmp" # mktemp creates it 0600
     jq '.file' <<<"$merged" > "$tmp"
+    # Stage the new state before touching the file, so a crash between the two mvs
+    # is recovered by the adoption check above.
     jq -c '.state' <<<"$merged" > "${statef}.new"
 
     # Reject an invalid value so the snap set fails loudly instead of silently not applying.
