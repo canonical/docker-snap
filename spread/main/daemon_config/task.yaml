@@ -57,8 +57,9 @@ execute: |
   wait_for_docker
   sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"error"' || ERROR "log-level did not restore the shipped default on unset"
 
-  # Options set by hand in daemon.json survive snap config changes: only the keys the hook
-  # applied itself are dropped or reset, even when they are allowlisted (log-level here).
+  # Options set by hand in daemon.json survive snap config changes: the hook tracks
+  # hand edits as their own layer and only overrides a key while it is set in snap
+  # config (log-level here is allowlisted and still survives).
   # Ubuntu Core has no jq, so edit the file with the snap's copy in the snap's environment.
   edit_config() {
     sudo snap run --shell docker.docker -c "jq '$1' \"\$SNAP_DATA/config/daemon.json\" > \"\$SNAP_DATA/config/daemon.json.new\" && mv \"\$SNAP_DATA/config/daemon.json.new\" \"\$SNAP_DATA/config/daemon.json\""
@@ -70,31 +71,50 @@ execute: |
   sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"debug"' || ERROR "hand-set log-level was reset by an unrelated snap set"
   sudo cat "$CONFIG" | MATCH '"mtu"[[:space:]]*:[[:space:]]*1400' || ERROR "mtu was not applied"
 
-  # Once a key has been set through snap config it is managed: unset restores the shipped
-  # default, not the hand-set value.
+  # A hand-set value survives a snap set / unset cycle: unset restores the hand-set
+  # value, not the shipped default.
   snapcfg set docker daemon.log-level=info
   wait_for_docker
+  sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"info"' || ERROR "log-level was not applied over the hand-set value"
   snapcfg unset docker daemon.log-level
   wait_for_docker
-  sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"error"' || ERROR "managed log-level did not restore the shipped default on unset"
+  sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"debug"' || ERROR "unset did not restore the hand-set log-level"
   snapcfg unset docker daemon.mtu
   wait_for_docker
   sudo cat "$CONFIG" | NOMATCH '"mtu"' || ERROR "mtu was not removed on unset"
   sudo cat "$CONFIG" | MATCH '"snap\.test"' || ERROR "hand-set option was dropped on unset"
 
-  # A state file naming a key outside the allowlist must not let the hook drop it, and
-  # an unreadable one is discarded rather than trusted.
+  # A corrupt state file is discarded and reseeded; it can never touch keys outside
+  # the allowlist.
   edit_config '. + {"max-concurrent-downloads": 7}'
-  echo '{"applied":{"max-concurrent-downloads":7}}' | sudo tee "$STATE" >/dev/null
+  echo 'not json' | sudo tee "$STATE" >/dev/null
   snapcfg set docker daemon.mtu=1450
   wait_for_docker
   sudo cat "$CONFIG" | MATCH '"max-concurrent-downloads"' || ERROR "corrupt state dropped an unmanaged key"
-  echo 'not json' | sudo tee "$STATE" >/dev/null
-  snapcfg set docker daemon.mtu=1460
-  wait_for_docker
-  sudo cat "$CONFIG" | MATCH '"mtu"[[:space:]]*:[[:space:]]*1460' || ERROR "mtu was not applied after an unreadable state"
+  sudo cat "$CONFIG" | MATCH '"mtu"[[:space:]]*:[[:space:]]*1450' || ERROR "mtu was not applied after a corrupt state"
   snapcfg unset docker daemon.mtu
   wait_for_docker
+
+  # A key deleted from the file by hand stays deleted: the tombstone survives snap
+  # set / unset and unrelated config changes.
+  edit_config 'del(."log-level")'
+  snapcfg set docker daemon.mtu=1300
+  wait_for_docker
+  sudo cat "$CONFIG" | NOMATCH '"log-level"' || ERROR "hand-deleted log-level came back on an unrelated snap set"
+  snapcfg set docker daemon.log-level=info
+  wait_for_docker
+  sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"info"' || ERROR "log-level was not applied over a tombstone"
+  snapcfg unset docker daemon.log-level daemon.mtu
+  wait_for_docker
+  sudo cat "$CONFIG" | NOMATCH '"log-level"' || ERROR "hand-deleted log-level came back on unset"
+
+  # Hand-writing the shipped value back makes the key track the shipped default again.
+  edit_config '. + {"log-level": "error"}'
+  snapcfg set docker daemon.log-level=info
+  wait_for_docker
+  snapcfg unset docker daemon.log-level
+  wait_for_docker
+  sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"error"' || ERROR "adopted log-level did not restore the shipped default on unset"
 
   # Unsetting removes the option again.
   snapcfg unset docker daemon.default-address-pools
@@ -106,10 +126,10 @@ restore: |
 
   sudo systemctl reset-failed snap.docker.nvidia-container-toolkit.service 2>/dev/null || true
   # Unset before restoring the file: each unset runs the configure hook, which rewrites
-  # daemon.json and the state.
+  # daemon.json and the merge state.
   sudo snap unset docker daemon.default-address-pools daemon.hosts daemon.mtu daemon.log-level 2>/dev/null || true
   sudo cp "$BACKUP" "$CONFIG"
-  sudo rm -f "$STATE"
+  sudo rm -f /var/snap/docker/current/daemon-config-state /var/snap/docker/current/daemon-config-keys
   sudo docker network rm testpool >/dev/null 2>&1 || true
   # The restored file only reaches the running daemon on a restart.
   restart_docker
