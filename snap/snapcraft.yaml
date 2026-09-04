@@ -1,5 +1,5 @@
 name: docker
-version: '29.7.2'
+version: '29.8.0'
 summary: Docker container runtime
 description: Refer to https://snapcraft.io/docker
 license: (Apache-2.0 AND MIT AND GPL-2.0)
@@ -214,7 +214,7 @@ parts:
   containerd:
     plugin: make
     source: https://github.com/containerd/containerd.git
-    source-tag: v2.3.3
+    source-tag: v2.3.4
     source-depth: 1
     override-build: |
       make GIT_COMMIT= GIT_BRANCH= LDFLAGS=
@@ -334,7 +334,7 @@ parts:
   buildx:
     plugin: nil
     source: https://github.com/docker/buildx.git
-    source-tag: v0.36.1
+    source-tag: v0.37.0
     source-depth: 1
     override-build: |
       export DESTDIR="$CRAFT_PART_INSTALL/usr/libexec/docker/cli-plugins"
@@ -354,7 +354,7 @@ parts:
   compose:
     plugin: make
     source: https://github.com/docker/compose.git
-    source-tag: v5.5.0
+    source-tag: v5.5.1
     source-depth: 1
     override-build: |
       make build
