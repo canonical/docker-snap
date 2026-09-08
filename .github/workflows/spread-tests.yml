@@ -5,14 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       snap_channel:
-        description: "`docker` snap channel to test"
+        description: "`docker` snap channel to test (e.g. latest/edge/runid-123)"
         required: true
-        type: choice
-        options:
-          - latest/stable
-          - latest/candidate
-          - latest/beta
-          - latest/edge
+        type: string
         default: latest/edge
       spread_test_filter:
         description: "job filter (e.g. '!26.10 cloud amd64')"
