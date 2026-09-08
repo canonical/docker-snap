@@ -20,6 +20,10 @@ else
     sudo snap wait system seed.loaded
     sudo snap refresh --hold || true
     sudo snap abort --last=auto-refresh 2>/dev/null || true
+    # The seeded snapd predates fchmodat2 in its seccomp template, which
+    # breaks `docker cp`. A named refresh goes through the hold, and snapd
+    # alone does not reboot the machine.
+    sudo snap refresh snapd
 fi
 
 echo "Removing docker (if already installed)"
