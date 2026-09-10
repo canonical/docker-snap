@@ -1,17 +1,22 @@
+From 70d983311b60569847aef8d6162f59c24e0a03b8 Mon Sep 17 00:00:00 2001
+From: Dariusz Duda <9116056+dariuszd21@users.noreply.github.com>
+Date: Wed, 9 Sep 2026 13:54:37 +0200
+Subject: [PATCH 1/6] snappy-aa-profile-reload
+
+Original patch:
 From 4a39581c2b14dac94905027d4fe0488c7928d482 Mon Sep 17 00:00:00 2001
 From: Ivano Matrisciano <ivano.matrisciano@canonical.com>
 Date: Mon, 8 Jun 2026 15:32:24 +0200
 Subject: [PATCH 1/6] snappy-aa-profile-reload
-
 ---
  daemon/apparmor_default.go | 2 +-
- 1 file changed, 1 insertions(+), 1 deletion(-)
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/daemon/apparmor_default.go b/daemon/apparmor_default.go
-index f4dab90707..d6d1d7faf1 100644
+index eed4f6311c..10099fd531 100644
 --- a/daemon/apparmor_default.go
 +++ b/daemon/apparmor_default.go
-@@ -32,7 +33,7 @@ func loadDefaultAppArmorProfileIfMissing() error {
+@@ -47,7 +47,7 @@ func (daemon *Daemon) loadDefaultAppArmorProfileIfMissing() error {
  	if err != nil {
  		return fmt.Errorf("Could not check if %s AppArmor profile was loaded: %s", defaultAppArmorProfile, err)
  	}
@@ -21,5 +26,5 @@ index f4dab90707..d6d1d7faf1 100644
  	}
  
 -- 
-2.51.0
+2.55.0
 
