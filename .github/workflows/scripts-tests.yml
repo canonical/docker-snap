@@ -31,16 +31,21 @@ jobs:
 
       - name: Run bats tests
         run: |
-          bats .github/workflows/testflinger/scripts/
+          bats .github/scripts/spread-matrix/ \
+               .github/workflows/testflinger/scripts/ \
+               spread/scripts/
 
   shellcheck:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       # shellcheck is preinstalled on the runner image. The .bats files are
       # not shellcheck-able (bats syntax), so only the plain scripts run.
       - name: Run shellcheck
         run: |
-          shellcheck .github/workflows/testflinger/scripts/*.sh
+          shellcheck \
+            .github/scripts/spread-matrix/spread-matrix \
+            .github/workflows/testflinger/scripts/*.sh \
+            spread/scripts/*.sh

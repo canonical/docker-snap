@@ -1,0 +1,53 @@
+#!/bin/bash
+# Build the spread-tests fan-out matrix: read a spread job list on stdin
+# (backend:system:suite/task lines, as printed by spread -list), apply the
+# job filter given as $1 and print the GitHub Actions include-matrix as
+# JSON on stdout -- one {system, jobs} entry per surviving system, so a
+# lane can run a subset of tasks. Diagnostics go to stderr; exits 1 if the
+# filter selects nothing.
+#
+# The filter is a chain of whitespace-separated EREs applied as successive
+# greps over the job lines: each term narrows the selection ('|' inside a
+# term expresses alternatives) and a '!' prefix inverts a term. An empty
+# filter selects every job.
+#
+# An Ubuntu Core release pairs with its LTS (core-26 <-> 26.04), so terms
+# treat them as one series: '26.04' selects core-26 too, '!26.04' drops
+# it, and '26.10' leaves core alone. Greps therefore run over two
+# tab-separated copies of each line -- the real job name plus a copy with
+# the core version expanded to LTS form -- and the real name comes back
+# out of column 1.
+set -eu
+
+FILTER="${1-}"
+
+jobs="$(cat)"
+matchable="$(paste <(printf '%s\n' "$jobs") <(sed -E 's/-core-([0-9]+)\./-core-\1.04./' <<<"$jobs"))"
+
+# shellcheck disable=SC2086 # word splitting of $FILTER is the point
+for term in $FILTER; do
+  case "$term" in
+    ('!'*) matchable="$(grep -vE -- "${term#!}" <<<"$matchable" || true)" ;;
+    (*)    matchable="$(grep -E -- "$term" <<<"$matchable" || true)" ;;
+  esac
+done
+jobs="$(cut -f1 <<<"$matchable")"
+
+if [ -z "$jobs" ]; then
+  printf "error: filter '%s' selected no jobs\n" "$FILTER" >&2
+  exit 1
+fi
+printf 'selected jobs:\n%s\n' "$jobs" >&2
+
+# Group jobs by system: one "system<TAB>job job job..." line each.
+groups="$(awk -F: '{g[$2]=g[$2]" "$0} END {for (s in g) print s "\t" substr(g[s],2)}' <<<"$jobs")"
+
+# The UI job list shows matrix order and awk's for-in order is arbitrary,
+# so sort: newest release first, architectures together within a release.
+# Prepend the bare release number as a sort key (system name minus flavour
+# prefix and architecture suffix), version-sort descending on it, then
+# drop the key again.
+sorted="$(awk -F'\t' '{key=$1; sub(/^[a-z-]+-/, "", key); sub(/\.[a-z0-9]+$/, "", key); print key "\t" $0}' <<<"$groups" \
+  | sort -t"$(printf '\t')" -k1,1Vr -k2,2 | cut -f2-)"
+
+jq -Rsc '{include: [split("\n")[] | select(length>0) | split("\t") | {system: .[0], jobs: .[1]}]}' <<<"$sorted"
