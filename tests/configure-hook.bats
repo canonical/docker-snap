@@ -57,6 +57,21 @@ _ops() { cat "$SNAPCTL_LOG" 2>/dev/null || true; }
   [ -z "$(_ops)" ]
 }
 
+@test "fails without touching anything when snapctl cannot read the options" {
+  _snap_config '{"mtu":1400}'
+  run bash "$HOOK"
+  [ "$status" -eq 0 ]
+  local before
+  before="$(_file)"
+  : > "$SNAPCTL_LOG"
+  _snap_config '{"mtu":1450}'
+  SNAPCTL_FAIL="get daemon" run bash "$HOOK"
+  [ "$status" -ne 0 ]
+  [ "$(_file)" = "$before" ]
+  [ "$(_keys)" = '["mtu"]' ]
+  [ -z "$(_ops)" ]
+}
+
 @test "rolls the file and key list back when the restart fails" {
   _snap_config '{"mtu":1400}'
   SNAPCTL_FAIL="start docker" run bash "$HOOK"

@@ -44,12 +44,14 @@ DOCKERD
 }
 
 # Backed by $SNAPCTL_CONFIG; service operations are appended to $SNAPCTL_LOG.
-# SNAPCTL_FAIL="start docker" makes exactly that operation fail.
+# SNAPCTL_FAIL="start docker" (or "get daemon") makes exactly that operation fail.
 _install_fake_snapctl() {
   cat > "$T/bin/snapctl" <<'SNAPCTL'
 #!/usr/bin/env bash
 case "$1" in
   (get)
+    key="$2"; [ "$2" != -d ] || key="$3"
+    [ "get $key" != "${SNAPCTL_FAIL:-}" ] || exit 1
     if [ "$2" = "-d" ]; then
       jq -c --arg k "$3" '{($k): .[$k]}' "$SNAPCTL_CONFIG"
     else
