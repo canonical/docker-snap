@@ -44,7 +44,7 @@ reject_unsupported_daemon_config() {
     [ -n "$snap_cfg" ] || return 0
     # `snap set docker daemon=foo` arrives as a non-object; reject it with a
     # message instead of letting jq abort the hook silently under set -e.
-    if ! jq -e '(.daemon // {}) | type == "object"' <<<"$snap_cfg" >/dev/null 2>&1; then
+    if ! jq -e '.daemon | type == "object" or type == "null"' <<<"$snap_cfg" >/dev/null 2>&1; then
         echo "error: daemon options must be set as daemon.<key>=<value>" >&2
         return 1
     fi
