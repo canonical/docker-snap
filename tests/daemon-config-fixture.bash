@@ -10,11 +10,11 @@ _setup_snap_tree() {
   export SNAP="$T/snap" SNAP_DATA="$T/data" SNAP_COMMON="$T/common"
   export SNAP_NAME=docker SNAP_REVISION=x1
   export SNAPCTL_CONFIG="$T/snapctl.json" SNAPCTL_LOG="$T/snapctl.log"
-  mkdir -p "$SNAP/config" "$SNAP/bin" "$SNAP/usr/share/docker" \
+  mkdir -p "$SNAP/config" "$SNAP/bin" "$SNAP/lib" \
     "$SNAP/usr/share/nvidia-container-toolkit" "$SNAP_DATA/config" "$SNAP_COMMON" "$T/bin"
   printf '{"log-level":"error"}\n' > "$SNAP/config/daemon.json"
   cp "$SNAP/config/daemon.json" "$SNAP_DATA/config/daemon.json"
-  cp "$REPO/lib/daemon-config" "$SNAP/usr/share/docker/daemon-config"
+  cp "$REPO/lib/daemon-config" "$SNAP/lib/daemon-config"
   _install_fake_dockerd
   _install_fake_snapctl
   _install_fake_nvidia_lib

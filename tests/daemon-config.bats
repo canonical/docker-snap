@@ -7,7 +7,7 @@ load daemon-config-fixture
 setup() {
   _setup_snap_tree
   # shellcheck disable=SC1091
-  . "$SNAP/usr/share/docker/daemon-config"
+  . "$SNAP/lib/daemon-config"
 }
 
 teardown() {
