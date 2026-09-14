@@ -57,7 +57,7 @@ _ops() { cat "$SNAPCTL_LOG" 2>/dev/null || true; }
   [ ! -e "$SNAP_DATA/daemon-config-keys" ]
   [ ! -e "$SNAP_DATA/.configure-rollback" ]
   # the recovery path tries to bring the services back on the restored config
-  [ "$(_ops)" = $'stop docker\nstart docker\nrestart docker' ]
+  [ "$(_ops)" = $'stop docker\nstart docker\nstop docker\nstart docker' ]
 }
 
 @test "rolls the key list back without a restart when only the key list moved" {
@@ -67,7 +67,17 @@ _ops() { cat "$SNAPCTL_LOG" 2>/dev/null || true; }
   [ "$status" -ne 0 ]
   [ ! -e "$SNAP_DATA/daemon-config-keys" ]
   [ "$(_file)" = '{"log-level":"error","mtu":1400}' ]
-  [[ "$(_ops)" != *"restart docker"* ]]
+  [ "$(_ops)" = $'stop docker.nvidia-container-toolkit\nstart docker.nvidia-container-toolkit' ]
+}
+
+@test "leaves services alone when the hook fails before stopping them" {
+  _snap_config '{"mtu":1400}'
+  # a directory in the way makes the nvidia branch's write fail after the merge
+  mkdir "$SNAP_DATA/config/daemon.json.new"
+  NVIDIA_DISABLED=1 run bash "$HOOK"
+  [ "$status" -ne 0 ]
+  [ "$(_file)" = '{"log-level":"error"}' ]
+  [ -z "$(_ops)" ]
 }
 
 @test "removes the nvidia runtime entry when nvidia support is disabled" {
@@ -97,7 +107,7 @@ _ops() { cat "$SNAPCTL_LOG" 2>/dev/null || true; }
   [ "$(_file)" = '{"log-level":"error","runtimes":{"nvidia":{"path":"nvidia-container-runtime"}}}' ]
   [ ! -e "$SNAP_DATA/daemon-config-keys" ]
   [ ! -e "$SNAP_DATA/.configure-rollback" ]
-  [ "$(_ops)" = $'stop docker\nstart docker\nrestart docker' ]
+  [ "$(_ops)" = $'stop docker\nstart docker\nstop docker\nstart docker' ]
 }
 
 @test "removes the rollback snapshot after a successful run" {
