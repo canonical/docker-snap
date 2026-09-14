@@ -294,13 +294,17 @@ GARBAGE
   [ ! -e "$SNAP_DATA/daemon-config-keys" ]
 }
 
-@test "a false or null daemon subtree is treated as unset" {
-  printf '{"daemon":false}\n' > "$SNAPCTL_CONFIG"
-  run reject_unsupported_daemon_config
-  [ "$status" -eq 0 ]
+@test "a null daemon subtree is treated as unset" {
   printf '{"daemon":null}\n' > "$SNAPCTL_CONFIG"
   run reject_unsupported_daemon_config
   [ "$status" -eq 0 ]
+}
+
+@test "rejects a false daemon subtree instead of reading it as unset" {
+  printf '{"daemon":false}\n' > "$SNAPCTL_CONFIG"
+  run reject_unsupported_daemon_config
+  [ "$status" -eq 1 ]
+  grep -qF "daemon options must be set as daemon.<key>=<value>" <<<"$output"
 }
 
 @test "rejects an array daemon subtree with the same message as a scalar" {

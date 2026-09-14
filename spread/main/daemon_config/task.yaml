@@ -47,6 +47,7 @@ execute: |
 
   # Setting the whole daemon subtree to a scalar fails with an error, not a silent hook crash.
   ! snapcfg set docker daemon=foo || ERROR "non-object daemon subtree was accepted"
+  ! snapcfg set docker daemon=false || ERROR "false daemon subtree was accepted"
 
   # log-level ships a default ("error") in the base config: setting it applies, and
   # unsetting restores the shipped default rather than dropping the key.
