@@ -250,6 +250,29 @@ _apply() {
   [ "$(_keys)" = '[]' ]
 }
 
+@test "a crash between the file and key-list writes strands no key" {
+  _snap_config '{"mtu":1400}'
+  _apply
+  _snap_config '{"mtu":1400,"dns":["1.1.1.1"]}'
+  # die at the first key-list write after daemon.json has landed
+  (
+    mv() {
+      if [ "$2" = "$DAEMON_CONFIG_FILE" ]; then
+        landed=1
+      elif [ "$2" = "$DAEMON_CONFIG_KEYS" ] && [ -n "${landed:-}" ]; then
+        exit 1
+      fi
+      command mv "$@"
+    }
+    _apply
+  ) || true
+  [ "$(jq -c .dns "$SNAP_DATA/config/daemon.json")" = '["1.1.1.1"]' ]
+  # snapd rolls the failed set back
+  _snap_config '{"mtu":1400}'
+  _apply
+  [ "$(_file)" = '{"log-level":"error","mtu":1400}' ]
+}
+
 @test "set/unset round-trips a bool, array, object and null value" {
   _snap_config '{"ipv6":true,"dns":["1.1.1.1","8.8.8.8"],"default-ulimits":{"nofile":{"hard":64000,"soft":32000}},"bip6":null}'
   _apply
