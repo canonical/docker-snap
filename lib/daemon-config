@@ -40,7 +40,7 @@ DAEMON_CONFIG_ROLLBACK="${SNAP_DATA}/.configure-rollback"
 reject_unsupported_daemon_config() {
     local allow snap_cfg bad
     allow="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
-    snap_cfg="$(snapctl get -d daemon 2>/dev/null || true)"
+    snap_cfg="$(snapctl get -d daemon)" || return 1
     [ -n "$snap_cfg" ] || return 0
     # `snap set docker daemon=foo` arrives as a non-object; reject it with a
     # message instead of letting jq abort the hook silently under set -e.
@@ -77,7 +77,7 @@ apply_user_daemon_config() {
     local managed="${DAEMON_CONFIG_KEYS}"
     local allow base snap_cfg overlay prev tmp
     allow="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
-    snap_cfg="$(snapctl get -d daemon 2>/dev/null || true)"
+    snap_cfg="$(snapctl get -d daemon)" || return 1
     [ -n "$snap_cfg" ] || snap_cfg='{}'
     prev="$(cat "$managed" 2>/dev/null || true)"
     jq -e 'type == "array" and all(type == "string")' <<<"$prev" >/dev/null 2>&1 || prev='[]'
