@@ -30,6 +30,8 @@ USER_DAEMON_KEYS=(
     mtu
 )
 
+DAEMON_CONFIG_FILE="${SNAP_DATA}/config/daemon.json"
+DAEMON_CONFIG_BASE="${SNAP}/config/daemon.json"
 # Keys applied by the previous run. Only those are dropped or reset on the next one,
 # so values set by hand in daemon.json (or by nvidia) are left alone.
 DAEMON_CONFIG_KEYS="${SNAP_DATA}/daemon-config-keys"
@@ -71,7 +73,7 @@ validate_daemon_config() {
 # Merge whitelisted daemon options from snap config into daemon.json.
 # Sets SVC_RESTART when the effective config changes.
 apply_user_daemon_config() {
-    local cfg="${SNAP_DATA}/config/daemon.json"
+    local cfg="${DAEMON_CONFIG_FILE}"
     local managed="${DAEMON_CONFIG_KEYS}"
     local allow base snap_cfg overlay prev tmp
     allow="$(printf '%s\n' "${USER_DAEMON_KEYS[@]}" | jq -Rn '[inputs]')"
@@ -86,7 +88,7 @@ apply_user_daemon_config() {
     # Defaults for whitelisted keys, so unsetting a key that
     # has a base default restores that default instead of dockerd's built-in.
     base="$(jq -c --argjson allow "$allow" \
-        'with_entries(select(.key as $k | $allow | index($k)))' "${SNAP}/config/daemon.json" 2>/dev/null || true)"
+        'with_entries(select(.key as $k | $allow | index($k)))' "${DAEMON_CONFIG_BASE}" 2>/dev/null || true)"
     jq -e 'type == "object"' <<<"$base" >/dev/null 2>&1 || base='{}'
 
     # Overlay = only the whitelisted keys the user has actually set.
@@ -148,14 +150,14 @@ apply_user_daemon_config() {
 # Copy daemon.json and the managed-key list aside, for restore_daemon_config.
 snapshot_daemon_config() {
     rm -rf "$DAEMON_CONFIG_ROLLBACK" && mkdir -p "$DAEMON_CONFIG_ROLLBACK"
-    cp "${SNAP_DATA}/config/daemon.json" "${DAEMON_CONFIG_ROLLBACK}/daemon.json"
+    cp "$DAEMON_CONFIG_FILE" "${DAEMON_CONFIG_ROLLBACK}/daemon.json"
     [ ! -f "$DAEMON_CONFIG_KEYS" ] || cp "$DAEMON_CONFIG_KEYS" "${DAEMON_CONFIG_ROLLBACK}/daemon-config-keys"
 }
 
 # Put the snapshot back. Returns 0 iff daemon.json actually changed, so the caller
 # knows a service restart is warranted.
 restore_daemon_config() {
-    local cfg="${SNAP_DATA}/config/daemon.json" changed=1
+    local cfg="${DAEMON_CONFIG_FILE}" changed=1
     [ -f "${DAEMON_CONFIG_ROLLBACK}/daemon.json" ] || return 1
     if ! cmp -s "${DAEMON_CONFIG_ROLLBACK}/daemon.json" "$cfg"; then
         cp "${DAEMON_CONFIG_ROLLBACK}/daemon.json" "$cfg"
