@@ -3,13 +3,13 @@ summary: Set daemon.json options via snap configuration
 environment:
   CONFIG: /var/snap/docker/current/config/daemon.json
   SIDECAR: /var/snap/docker/current/daemon-config-keys
-  BACKUP: daemon.json.bak
+  BACKUP: /tmp/daemon.json.bak
 
 prepare: |
+  sudo rm -f "$BACKUP"
   sudo cp "$CONFIG" "$BACKUP"
 
 execute: |
-
   source "$SCRIPTS_PATH/common.sh"
 
   # The configure hook restarts the nvidia oneshot on every config change; the rapid
@@ -105,6 +105,7 @@ restore: |
   # daemon.json and the managed-key list.
   sudo snap unset docker daemon.default-address-pools daemon.hosts daemon.mtu daemon.log-level 2>/dev/null || true
   sudo cp "$BACKUP" "$CONFIG"
+  sudo rm -f "$BACKUP"
   sudo docker network rm testpool >/dev/null 2>&1 || true
   # The restored file only reaches the running daemon on a restart.
   restart_docker
