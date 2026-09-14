@@ -150,6 +150,10 @@ apply_user_daemon_config() {
     # Only rewrite the file when its whitelisted slice changed, so hand formatting
     # survives a no-op run.
     if [ "$(jq -r '.changed' <<<"$merged")" = true ]; then
+        # Widen the managed list to this run's keys before the file lands, so a crash
+        # between the two writes cannot leave the file holding a key the list lacks.
+        jq -c --argjson A "$prev" 'keys + $A | unique' <<<"$overlay" > "${managed}.new"
+        mv "${managed}.new" "$managed"
         mv "$tmp" "$cfg"
         # shellcheck disable=SC2034
         SVC_RESTART=true
