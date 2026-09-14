@@ -7,7 +7,7 @@ exec &> >(tee -a "${HOOK_LOG}")
 
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 # shellcheck source=lib/daemon-config
-. "${SNAP}/usr/share/docker/daemon-config"
+. "${SNAP}/lib/daemon-config"
 
 # If the user unset the data-root, set it to the default
 data_root="$(snapctl get data-root)"

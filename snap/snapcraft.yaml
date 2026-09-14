@@ -126,7 +126,6 @@ parts:
       - mount
       - nftables
     organize:
-      lib/daemon-config: usr/share/docker/daemon-config
       nvidia/lib: usr/share/nvidia-container-toolkit/lib
       nvidia/nvidia-container-toolkit: bin/
       nvidia/nvidia-container-toolkit-connect-hook: bin/
@@ -136,8 +135,8 @@ parts:
       - bin/*
       - usr/sbin/*
       - config/daemon.json
+      - lib/daemon-config
       - patches/*
-      - usr/share/docker/*
       - usr/share/nvidia-container-toolkit/*
     prime:
       - -bin/go-build-helper.sh
@@ -145,7 +144,7 @@ parts:
       - bin/*
       - usr/sbin/*
       - config/daemon.json
-      - usr/share/docker/*
+      - lib/daemon-config
       - usr/share/nvidia-container-toolkit/*
 
   utils:
