@@ -39,6 +39,14 @@ _ops() { cat "$SNAPCTL_LOG" 2>/dev/null || true; }
   [ "$(jq -r '."data-root"' "$SNAPCTL_CONFIG")" = /var/snap/docker/common/var-lib-docker ]
 }
 
+@test "re-seeds a missing daemon.json from the shipped default" {
+  rm "$SNAP_DATA/config/daemon.json"
+  _snap_config '{"mtu":1400}'
+  run bash "$HOOK"
+  [ "$status" -eq 0 ]
+  [ "$(_file)" = '{"log-level":"error","mtu":1400}' ]
+}
+
 @test "fails on a disallowed option before touching anything" {
   _snap_config '{"hosts":["tcp://0.0.0.0:2375"]}'
   run bash "$HOOK"
