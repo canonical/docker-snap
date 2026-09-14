@@ -348,11 +348,20 @@ GARBAGE
   [ "$(_keys)" = "$before_keys" ]
 }
 
-@test "reject returns success when snapctl itself prints nothing" {
+@test "a failed snapctl read fails the option check" {
   printf 'not json' > "$SNAPCTL_CONFIG"
   run reject_unsupported_daemon_config
-  [ "$status" -eq 0 ]
-  [ -z "$output" ]
+  [ "$status" -eq 1 ]
+}
+
+@test "a failed snapctl read leaves daemon.json and the key list alone" {
+  _snap_config '{"mtu":1400}'
+  _apply
+  printf 'not json' > "$SNAPCTL_CONFIG"
+  run _apply
+  [ "$status" -eq 1 ]
+  [ "$(_file)" = '{"log-level":"error","mtu":1400}' ]
+  [ "$(_keys)" = '["mtu"]' ]
 }
 
 @test "an empty allowlist makes apply_user_daemon_config a pure no-op" {
