@@ -80,22 +80,18 @@ validate_daemon_config() {
 
 # Merge whitelisted daemon options from snap config into daemon.json.
 #
-# The whitelisted slice is composed from three layers, later wins, and one key set:
-#   B: the defaults shipped in $SNAP/config/daemon.json
-#   C: the current file
-#   O: snap config (`snapctl get -d daemon`)
-#   A: the keys O held on the previous run (the managed list)
-# The result is R = (B|A) < (C - A) < O: a key A held goes back to B once O drops it,
-# and a key A did not hold stays as the file has it. Keys outside the whitelist are
-# never touched. Sets SVC_RESTART when the effective config changes.
+# For the whitelisted slice: snap config wins; a key the previous run applied (the
+# managed list) that snap config no longer holds goes back to the shipped default,
+# or away if there is none; everything else stays as the file has it. Keys outside
+# the whitelist are never touched. Sets SVC_RESTART when the effective config changes.
 apply_user_daemon_config() {
-    local cfg="${DAEMON_CONFIG_FILE}" managed="${DAEMON_CONFIG_KEYS}"
-    local allow snap_cfg prev base overlay merged tmp err cfg_err
+    local cfg="${DAEMON_CONFIG_FILE}" mng="${DAEMON_CONFIG_KEYS}"
+    local allow snap_cfg managed base overlay merged tmp err cfg_err
     allow="$(daemon_config_whitelist)"
     snap_cfg="$(snapctl get -d daemon)" || return 1
     [ -n "$snap_cfg" ] || snap_cfg='{}'
 
-    prev="$(jq -ce 'arrays | select(all(type == "string"))' "$managed" 2>/dev/null || echo '[]')"
+    managed="$(jq -ce 'arrays | select(all(type == "string"))' "$mng" 2>/dev/null || echo '[]')"
     base="$(jq -ce "$DAEMON_CONFIG_JQ"'keep_keys($allow)' --argjson allow "$allow" \
         "${DAEMON_CONFIG_BASE}" 2>/dev/null || echo '{}')"
     if ! overlay="$(jq -ce "$DAEMON_CONFIG_JQ"'(.daemon // {}) | keep_keys($allow)' \
@@ -109,10 +105,11 @@ apply_user_daemon_config() {
     if ! merged="$(jq -ce "$DAEMON_CONFIG_JQ"'
         objects | . as $file
         | keep_keys($allow) as $C
-        # R = (B|A) < (C - A) < O
-        | (($B | keep_keys($A)) + ($C | drop_keys($A)) + $O) as $R
+        # B: the base config, C: the file, O: snap config, M: the managed list
+        # R = (B|M) + (C - M) + O   (B|M: B restricted to the keys in M; +: right wins)
+        | (($B | keep_keys($M)) + ($C | drop_keys($M)) + $O) as $R
         | {file: (($file | drop_keys($allow)) + $R), changed: ($R != $C)}' \
-        --argjson allow "$allow" --argjson B "$base" --argjson A "$prev" --argjson O "$overlay" \
+        --argjson allow "$allow" --argjson B "$base" --argjson M "$managed" --argjson O "$overlay" \
         "$cfg" 2>/dev/null)"; then
         cfg_err="$(validate_daemon_config "$cfg")" || true
         echo "error: existing ${cfg} is invalid: ${cfg_err:-not a JSON object}" >&2
@@ -139,16 +136,16 @@ apply_user_daemon_config() {
     # crash between the two writes cannot leave the file holding a key the list lacks. The
     # list tracks the overlay, not the file: an unset that changes nothing still drops its key.
     if jq -e '.changed' <<<"$merged" >/dev/null; then
-        jq -c --argjson A "$prev" 'keys + $A | unique' <<<"$overlay" > "${managed}.new"
-        mv "${managed}.new" "$managed"
+        jq -c --argjson M "$managed" 'keys + $M | unique' <<<"$overlay" > "${mng}.new"
+        mv "${mng}.new" "$mng"
         mv "$tmp" "$cfg"
         # shellcheck disable=SC2034
         SVC_RESTART=true
     else
         rm -f "$tmp"
     fi
-    jq -c 'keys' <<<"$overlay" > "${managed}.new"
-    mv "${managed}.new" "$managed"
+    jq -c 'keys' <<<"$overlay" > "${mng}.new"
+    mv "${mng}.new" "$mng"
 }
 
 # Copy daemon.json and the managed-key list aside, for restore_daemon_config.
