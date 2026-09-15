@@ -6,6 +6,9 @@ on:
       - ".github/workflows/**"
       - ".github/scripts/**"
       - "spread/scripts/**"
+      - "lib/**"
+      - "snap/hooks/**"
+      - "tests/**"
 
 # Cancel an in-progress run when a newer commit lands on the same ref, so a
 # burst of pushes to a branch or PR only tests the latest one.
@@ -31,7 +34,7 @@ jobs:
 
       - name: Run bats tests
         run: |
-          bats .github/workflows/testflinger/scripts/
+          bats .github/workflows/testflinger/scripts/ tests/
 
   shellcheck:
     runs-on: ubuntu-latest
@@ -43,4 +46,4 @@ jobs:
       # not shellcheck-able (bats syntax), so only the plain scripts run.
       - name: Run shellcheck
         run: |
-          shellcheck .github/workflows/testflinger/scripts/*.sh
+          shellcheck .github/workflows/testflinger/scripts/*.sh tests/*.bash
