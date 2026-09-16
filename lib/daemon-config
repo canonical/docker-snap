@@ -105,8 +105,8 @@ apply_user_daemon_config() {
     if ! merged="$(jq -ce "$DAEMON_CONFIG_JQ"'
         objects | . as $file
         | keep_keys($allow) as $C
-        # B: the base config, C: the file, O: snap config, M: the managed list
-        # R = (B|M) + (C - M) + O   (B|M: B restricted to the keys in M; +: right wins)
+        # [B]ase config, [C]onfig file, snap c[O]nfig, [M]anaged list
+        # R = (B | M) + (C - M) + O
         | (($B | keep_keys($M)) + ($C | drop_keys($M)) + $O) as $R
         | {file: (($file | drop_keys($allow)) + $R), changed: ($R != $C)}' \
         --argjson allow "$allow" --argjson B "$base" --argjson M "$managed" --argjson O "$overlay" \
