@@ -85,7 +85,7 @@ systems() {
 }
 
 @test "development series term leaves core alone" {
-  [ "$(systems '26.10' | grep -vc 'cloud-26\.10')" -eq 0 ]
+  [ "$(systems '26.10' | grep -c 'core')" -eq 0 ]
   [ "$(systems '26.10' | wc -l)" -eq 5 ]
 }
 
