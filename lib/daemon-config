@@ -165,12 +165,14 @@ snapshot_daemon_config() {
 restore_daemon_config() {
     local cfg="${DAEMON_CONFIG_FILE}" changed=1
     [ -f "${DAEMON_CONFIG_ROLLBACK}/daemon.json" ] || return 1
+    # the caller reads a 0 as "restored, bounce the services", so a copy that fails
+    # must not look like one
     if ! cmp -s "${DAEMON_CONFIG_ROLLBACK}/daemon.json" "$cfg"; then
-        cp "${DAEMON_CONFIG_ROLLBACK}/daemon.json" "$cfg"
+        cp "${DAEMON_CONFIG_ROLLBACK}/daemon.json" "$cfg" || return 1
         changed=0
     fi
     if [ -f "${DAEMON_CONFIG_ROLLBACK}/daemon-config-keys" ]; then
-        cp "${DAEMON_CONFIG_ROLLBACK}/daemon-config-keys" "$DAEMON_CONFIG_KEYS"
+        cp "${DAEMON_CONFIG_ROLLBACK}/daemon-config-keys" "$DAEMON_CONFIG_KEYS" || return 1
     else
         rm -f "$DAEMON_CONFIG_KEYS"
     fi
