@@ -31,22 +31,14 @@ _apply() {
   grep -qF "allowed daemon options: ${USER_DAEMON_KEYS[*]}" <<<"$output"
 }
 
-@test "rejects a scalar or array daemon subtree with a message" {
-  printf '{"daemon":"foo"}\n' > "$SNAPCTL_CONFIG"
-  run reject_unsupported_daemon_config
-  [ "$status" -eq 1 ]
-  grep -qF "daemon options must be set as daemon.<key>=<value>" <<<"$output"
-  printf '{"daemon":[1,2]}\n' > "$SNAPCTL_CONFIG"
-  run reject_unsupported_daemon_config
-  [ "$status" -eq 1 ]
-  grep -qF "daemon options must be set as daemon.<key>=<value>" <<<"$output"
-}
-
-@test "rejects a false daemon subtree instead of reading it as unset" {
-  printf '{"daemon":false}\n' > "$SNAPCTL_CONFIG"
-  run reject_unsupported_daemon_config
-  [ "$status" -eq 1 ]
-  grep -qF "daemon options must be set as daemon.<key>=<value>" <<<"$output"
+@test "rejects a daemon subtree that is not an object, false included" {
+  local bad
+  for bad in '"foo"' '[1,2]' 'false'; do
+    printf '{"daemon":%s}\n' "$bad" > "$SNAPCTL_CONFIG"
+    run reject_unsupported_daemon_config
+    [ "$status" -eq 1 ]
+    grep -qF "daemon options must be set as daemon.<key>=<value>" <<<"$output"
+  done
 }
 
 @test "accepts allowlisted options and a null (unset) subtree" {
@@ -114,20 +106,15 @@ _apply() {
   [ "$(_file)" = '{"log-level":"error"}' ]
 }
 
-@test "hand edits survive an unrelated snap set" {
+@test "hand edits survive an unrelated snap set, but not one on the same key" {
   _hand '. + {"dns-search":["snap.test"],"log-level":"debug"}'
   _snap_config '{"mtu":1400}'
   _apply
   [ "$(_file)" = '{"dns-search":["snap.test"],"log-level":"debug","mtu":1400}' ]
-}
-
-@test "a snap-set key overwrites a hand edit to it on the next run" {
-  _snap_config '{"mtu":1400}'
-  _apply
   _hand '. + {"mtu":9000}'
   _apply
   [ "$SVC_RESTART" = true ]
-  [ "$(_file)" = '{"log-level":"error","mtu":1400}' ]
+  [ "$(_file)" = '{"dns-search":["snap.test"],"log-level":"debug","mtu":1400}' ]
 }
 
 @test "a hand-deleted shipped key stays deleted until snap config takes it over" {
