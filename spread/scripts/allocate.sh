@@ -18,14 +18,12 @@ fi
 export QEMU_SMP_OPTION="${QEMU_SMP_OPTION:--smp 4}"
 export QEMU_MEM_OPTION="${QEMU_MEM_OPTION:--m 3072}"
 
-# Map spread system architecture
-SPREAD_SYSTEM=${SPREAD_SYSTEM/%amd64/x86_64}  # maps "amd64" to "x86_64"
-SPREAD_SYSTEM=${SPREAD_SYSTEM/%arm64/aarch64} # maps "arm64" to "aarch64"
-
-GARDEN_SYSTEM="${SPREAD_SYSTEM/-plus-/+}"
+# image-garden names systems after the machine architecture
+GARDEN_SYSTEM="${SPREAD_SYSTEM/%amd64/x86_64}"  # maps "amd64" to "x86_64"
+GARDEN_SYSTEM="${GARDEN_SYSTEM/%arm64/aarch64}" # maps "arm64" to "aarch64"
 
 HOST_ARCH="${ARCH:-$(uname -m)}"
-SYSTEM_ARCH="${SPREAD_SYSTEM##*.}"
+SYSTEM_ARCH="${GARDEN_SYSTEM##*.}"
 
 if [ "$SYSTEM_ARCH" = "ppc64el" ]; then
   # The snap's qemu-ppc64 component does not ship vgabios-stdvga.bin, which
