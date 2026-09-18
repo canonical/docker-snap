@@ -174,6 +174,13 @@ _apply() {
   _apply
   [ "$(_file)" = '{"dns-search":["snap.test"],"log-level":"error","max-concurrent-downloads":7,"mtu":1450}' ]
   [ "$(_keys)" = '["mtu"]' ]
+  # a file holding two documents is corrupt too: discard it rather than fail the merge
+  printf '["mtu"]\n["dns"]\n' > "$SNAP_DATA/daemon-config-keys"
+  _hand '. + {"dns":["1.1.1.1"]}'
+  _snap_config '{"mtu":1500}'
+  _apply
+  [ "$(_file)" = '{"dns":["1.1.1.1"],"dns-search":["snap.test"],"log-level":"error","max-concurrent-downloads":7,"mtu":1500}' ]
+  [ "$(_keys)" = '["mtu"]' ]
 }
 
 @test "a key list naming a non-allowlisted key cannot drop it from the file" {
