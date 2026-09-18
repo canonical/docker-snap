@@ -91,7 +91,9 @@ apply_user_daemon_config() {
     snap_cfg="$(snapctl get -d daemon)" || return 1
     [ -n "$snap_cfg" ] || snap_cfg='{}'
 
-    managed="$(jq -ce 'arrays | select(all(type == "string"))' "$mng" 2>/dev/null || echo '[]')"
+    # -s so a file holding more than one document is discarded, not carried on as two
+    managed="$(jq -cse 'select(length == 1) | .[0] | arrays | select(all(type == "string"))' \
+        "$mng" 2>/dev/null || echo '[]')"
     base="$(jq -ce "$DAEMON_CONFIG_JQ"'keep_keys($allow)' --argjson allow "$allow" \
         "${DAEMON_CONFIG_BASE}" 2>/dev/null || echo '{}')"
     if ! overlay="$(jq -ce "$DAEMON_CONFIG_JQ"'(.daemon // {}) | keep_keys($allow)' \
