@@ -45,17 +45,6 @@ while True:
   [ -n "$PORT" ]
 }
 
-# An ephemeral port with nothing listening on it.
-free_port() {
-  python3 -c '
-import socket
-s = socket.socket()
-s.bind(("127.0.0.1", 0))
-print(s.getsockname()[1])
-s.close()
-'
-}
-
 @test "ready when the listener talks ssh" {
   start_listener $'SSH-2.0-bats\r\n'
   wait_for_ssh 127.0.0.1 "$PORT" 2 0.1
@@ -68,7 +57,9 @@ s.close()
 }
 
 @test "an unreachable port times out" {
-  run wait_for_ssh 127.0.0.1 "$(free_port)" 2 0.1
+  # Port 1: privileged and outside the ephemeral range, so nothing can land
+  # on it between picking the port and probing it.
+  run wait_for_ssh 127.0.0.1 1 2 0.1
   [ "$status" -eq 1 ]
 }
 
