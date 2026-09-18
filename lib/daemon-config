@@ -86,7 +86,7 @@ validate_daemon_config() {
 # the whitelist are never touched. Sets SVC_RESTART when the effective config changes.
 apply_user_daemon_config() {
     local cfg="${DAEMON_CONFIG_FILE}" mng="${DAEMON_CONFIG_KEYS}"
-    local allow snap_cfg managed base overlay merged tmp err cfg_err
+    local allow snap_cfg managed base overlay merged tmp mode err cfg_err
     allow="$(daemon_config_whitelist)"
     snap_cfg="$(snapctl get -d daemon)" || return 1
     [ -n "$snap_cfg" ] || snap_cfg='{}'
@@ -116,7 +116,10 @@ apply_user_daemon_config() {
         return 1
     fi
     tmp="$(mktemp "${cfg}.XXXXXX")"
-    chmod 644 "$tmp" # mktemp creates it 0600
+    # mktemp creates it 0600; daemon.json can hold credentials (proxies), so carry the
+    # mode of the file being replaced over rather than widening it
+    mode="$(stat -c '%a' "$cfg" 2>/dev/null || stat -f '%Lp' "$cfg")"
+    chmod "${mode:-644}" "$tmp"
     jq '.file' <<<"$merged" > "$tmp"
 
     # Reject an invalid value so the snap set fails loudly instead of silently not applying.
