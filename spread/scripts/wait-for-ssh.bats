@@ -16,7 +16,8 @@ teardown() {
   fi
 }
 
-# Serve $1 as the connection banner on an ephemeral port; sets PORT.
+# Serve $1 as the connection banner on an ephemeral port; an empty banner
+# accepts and then stays silent. Sets PORT.
 start_listener() {
   python3 -c '
 import socket, sys
@@ -25,10 +26,14 @@ s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 s.bind(("127.0.0.1", 0))
 s.listen(5)
 print(s.getsockname()[1], flush=True)
+held = []
 while True:
     c, _ = s.accept()
-    c.sendall(sys.argv[1].encode())
-    c.close()
+    if sys.argv[1]:
+        c.sendall(sys.argv[1].encode())
+        c.close()
+    else:
+        held.append(c)
 ' "$1" > "$BATS_TEST_TMPDIR/port" &
   LISTENER_PID=$!
   local i
@@ -53,23 +58,31 @@ s.close()
 
 @test "ready when the listener talks ssh" {
   start_listener $'SSH-2.0-bats\r\n'
-  wait_for_ssh 127.0.0.1 "$PORT" 3 0.1
+  wait_for_ssh 127.0.0.1 "$PORT" 2 0.1
 }
 
 @test "a non-ssh banner is not ready" {
   start_listener $'HTTP/1.0 200 OK\r\n'
-  run wait_for_ssh 127.0.0.1 "$PORT" 3 0.1
+  run wait_for_ssh 127.0.0.1 "$PORT" 2 0.1
   [ "$status" -eq 1 ]
 }
 
 @test "an unreachable port times out" {
-  run wait_for_ssh 127.0.0.1 "$(free_port)" 3 0.1
+  run wait_for_ssh 127.0.0.1 "$(free_port)" 2 0.1
   [ "$status" -eq 1 ]
+}
+
+@test "a silent listener is bounded by the timeout, not the banner wait" {
+  start_listener ''
+  local start=$SECONDS
+  run wait_for_ssh 127.0.0.1 "$PORT" 2 0.1 30
+  [ "$status" -eq 1 ]
+  [ $((SECONDS - start)) -lt 10 ]
 }
 
 @test "a ready daemon is picked up without sleeping" {
   start_listener $'SSH-2.0-bats\r\n'
   local start=$SECONDS
-  wait_for_ssh 127.0.0.1 "$PORT" 3 60
+  wait_for_ssh 127.0.0.1 "$PORT" 30 60
   [ $((SECONDS - start)) -lt 10 ]
 }

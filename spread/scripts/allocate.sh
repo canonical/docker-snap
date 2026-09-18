@@ -59,10 +59,10 @@ if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
   # image-garden hands out the address once the port-forward exists, which under
   # emulation can be well before sshd actually answers. Poll for the banner and
   # hand over as soon as the daemon responds, with a hard 10-minute upper bound
-  # (120 attempts, 5s apart).
+  # (checked every 5s).
   # shellcheck source=spread/scripts/wait-for-ssh.sh
   source spread/scripts/wait-for-ssh.sh
-  if wait_for_ssh "${OUT%:*}" "${OUT##*:}" 120 5; then
+  if wait_for_ssh "${OUT%:*}" "${OUT##*:}" 600 5; then
     echo "ssh is answering on $OUT"
   else
     FATAL "ssh did not become ready on $OUT"
