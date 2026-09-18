@@ -48,7 +48,9 @@ Before running any test, you have to choose which docker snap to test
   ```bash
   SNAP_FILE_AMD64=docker_29.3.1_amd64.snap \
     SNAP_FILE_ARM64=docker_29.3.1_arm64.snap \
-    SNAP_FILE_RISCV64=docker_29.3.1_riscv.snap \
+    SNAP_FILE_RISCV64=docker_29.3.1_riscv64.snap \
+    SNAP_FILE_S390X=docker_29.3.1_s390x.snap \
+    SNAP_FILE_PPC64EL=docker_29.3.1_ppc64el.snap \
     image-garden.spread
   ```
 
