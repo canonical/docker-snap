@@ -31,16 +31,16 @@ for term in $FILTER; do
     (*)    matchable="$(grep -E -- "$term" <<<"$matchable" || true)" ;;
   esac
 done
-jobs="$(cut -f1 <<<"$matchable")"
+selected="$(cut -f1 <<<"$matchable")"
 
-if [ -z "$jobs" ]; then
+if [ -z "$selected" ]; then
   printf "error: filter '%s' selected no jobs\n" "$FILTER" >&2
   exit 1
 fi
-printf 'selected jobs:\n%s\n' "$jobs" >&2
+printf 'selected jobs:\n%s\n' "$selected" >&2
 
 # Group jobs by system: one "system<TAB>job job job..." line each.
-groups="$(awk -F: '{g[$2]=g[$2]" "$0} END {for (s in g) print s "\t" substr(g[s],2)}' <<<"$jobs")"
+groups="$(awk -F: '{g[$2]=g[$2]" "$0} END {for (s in g) print s "\t" substr(g[s],2)}' <<<"$selected")"
 
 # The UI job list shows matrix order and awk's for-in order is arbitrary,
 # so sort: newest release first, architectures together within a release.
