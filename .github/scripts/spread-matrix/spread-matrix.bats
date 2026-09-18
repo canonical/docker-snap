@@ -4,7 +4,7 @@
 setup() {
   SCRIPT="$BATS_TEST_DIRNAME/spread-matrix"
   # Canned spread -list output: the full 23-system board, two tasks each.
-  local systems=(
+  SYSTEMS=(
     ubuntu-core-22.amd64
     ubuntu-core-22.arm64
     ubuntu-cloud-22.04.amd64
@@ -31,7 +31,7 @@ setup() {
   )
   JOBS=""
   local s t
-  for s in "${systems[@]}"; do
+  for s in "${SYSTEMS[@]}"; do
     for t in build hello-world; do
       JOBS+="garden:${s}:spread/main/${t}"$'\n'
     done
@@ -49,15 +49,15 @@ systems() {
 }
 
 @test "empty filter selects every system with every task" {
-  [ "$(matrix '' | jq '.include | length')" -eq 23 ]
-  [ "$(matrix '' | jq -r '.include[].jobs' | grep -c 'build.*hello-world')" -eq 23 ]
+  [ "$(matrix '' | jq '.include | length')" -eq "${#SYSTEMS[@]}" ]
+  [ "$(matrix '' | jq -r '.include[].jobs' | grep -c 'build.*hello-world')" -eq "${#SYSTEMS[@]}" ]
 }
 
 @test "systems are sorted newest release first" {
   [ "$(systems '' | sed -n 1p)" = ubuntu-cloud-26.10.amd64 ]
   [ "$(systems '' | sed -n 6p)" = ubuntu-cloud-26.04.amd64 ]
   [ "$(systems '' | sed -n 11p)" = ubuntu-core-26.amd64 ]
-  [ "$(systems '' | sed -n 23p)" = ubuntu-core-22.arm64 ]
+  [ "$(systems '' | sed -n '$p')" = ubuntu-core-22.arm64 ]
 }
 
 @test "architecture term" {
@@ -94,7 +94,7 @@ systems() {
 }
 
 @test "task term selects a task subset on every system" {
-  [ "$(matrix 'build' | jq '.include | length')" -eq 23 ]
+  [ "$(matrix 'build' | jq '.include | length')" -eq "${#SYSTEMS[@]}" ]
   [ "$(matrix 'build' | jq -r '.include[].jobs' | grep -c hello-world)" -eq 0 ]
 }
 
