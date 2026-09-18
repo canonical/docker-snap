@@ -300,4 +300,10 @@ GARBAGE
   # nothing to put back this time: status 1 tells the hook no restart is needed
   run restore_daemon_config
   [ "$status" -eq 1 ]
+  # a copy that fails must not read as a restore the hook can act on
+  snapshot_daemon_config
+  _hand '. + {"mtu":9}'
+  run bash -c '. "$SNAP/lib/daemon-config"; cp() { return 1; }; restore_daemon_config'
+  [ "$status" -ne 0 ]
+  [ "$(_file)" = '{"log-level":"error","mtu":9}' ]
 }
