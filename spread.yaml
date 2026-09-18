@@ -28,6 +28,10 @@ backends:
       # Want to add more systems? Look here for a list of available systems: https://gitlab.com/zygoon/image-garden/-/tree/main/data
       # or look here for an exhaustive example: https://gitlab.com/zygoon/image-garden/-/blob/main/spread-demo/spread.yaml
       # Note: ubuntu core images are prepared via this script: https://gitlab.com/zygoon/image-garden/-/blob/main/mk/050-ubuntu-core.mk
+      #
+      # Architectures: ubuntu-cloud runs on amd64, arm64, riscv64, s390x and
+      # ppc64el (22.04 on amd64 and arm64 only). ubuntu-core runs on amd64 and
+      # arm64 only: Ubuntu Core is not published for the other three.
       - ubuntu-core-22.amd64:
           username: ubuntu
           password: ubuntu
@@ -74,8 +78,6 @@ backends:
           password: ubuntu
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_RISCV64)
-      # No ubuntu-core systems for s390x/ppc64el: Ubuntu Core is not published
-      # for those architectures.
       - ubuntu-cloud-24.04.s390x:
           username: ubuntu
           password: ubuntu
