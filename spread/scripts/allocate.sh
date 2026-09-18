@@ -12,9 +12,11 @@ if [ -n "${SPREAD_HOST_PATH-}" ]; then
 fi
 
 # One emulated guest per runner (the CI matrix fans systems out into separate
-# jobs), so there is no contention to budget memory against.
-export QEMU_SMP_OPTION="-smp 4"
-export QEMU_MEM_OPTION="-m 3072"
+# jobs), so there is no contention to budget memory against. Defaults only:
+# spread passes the host environment through, so either can be set by the
+# caller to suit a smaller or larger host.
+export QEMU_SMP_OPTION="${QEMU_SMP_OPTION:--smp 4}"
+export QEMU_MEM_OPTION="${QEMU_MEM_OPTION:--m 3072}"
 
 # Map spread system architecture
 SPREAD_SYSTEM=${SPREAD_SYSTEM/%amd64/x86_64}  # maps "amd64" to "x86_64"
