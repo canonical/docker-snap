@@ -12,7 +12,9 @@
 # A connection that is accepted but stays silent (the slirp case above) holds
 # each check for up to banner_timeout seconds (default 10). That wait is
 # clamped to what is left of the timeout, so the overall bound is the timeout
-# plus at most one interval, regardless of how the checks fail.
+# plus at most one interval. The tcp connect itself is not bounded: that holds
+# for a local port-forward, which accepts or refuses at once, but not for a
+# host that drops packets.
 
 _ssh_banner_ready() {
   (
