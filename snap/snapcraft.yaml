@@ -135,6 +135,7 @@ parts:
       - bin/*
       - usr/sbin/*
       - config/daemon.json
+      - lib/daemon-config
       - patches/*
       - usr/share/nvidia-container-toolkit/*
     prime:
@@ -143,6 +144,7 @@ parts:
       - bin/*
       - usr/sbin/*
       - config/daemon.json
+      - lib/daemon-config
       - usr/share/nvidia-container-toolkit/*
 
   utils:
