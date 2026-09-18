@@ -68,6 +68,14 @@ _apply() {
   [ "$(find "$SNAP_DATA/config/daemon.json" -perm 644)" = "$SNAP_DATA/config/daemon.json" ]
 }
 
+@test "a merge keeps the mode of the file it replaces" {
+  # daemon.json can hold credentials (proxies), so a hardened mode has to survive
+  chmod 600 "$SNAP_DATA/config/daemon.json"
+  _snap_config '{"mtu":1400}'
+  _apply
+  [ "$(find "$SNAP_DATA/config/daemon.json" -perm 600)" = "$SNAP_DATA/config/daemon.json" ]
+}
+
 @test "apply drops snap keys outside the allowlist" {
   # the hook rejects these first; the merge must not rely on that
   _snap_config '{"hosts":["tcp://0.0.0.0:2375"],"mtu":1400}'
