@@ -97,6 +97,14 @@ image-garden.spread -artifacts artifacts
 By default, image garden VMs have ephimeral storage. To start VMs with permanent storage, set `QEMU_SNAPSHOT_OPTION=""`
 as described in [Persistent Storage Mode](https://gitlab.com/zygoon/image-garden/-/blob/main/README.md?ref_type=heads#persistent-storage-mode).
 
+### Guest CPU and memory
+
+Each VM gets 4 vCPUs and 3 GiB of RAM by default. To change that, set `QEMU_SMP_OPTION` and/or `QEMU_MEM_OPTION` to the QEMU arguments to use instead:
+
+```bash
+QEMU_SMP_OPTION="-smp 2" QEMU_MEM_OPTION="-m 2048" image-garden.spread
+```
+
 ## Running in CI
 
 The [Spread Tests workflow](.github/workflows/spread-tests.yml) runs these tests on GitHub Actions, on manual dispatch only.
