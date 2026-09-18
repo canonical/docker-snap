@@ -248,6 +248,7 @@ GARBAGE
 }
 
 @test "a crash between the file and key-list writes strands no key" {
+  _hand '. + {"dns-search":["snap.test"]}'
   _snap_config '{"mtu":1400}'
   _apply
   _snap_config '{"mtu":1400,"dns":["1.1.1.1"]}'
@@ -264,10 +265,12 @@ GARBAGE
     _apply
   ) || true
   [ "$(jq -c .dns "$SNAP_DATA/config/daemon.json")" = '["1.1.1.1"]' ]
+  # the widened list covers what snap config applied, and nothing set by hand
+  [ "$(_keys)" = '["dns","mtu"]' ]
   # snapd rolls the failed set back
   _snap_config '{"mtu":1400}'
   _apply
-  [ "$(_file)" = '{"log-level":"error","mtu":1400}' ]
+  [ "$(_file)" = '{"dns-search":["snap.test"],"log-level":"error","mtu":1400}' ]
 }
 
 @test "snapshot and restore put the file and the key list back" {
