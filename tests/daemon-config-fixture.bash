@@ -26,6 +26,15 @@ _teardown_snap_tree() {
   rm -rf "$T"
 }
 
+# _refresh_to_new_revision [rev]: what a refresh leaves behind -- a new revision with its
+# own $SNAP, holding a copy of the old revision's data. Snap config is not per-revision.
+_refresh_to_new_revision() {
+  local rev="${1:-x2}"
+  cp -R "$SNAP_DATA" "$T/data-$rev"
+  cp -R "$SNAP" "$T/snap-$rev"
+  export SNAP_DATA="$T/data-$rev" SNAP="$T/snap-$rev" SNAP_REVISION="$rev"
+}
+
 # Only `--validate --config-file=<path>`. Rejects a file carrying the key "bad" (an
 # unknown directive) or an mtu of 13 (a bad value), the way dockerd would.
 _install_fake_dockerd() {

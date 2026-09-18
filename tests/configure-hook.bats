@@ -123,3 +123,43 @@ _ops() { cat "$SNAPCTL_LOG" 2>/dev/null || true; }
   [ ! -e "$SNAP_DATA/.configure-rollback" ]
   [ "$(_ops)" = $'stop docker\nstart docker\nstop docker\nstart docker' ]
 }
+
+@test "a snap-set option survives a refresh and then follows the new default" {
+  _snap_config '{"log-level":"info"}'
+  run bash "$HOOK"
+  [ "$status" -eq 0 ]
+  _refresh_to_new_revision
+  printf '{"log-level":"warn"}\n' > "$SNAP/config/daemon.json"
+  run bash "$HOOK"
+  [ "$status" -eq 0 ]
+  [ "$(_file)" = '{"log-level":"info"}' ]
+  [ "$(_keys)" = '["log-level"]' ]
+  _snap_config '{}'
+  run bash "$HOOK"
+  [ "$status" -eq 0 ]
+  [ "$(_file)" = '{"log-level":"warn"}' ]
+}
+
+@test "an option set before the feature existed is applied on the next revision" {
+  # nothing applied it on the old revision, so there is no key list to carry over
+  _snap_config '{"mtu":1400}'
+  _refresh_to_new_revision
+  run bash "$HOOK"
+  [ "$status" -eq 0 ]
+  [ "$(_file)" = '{"log-level":"error","mtu":1400}' ]
+  [ "$(_keys)" = '["mtu"]' ]
+}
+
+@test "a key dropped from the allowlist blocks the hook after a refresh" {
+  _snap_config '{"mtu":1400}'
+  run bash "$HOOK"
+  [ "$status" -eq 0 ]
+  _refresh_to_new_revision
+  grep -v '^    mtu$' "$SNAP/lib/daemon-config" > "$T/lib" && mv "$T/lib" "$SNAP/lib/daemon-config"
+  run bash "$HOOK"
+  # pin: retiring a key while it is still set breaks the refresh, which is why removing one
+  # needs the stored value unset first
+  [ "$status" -ne 0 ]
+  grep -qF "not configurable via snap: mtu" <<<"$output"
+  [ "$(_file)" = '{"log-level":"error","mtu":1400}' ]
+}
