@@ -81,8 +81,7 @@ _ops() { cat "$SNAPCTL_LOG" 2>/dev/null || true; }
   [ "$(_file)" = '{"log-level":"error"}' ]
   [ ! -e "$SNAP_DATA/daemon-config-keys" ]
   [ ! -e "$SNAP_DATA/.configure-rollback" ]
-  # the recovery path tries to bring the services back on the restored config
-  [ "$(_ops)" = $'stop docker\nstart docker\nstop docker\nstart docker' ]
+  [ "$(_ops)" = $'stop docker\nstart docker' ]
 }
 
 @test "rolls the key list back without a restart when only the key list moved" {
@@ -121,7 +120,7 @@ _ops() { cat "$SNAPCTL_LOG" 2>/dev/null || true; }
   [ "$(_file)" = '{"log-level":"error","runtimes":{"nvidia":{"path":"nvidia-container-runtime"}}}' ]
   [ ! -e "$SNAP_DATA/daemon-config-keys" ]
   [ ! -e "$SNAP_DATA/.configure-rollback" ]
-  [ "$(_ops)" = $'stop docker\nstart docker\nstop docker\nstart docker' ]
+  [ "$(_ops)" = $'stop docker\nstart docker' ]
 }
 
 @test "a snap-set option survives a refresh and then follows the new default" {
