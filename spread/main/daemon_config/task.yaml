@@ -70,6 +70,7 @@ execute: |
   sudo cat "$CONFIG" | MATCH '"snap\.test"' || ERROR "hand-set option was dropped by an unrelated snap set"
   sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"debug"' || ERROR "hand-set log-level was reset by an unrelated snap set"
   sudo cat "$CONFIG" | MATCH '"mtu"[[:space:]]*:[[:space:]]*1400' || ERROR "mtu was not applied"
+  [ "$(sudo docker network inspect bridge -f '{{index .Options "com.docker.network.driver.mtu"}}')" = 1400 ] || ERROR "running daemon did not load mtu"
 
   # Once a key has been set through snap config it is managed: unset restores the shipped
   # default, not the hand-set value.
@@ -81,6 +82,7 @@ execute: |
   snapcfg unset docker daemon.mtu
   wait_for_docker
   sudo cat "$CONFIG" | NOMATCH '"mtu"' || ERROR "mtu was not removed on unset"
+  [ "$(sudo docker network inspect bridge -f '{{index .Options "com.docker.network.driver.mtu"}}')" = 1500 ] || ERROR "running daemon kept mtu after unset"
   sudo cat "$CONFIG" | MATCH '"snap\.test"' || ERROR "hand-set option was dropped on unset"
 
   # A corrupt managed-keys file must not let the hook drop keys outside the allowlist.
