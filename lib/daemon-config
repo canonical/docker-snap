@@ -95,12 +95,9 @@ apply_user_daemon_config() {
     managed="$(jq -cse 'select(length == 1) | .[0] | arrays | select(all(type == "string"))' \
         "$mng" 2>/dev/null || echo '[]')"
     base="$(jq -ce "$DAEMON_CONFIG_JQ"'keep_keys($allow)' --argjson allow "$allow" \
-        "${DAEMON_CONFIG_BASE}" 2>/dev/null || echo '{}')"
-    if ! overlay="$(jq -ce "$DAEMON_CONFIG_JQ"'(.daemon // {}) | keep_keys($allow)' \
-        --argjson allow "$allow" <<<"$snap_cfg" 2>/dev/null)"; then
-        echo "config: could not read daemon options; leaving daemon.json unchanged"
-        return 0
-    fi
+        "${DAEMON_CONFIG_BASE}")" || return 1
+    overlay="$(jq -ce "$DAEMON_CONFIG_JQ"'(.daemon // {}) | keep_keys($allow)' \
+        --argjson allow "$allow" <<<"$snap_cfg")" || return 1
 
     # Refuse a daemon.json that is not a JSON object (the merge fails on it), so the snap
     # set fails instead of committing an option that never reaches the file.

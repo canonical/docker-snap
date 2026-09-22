@@ -220,8 +220,7 @@ printf 'not valid json {'
 GARBAGE
   chmod +x "$T/bin/snapctl"
   run _apply
-  [ "$status" -eq 0 ]
-  grep -qF "could not read daemon options; leaving daemon.json unchanged" <<<"$output"
+  [ "$status" -eq 1 ]
   [ "$(_file)" = '{"log-level":"error"}' ]
   [ ! -e "$SNAP_DATA/daemon-config-keys" ]
   # empty output means nothing is set: a silent no-op for both entry points
