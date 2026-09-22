@@ -44,8 +44,7 @@ jobs:
 
       # shellcheck is preinstalled on the runner image. The .bats files are
       # not shellcheck-able (bats syntax), so only the plain scripts run.
-      # SC1091 is off because the hook sources files by their in-snap path.
       - name: Run shellcheck
         run: |
-          shellcheck -e SC1091 .github/workflows/testflinger/scripts/*.sh tests/*.bash \
+          shellcheck -x .github/workflows/testflinger/scripts/*.sh tests/*.bash \
             lib/daemon-config snap/hooks/configure

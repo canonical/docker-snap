@@ -5,6 +5,7 @@ set -eux
 HOOK_LOG="${SNAP_COMMON}/hooks/${SNAP_REVISION}/$(basename "$0").log" && mkdir -p "${HOOK_LOG%/*}"
 exec &> >(tee -a "${HOOK_LOG}")
 
+# shellcheck source=nvidia/lib
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 # shellcheck source=lib/daemon-config
 . "${SNAP}/lib/daemon-config"

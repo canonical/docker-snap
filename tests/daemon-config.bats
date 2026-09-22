@@ -6,7 +6,7 @@ load daemon-config-fixture
 
 setup() {
   _setup_snap_tree
-  # shellcheck disable=SC1091
+  # shellcheck source=lib/daemon-config
   . "$SNAP/lib/daemon-config"
 }
 
