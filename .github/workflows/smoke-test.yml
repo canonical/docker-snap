@@ -374,10 +374,12 @@ jobs:
           snapcfg set docker daemon.mtu=1400
           sudo jq -e '.mtu == 1400' "$CONFIG"
           timeout 60 sh -c 'until sudo docker info >/dev/null 2>&1; do sleep 1; done'
+          [ "$(sudo docker network inspect bridge -f '{{index .Options "com.docker.network.driver.mtu"}}')" = 1400 ]
 
           snapcfg unset docker daemon.mtu
           sudo jq -e 'has("mtu") | not' "$CONFIG"
           timeout 60 sh -c 'until sudo docker info >/dev/null 2>&1; do sleep 1; done'
+          [ "$(sudo docker network inspect bridge -f '{{index .Options "com.docker.network.driver.mtu"}}')" = 1500 ]
 
           # an option outside the allowlist fails the snap set and never reaches the file
           if snapcfg set docker daemon.hosts='["tcp://0.0.0.0:2375"]'; then
