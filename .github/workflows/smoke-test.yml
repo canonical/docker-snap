@@ -133,8 +133,6 @@ jobs:
             sudo snap install snapd --channel="$SNAPD_CHANNEL"
           fi
 
-          sudo snap watch --last=refresh || true
-
           sudo snap list
 
           # Fail loudly if the channel did not take: a run that silently tested
