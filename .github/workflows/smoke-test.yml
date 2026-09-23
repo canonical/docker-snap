@@ -35,9 +35,9 @@ on:
           - latest/beta
           - latest/edge
         default: latest/stable
-  # Nightly test of latest/stable and latest/beta
+  # Weekday nightly test of latest/stable and latest/beta
   schedule:
-    - cron: '17 5 * * *'
+    - cron: '17 5 * * 1-5'
 
 # Cancel an in-progress run when a newer commit lands on the same ref, so a
 # burst of pushes to a branch or PR only tests the latest one. The event and
