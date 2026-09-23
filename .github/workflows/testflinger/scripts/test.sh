@@ -32,7 +32,7 @@ smi_test() (
       assert_driver "$smi_out"
       # Then in a container, via the nvidia-smi the toolkit mounts from the
       # docker snap's gpu-2404 component.
-      smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all ubuntu bash -c "/snap/docker/*/gpu-2404/usr/bin/nvidia-smi")
+      smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all ubuntu bash -c "/snap/docker/*/gpu-2404*/usr/bin/nvidia-smi")
       assert_driver "$smi_out"
       ;;
     *)

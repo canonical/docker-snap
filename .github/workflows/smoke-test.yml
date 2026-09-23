@@ -401,3 +401,30 @@ jobs:
           COUNT="$(sudo iptables -L | grep -i docker | wc -l)"
           set -e
           [ "$COUNT" -gt 0 ]
+
+      - name: Daemon options via snap config
+        run: |
+          trap 'echo "error, sad day ($?)"; sleep 1; sudo snap logs -n=20 docker.dockerd; sudo cat /var/snap/docker/current/config/daemon.json' ERR
+          CONFIG=/var/snap/docker/current/config/daemon.json
+          # each configure run bounces the nvidia oneshot; keep it clear of systemd's start limit
+          snapcfg() {
+            sudo systemctl reset-failed snap.docker.nvidia-container-toolkit.service || :
+            sudo snap "$@"
+          }
+
+          snapcfg set docker daemon.mtu=1400
+          sudo jq -e '.mtu == 1400' "$CONFIG"
+          timeout 60 sh -c 'until sudo docker info >/dev/null 2>&1; do sleep 1; done'
+          [ "$(sudo docker network inspect bridge -f '{{index .Options "com.docker.network.driver.mtu"}}')" = 1400 ]
+
+          snapcfg unset docker daemon.mtu
+          sudo jq -e 'has("mtu") | not' "$CONFIG"
+          timeout 60 sh -c 'until sudo docker info >/dev/null 2>&1; do sleep 1; done'
+          [ "$(sudo docker network inspect bridge -f '{{index .Options "com.docker.network.driver.mtu"}}')" = 1500 ]
+
+          # an option outside the allowlist fails the snap set and never reaches the file
+          if snapcfg set docker daemon.hosts='["tcp://0.0.0.0:2375"]'; then
+            echo "Error: disallowed daemon option was accepted"
+            exit 1
+          fi
+          sudo jq -e 'has("hosts") | not' "$CONFIG"
