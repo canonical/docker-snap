@@ -131,6 +131,8 @@ setup_fail () {
         mv "${SNAP_DATA}/config/daemon.json"{.new,}
         rm -f "${SNAP_DATA}/etc/cdi/nvidia.yaml"
         rm -f "${SNAP_DATA}/etc/nvidia-container-runtime/config.toml"
+    else
+        rm -f "${SNAP_DATA}/config/daemon.json.new"
     fi
 }
 
