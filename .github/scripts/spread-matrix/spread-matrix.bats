@@ -109,6 +109,12 @@ systems() {
     "garden:ubuntu-cloud-24.04.amd64:spread/main/build garden:ubuntu-cloud-24.04.amd64:spread/main/hello-world" ]
 }
 
+@test "terms are regexes, not globs against the cwd" {
+  cd "$BATS_TEST_TMPDIR"
+  touch .dotfile
+  [ "$(matrix '.*' | jq '.include | length')" -eq "${#SYSTEMS[@]}" ]
+}
+
 @test "zero-match filter fails loudly" {
   run "$SCRIPT" 'no-such-thing' <<<"$JOBS"
   [ "$status" -eq 1 ]

@@ -17,14 +17,14 @@
 # tab-separated copies of each line -- the real job name plus a copy with
 # the core version expanded to LTS form -- and the real name comes back
 # out of column 1.
-set -eu
+set -euf
 
 FILTER="${1-}"
 
 jobs="$(cat)"
 matchable="$(paste <(printf '%s\n' "$jobs") <(sed -E 's/-core-([0-9]+)\./-core-\1.04./' <<<"$jobs"))"
 
-# shellcheck disable=SC2086 # word splitting of $FILTER is the point
+# shellcheck disable=SC2086 # word splitting of $FILTER is the point; set -f keeps terms from globbing
 for term in $FILTER; do
   case "$term" in
     ('!'*) matchable="$(grep -vE -- "${term#!}" <<<"$matchable" || true)" ;;
