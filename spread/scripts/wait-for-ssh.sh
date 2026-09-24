@@ -32,13 +32,13 @@ wait_for_ssh() {
   local interval="${4:-5}"
   local banner_timeout="${5:-10}"
   local deadline=$((SECONDS + timeout))
-  local remaining
-  while ((SECONDS < deadline)); do
-    remaining=$((deadline - SECONDS))
+  local remaining=$timeout
+  while ((remaining > 0)); do
     if _ssh_banner_ready "$host" "$port" "$((remaining < banner_timeout ? remaining : banner_timeout))"; then
       return 0
     fi
     sleep "$interval"
+    remaining=$((deadline - SECONDS))
   done
   return 1
 }
