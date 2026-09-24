@@ -51,7 +51,7 @@ case "$garden_system" in
         echo "Pre-building $dst (snap-safe stand-in for image-garden's truncate)"
         # Plain cp: the fresh mtime makes make consider the target up to date.
         cp "$src" "$dst"
-        qemu-img resize -f raw "$dst" "$flash_size"
+        qemu-img resize -f raw "$dst" "$flash_size" || { rm -f "$dst"; exit 1; }
       fi
     done
     ;;
