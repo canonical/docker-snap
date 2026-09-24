@@ -65,6 +65,8 @@ if [ "$HOST_ARCH" != "$SYSTEM_ARCH" ] || [ ! -e /dev/kvm ]; then
   if wait_for_ssh "${OUT%:*}" "${OUT##*:}" 600 5; then
     echo "ssh is answering on $OUT"
   else
+    # spread only discards systems whose allocation succeeded
+    image-garden discard "$OUT" || true
     FATAL "ssh did not become ready on $OUT"
   fi
 fi
