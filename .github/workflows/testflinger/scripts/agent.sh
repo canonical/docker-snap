@@ -6,7 +6,7 @@ SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export SCRIPTS
 
 echo "List attached files"
-find $SCRIPTS
+find "$SCRIPTS"
 
 echo "Testing device with IP: $DEVICE_IP"
 
@@ -15,23 +15,40 @@ DEVICE_USER="${DEVICE_USER:-ubuntu}"
 export DEVICE_USER
 echo "Testing as user: $DEVICE_USER"
 
+# Common SSH options, inherited by the sub-scripts.
+# The device under test is ephemeral and its IP is reused across provisions, so
+# its host key changes; skip host-key checking to avoid hard failures.
+# ConnectTimeout keeps the reboot-wait loops from blocking on TCP for minutes,
+# and the ServerAlive settings drop dead sessions instead of hanging.
+SSH_OPTS="-o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=15 -o ServerAliveCountMax=3"
+export SSH_OPTS
+
 # Update preinstalled system snaps to latest versions
-$SCRIPTS/update-snaps.sh
-$SCRIPTS/update-snapd-beta.sh
+"$SCRIPTS/update-snaps.sh"
 
 # Install dependencies and required docker version
 echo "Setup the environment on the target device"
-ssh $DEVICE_USER@$DEVICE_IP "bash -s -- $SNAP_CHANNEL" < $SCRIPTS/setup.sh
+# shellcheck disable=SC2086,SC2029  # $SSH_OPTS is an intentional multi-arg split; remote vars expand client-side by design
+ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "bash -s -- $SNAP_CHANNEL" < $SCRIPTS/setup.sh
+
+# Record the boot id so we can tell a real reboot from a still-up pre-reboot box.
+# Without this, the wait loop below can succeed before the queued reboot fires
+# and run the tests on a machine that is about to go down.
+# shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+BOOT_ID=$(ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "cat /proc/sys/kernel/random/boot_id")
+echo "Boot id before reboot: $BOOT_ID"
 
 # Reboot the machine to activate newly installed kernel components
 # Queue reboot in background to avoid breaking the SSH connection prematurely
 echo "Rebooting the device"
-ssh $DEVICE_USER@$DEVICE_IP "(sleep 3 && sudo reboot) &"
+# shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "(sleep 3 && sudo reboot) &"
 
-# Wait for machine to start up, and also wait for docker to start
+# Wait for the machine to actually reboot (boot id changed) and for docker to start.
 ITERATIONS=0
 MAX_ITERATIONS=20 # 30 seconds, 20 times, is 10 minutes
-while ! ssh $DEVICE_USER@$DEVICE_IP "sudo docker version"; do
+# shellcheck disable=SC2086,SC2029  # $SSH_OPTS is an intentional multi-arg split; $BOOT_ID expands client-side by design
+while ! ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "[ \"\$(cat /proc/sys/kernel/random/boot_id)\" != \"$BOOT_ID\" ] && sudo docker version"; do
   ITERATIONS=$((ITERATIONS + 1))
   if [ $ITERATIONS -ge $MAX_ITERATIONS ]; then
     echo "Timeout waiting for ssh server and Docker daemon."
@@ -42,7 +59,9 @@ while ! ssh $DEVICE_USER@$DEVICE_IP "sudo docker version"; do
 done
 
 echo "Run tests"
-ssh $DEVICE_USER@$DEVICE_IP "bash -s" < $SCRIPTS/test.sh
+# shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "bash -s" < $SCRIPTS/test.sh
 
 echo "Run snap refresh test"
-ssh $DEVICE_USER@$DEVICE_IP "bash -s -- $SNAP_CHANNEL" < $SCRIPTS/refresh-test.sh
+# shellcheck disable=SC2086,SC2029  # $SSH_OPTS is an intentional multi-arg split; remote vars expand client-side by design
+ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "bash -s -- $SNAP_CHANNEL" < $SCRIPTS/refresh-test.sh

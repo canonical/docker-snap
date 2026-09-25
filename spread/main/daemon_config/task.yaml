@@ -1,0 +1,114 @@
+summary: Set daemon.json options via snap configuration
+
+environment:
+  CONFIG: /var/snap/docker/current/config/daemon.json
+  SIDECAR: /var/snap/docker/current/daemon-config-keys
+  BACKUP: /tmp/daemon.json.bak
+
+prepare: |
+  sudo rm -f "$BACKUP"
+  sudo cp "$CONFIG" "$BACKUP"
+
+execute: |
+  source "$SCRIPTS_PATH/common.sh"
+
+  # The configure hook restarts the nvidia oneshot on every config change; the rapid
+  # successive changes below would otherwise trip systemd's start-limit, so reset it first.
+  snapcfg() {
+    sudo systemctl reset-failed snap.docker.nvidia-container-toolkit.service 2>/dev/null || true
+    sudo snap "$@"
+  }
+
+  # An allowlisted option is merged into daemon.json and takes effect.
+  snapcfg set docker daemon.default-address-pools='[{"base":"10.211.0.0/16","size":24}]'
+  wait_for_docker
+  sudo cat "$CONFIG" | MATCH '10\.211\.0\.0/16'
+
+  sudo docker network rm testpool >/dev/null 2>&1 || true
+  sudo docker network create testpool
+  subnet=$(sudo docker network inspect testpool -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
+  echo "testpool subnet: $subnet"
+  echo "$subnet" | MATCH '^10\.211\.' || ERROR "created network did not draw from the configured pool"
+  sudo docker network rm testpool
+
+  # A dangerous / unknown option is rejected outright: the configure hook fails the
+  # `snap set`, so nothing is stored, nothing reaches daemon.json, and no port is opened.
+  # The port check names dockerd, so an unrelated listener on 2375 does not fail the task.
+  ! snapcfg set docker daemon.hosts='["tcp://0.0.0.0:2375"]' || ERROR "disallowed 'hosts' option was accepted"
+  wait_for_docker
+  sudo cat "$CONFIG" | NOMATCH 'tcp://0\.0\.0\.0:2375' || ERROR "'hosts' leaked into daemon.json"
+  sudo ss -tlnpH 'sport = :2375' | NOMATCH 'dockerd' || ERROR "daemon exposed a TCP port via a disallowed option"
+
+  # An invalid value for an allowlisted key is rejected by validation: the snap set fails
+  # and nothing reaches daemon.json.
+  ! snapcfg set docker daemon.mtu='not-a-number' || ERROR "invalid 'mtu' value was accepted"
+  wait_for_docker
+  sudo cat "$CONFIG" | NOMATCH 'not-a-number' || ERROR "invalid value was written to daemon.json"
+
+  # Setting the whole daemon subtree to a scalar fails with an error, not a silent hook crash.
+  ! snapcfg set docker daemon=foo || ERROR "non-object daemon subtree was accepted"
+  ! snapcfg set docker daemon=false || ERROR "false daemon subtree was accepted"
+
+  # log-level ships a default ("error") in the base config: setting it applies, and
+  # unsetting restores the shipped default rather than dropping the key.
+  snapcfg set docker daemon.log-level=debug
+  wait_for_docker
+  sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"debug"' || ERROR "log-level was not applied"
+  snapcfg unset docker daemon.log-level
+  wait_for_docker
+  sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"error"' || ERROR "log-level did not restore the shipped default on unset"
+
+  # Options set by hand in daemon.json survive snap config changes: only the keys the hook
+  # applied itself are dropped or reset, even when they are allowlisted (log-level here).
+  # Ubuntu Core has no jq, so edit the file with the snap's copy in the snap's environment.
+  edit_config() {
+    sudo snap run --shell docker.docker -c "jq '$1' \"\$SNAP_DATA/config/daemon.json\" > \"\$SNAP_DATA/config/daemon.json.new\" && mv \"\$SNAP_DATA/config/daemon.json.new\" \"\$SNAP_DATA/config/daemon.json\""
+  }
+  edit_config '. + {"dns-search": ["snap.test"], "log-level": "debug"}'
+  snapcfg set docker daemon.mtu=1400
+  wait_for_docker
+  sudo cat "$CONFIG" | MATCH '"snap\.test"' || ERROR "hand-set option was dropped by an unrelated snap set"
+  sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"debug"' || ERROR "hand-set log-level was reset by an unrelated snap set"
+  sudo cat "$CONFIG" | MATCH '"mtu"[[:space:]]*:[[:space:]]*1400' || ERROR "mtu was not applied"
+  [ "$(sudo docker network inspect bridge -f '{{index .Options "com.docker.network.driver.mtu"}}')" = 1400 ] || ERROR "running daemon did not load mtu"
+
+  # Once a key has been set through snap config it is managed: unset restores the shipped
+  # default, not the hand-set value.
+  snapcfg set docker daemon.log-level=info
+  wait_for_docker
+  snapcfg unset docker daemon.log-level
+  wait_for_docker
+  sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"error"' || ERROR "managed log-level did not restore the shipped default on unset"
+  snapcfg unset docker daemon.mtu
+  wait_for_docker
+  sudo cat "$CONFIG" | NOMATCH '"mtu"' || ERROR "mtu was not removed on unset"
+  [ "$(sudo docker network inspect bridge -f '{{index .Options "com.docker.network.driver.mtu"}}')" = 1500 ] || ERROR "running daemon kept mtu after unset"
+  sudo cat "$CONFIG" | MATCH '"snap\.test"' || ERROR "hand-set option was dropped on unset"
+
+  # A corrupt managed-keys file must not let the hook drop keys outside the allowlist.
+  edit_config '. + {"max-concurrent-downloads": 7}'
+  echo '["max-concurrent-downloads"]' | sudo tee "$SIDECAR" >/dev/null
+  snapcfg set docker daemon.mtu=1450
+  wait_for_docker
+  sudo cat "$CONFIG" | MATCH '"max-concurrent-downloads"' || ERROR "corrupt sidecar dropped an unmanaged key"
+  snapcfg unset docker daemon.mtu
+  wait_for_docker
+
+  # Unsetting removes the option again.
+  snapcfg unset docker daemon.default-address-pools
+  wait_for_docker
+  sudo cat "$CONFIG" | NOMATCH '10\.211\.0\.0/16' || ERROR "option was not removed on unset"
+
+restore: |
+  source "$SCRIPTS_PATH/common.sh"
+
+  sudo systemctl reset-failed snap.docker.nvidia-container-toolkit.service 2>/dev/null || true
+  # Unset before restoring the file: each unset runs the configure hook, which rewrites
+  # daemon.json and the managed-key list.
+  sudo snap unset docker daemon.default-address-pools daemon.hosts daemon.mtu daemon.log-level 2>/dev/null || true
+  sudo cp "$BACKUP" "$CONFIG"
+  sudo rm -f "$BACKUP"
+  sudo docker network rm testpool >/dev/null 2>&1 || true
+  # The restored file only reaches the running daemon on a restart.
+  restart_docker
+  wait_for_docker

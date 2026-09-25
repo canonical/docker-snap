@@ -1,0 +1,79 @@
+#!/usr/bin/env bats
+# Tests for wait_for_ssh. Run with: bats spread/scripts/
+#
+# A small python listener stands in for sshd; python3 is available both on
+# the CI runners and on developer machines, unlike any one flavour of nc.
+
+setup() {
+  source "$BATS_TEST_DIRNAME/wait-for-ssh.sh"
+  LISTENER_PID=""
+}
+
+teardown() {
+  if [ -n "$LISTENER_PID" ]; then
+    kill "$LISTENER_PID" 2>/dev/null || true
+    wait "$LISTENER_PID" 2>/dev/null || true
+  fi
+}
+
+# Serve $1 as the connection banner on an ephemeral port; an empty banner
+# accepts and then stays silent. Sets PORT.
+start_listener() {
+  python3 -c '
+import socket, sys
+s = socket.socket()
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(("127.0.0.1", 0))
+s.listen(5)
+print(s.getsockname()[1], flush=True)
+held = []
+while True:
+    c, _ = s.accept()
+    if sys.argv[1]:
+        c.sendall(sys.argv[1].encode())
+        c.close()
+    else:
+        held.append(c)
+' "$1" > "$BATS_TEST_TMPDIR/port" &
+  LISTENER_PID=$!
+  local i
+  for ((i = 0; i < 50; i++)); do
+    [ -s "$BATS_TEST_TMPDIR/port" ] && break
+    sleep 0.1
+  done
+  PORT=$(cat "$BATS_TEST_TMPDIR/port")
+  [ -n "$PORT" ]
+}
+
+@test "ready when the listener talks ssh" {
+  start_listener $'SSH-2.0-bats\r\n'
+  wait_for_ssh 127.0.0.1 "$PORT" 2 0.1
+}
+
+@test "a non-ssh banner is not ready" {
+  start_listener $'HTTP/1.0 200 OK\r\n'
+  run wait_for_ssh 127.0.0.1 "$PORT" 2 0.1
+  [ "$status" -eq 1 ]
+}
+
+@test "an unreachable port times out" {
+  # Port 1: privileged and outside the ephemeral range, so nothing can land
+  # on it between picking the port and probing it.
+  run wait_for_ssh 127.0.0.1 1 2 0.1
+  [ "$status" -eq 1 ]
+}
+
+@test "a silent listener is bounded by the timeout, not the banner wait" {
+  start_listener ''
+  local start=$SECONDS
+  run wait_for_ssh 127.0.0.1 "$PORT" 2 0.1 30
+  [ "$status" -eq 1 ]
+  [ $((SECONDS - start)) -lt 10 ]
+}
+
+@test "a ready daemon is picked up without sleeping" {
+  start_listener $'SSH-2.0-bats\r\n'
+  local start=$SECONDS
+  wait_for_ssh 127.0.0.1 "$PORT" 30 60
+  [ $((SECONDS - start)) -lt 10 ]
+}

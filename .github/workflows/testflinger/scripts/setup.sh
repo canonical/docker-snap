@@ -105,6 +105,7 @@ install_dependencies() {
   # Source variables that define the version.
   # e.g. core: ID=ubuntu-core, VERSION_ID="24"
   # e.g. desktop: ID=ubuntu, VERSION_ID="25.10"
+  # shellcheck disable=SC1091  # /etc/os-release is provided by the OS at runtime
   source /etc/os-release
 
   case "$ID-$VERSION_ID" in
