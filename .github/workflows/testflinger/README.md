@@ -51,11 +51,17 @@ like adding `reserve_data` for debugging a failed job.
 The Testflinger job is used in the [nvidia-test.yml](../nvidia-test.yml) Github Workflow.
 This workflow can only be run manually.
 
-The workflow takes a Docker snap build artifact generated via a previous
-[smoke-test.yml](../smoke-test.yml) workflow run,
-publishes it to the Snap Store under a branch, and then uses that branch to run the tests.
+The workflow tests either a Docker snap build or a Snap Store channel. Set exactly one of:
+
+* `Run id number` - a previous [smoke-test.yml](../smoke-test.yml) workflow run.
+  The workflow takes its Docker snap build artifact,
+  publishes it to the Snap Store under the `latest/edge/runid-<run-id>` branch,
+  and then uses that branch to run the tests.
+* `Snap channel` - an existing channel, e.g. `latest/candidate`.
+  The workflow tests whatever revision the channel holds, without publishing anything.
 
 To run the Github workflow,
 go to the [workflow page](https://github.com/canonical/docker-snap/actions/workflows/nvidia-test.yml) on Github,
 open the `Run workflow` menu, and provide the necessary inputs.
-The `Publish to Store` option should only be set if the artifact hasn't been uploaded to the Store.
+The `Publish to Store` option applies to a run id only,
+and should only be set if the artifact hasn't been uploaded to the Store.
