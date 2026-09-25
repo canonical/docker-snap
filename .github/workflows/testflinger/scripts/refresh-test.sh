@@ -95,13 +95,21 @@ main() {
 
   check_container
 
+  REV_BEFORE=$(snap list docker | awk 'NR==2 {print $3}')
+
   refresh_docker "$1"
 
   check_container
 
-  revert_docker
+  # A channel holding the same revision as stable only switches tracking, which
+  # leaves no older revision for snap revert to go back to.
+  if [ "$(snap list docker | awk 'NR==2 {print $3}')" = "$REV_BEFORE" ]; then
+    echo "Channel $1 holds the same revision as stable ($REV_BEFORE), skipping revert."
+  else
+    revert_docker
 
-  check_container
+    check_container
+  fi
 
   echo "Docker snap successfully refreshed and container is still running."
 }
