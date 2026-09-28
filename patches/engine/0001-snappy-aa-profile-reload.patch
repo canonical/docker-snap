@@ -1,4 +1,4 @@
-From 70d983311b60569847aef8d6162f59c24e0a03b8 Mon Sep 17 00:00:00 2001
+From 5e34dcb2dc9e7c65993629d3f81d8a782c4687a7 Mon Sep 17 00:00:00 2001
 From: Dariusz Duda <9116056+dariuszd21@users.noreply.github.com>
 Date: Wed, 9 Sep 2026 13:54:37 +0200
 Subject: [PATCH 1/6] snappy-aa-profile-reload
@@ -7,7 +7,8 @@ Original patch:
 From 4a39581c2b14dac94905027d4fe0488c7928d482 Mon Sep 17 00:00:00 2001
 From: Ivano Matrisciano <ivano.matrisciano@canonical.com>
 Date: Mon, 8 Jun 2026 15:32:24 +0200
-Subject: [PATCH 1/6] snappy-aa-profile-reload
+Subject: [PATCH 1/7] snappy-aa-profile-reload
+
 ---
  daemon/apparmor_default.go | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
@@ -26,5 +27,5 @@ index eed4f6311c..10099fd531 100644
  	}
  
 -- 
-2.55.0
+2.43.0
 

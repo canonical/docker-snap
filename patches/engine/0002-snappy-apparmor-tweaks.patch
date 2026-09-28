@@ -1,18 +1,18 @@
-From bcc63ecfbc2ad8146c43fc24da554fc8d7b39698 Mon Sep 17 00:00:00 2001
+From 9fdc20d192f211c88cc145659abc701856973cb7 Mon Sep 17 00:00:00 2001
 From: Ivano Matrisciano <ivano.matrisciano@canonical.com>
 Date: Mon, 8 Jun 2026 15:32:34 +0200
-Subject: [PATCH 2/6] snappy apparmor tweaks
+Subject: [PATCH 2/7] snappy apparmor tweaks
 
 ---
  .../moby/profiles/apparmor/apparmor.go          | 17 +++++++++++++++++
- .../moby/profiles/apparmor/template.go          |  8 ++++++++
- 2 files changed, 25 insertions(+)
+ .../moby/profiles/apparmor/template.go          | 10 ++++++++++
+ 2 files changed, 27 insertions(+)
 
 diff --git a/vendor/github.com/moby/profiles/apparmor/apparmor.go b/vendor/github.com/moby/profiles/apparmor/apparmor.go
-index 244ae70fb2..5aa7f6aa54 100644
+index d2d3f815bd..0a270168c0 100644
 --- a/vendor/github.com/moby/profiles/apparmor/apparmor.go
 +++ b/vendor/github.com/moby/profiles/apparmor/apparmor.go
-@@ -14,6 +14,7 @@ import (
+@@ -14,6 +14,7 @@
  	"os"
  	"os/exec"
  	"path/filepath"
@@ -51,10 +51,10 @@ index 244ae70fb2..5aa7f6aa54 100644
  }
  
 diff --git a/vendor/github.com/moby/profiles/apparmor/template.go b/vendor/github.com/moby/profiles/apparmor/template.go
-index 4694a6c6e1..4428c4c2c8 100644
+index 71a1899f21..3ca27b644d 100644
 --- a/vendor/github.com/moby/profiles/apparmor/template.go
 +++ b/vendor/github.com/moby/profiles/apparmor/template.go
-@@ -70,5 +70,13 @@ profile "{{.Name}}" flags=(attach_disconnected,mediate_deleted) {
+@@ -72,5 +72,15 @@
    # allow processes within the container to trace each other,
    # provided all other LSM and yama setting allow it.
    ptrace (trace,tracedby,read,readby) peer="{{.Name}}",
@@ -65,9 +65,11 @@ index 4694a6c6e1..4428c4c2c8 100644
 +  signal (receive) peer="{{.SnapSecurityLabel}}",
 +  #   Allow container processes to signal other container processes
 +  signal (send, receive) peer=docker-default,
++  signal (send, receive) peer="docker-default//[&]{{.SnapSecurityLabel}}",
++  ptrace (trace,tracedby,read,readby) peer="docker-default//[&]{{.SnapSecurityLabel}}",
 +{{end}}
  }
  `
 -- 
-2.51.0
+2.43.0
 

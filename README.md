@@ -106,7 +106,7 @@ Docker should function normally, with the following caveats:
 
 * Additional certificates used by the Docker daemon to authenticate with registries need to be located in `/var/snap/docker/common/etc/certs.d` instead of `/etc/docker/certs.d`.
 
-* Specifying the option `--security-opt="no-new-privileges=true"` with the `docker run` command (or the equivalent in docker-compose) will result in a failure of the container to start. This is due to an an underlying external constraint on AppArmor; see [LP#1908448](https://bugs.launchpad.net/snappy/+bug/1908448) for details.
+* The `--security-opt="no-new-privileges=true"` option uses AppArmor profile stacking to preserve both the Docker snap and container confinement.
 
 ### Configuring daemon options
 

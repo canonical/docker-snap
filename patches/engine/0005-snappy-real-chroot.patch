@@ -1,7 +1,7 @@
-From 32cbe39a331992aaff53b39a2f371b3b23cccfa1 Mon Sep 17 00:00:00 2001
+From b78adf2156b3d06a5e19ec1c7ed9ed68c4f68c07 Mon Sep 17 00:00:00 2001
 From: Lucas Kanashiro <lucas.kanashiro@canonical.com>
 Date: Wed, 23 Aug 2023 19:00:48 -0300
-Subject: [PATCH 5/6] snappy-real-chroot
+Subject: [PATCH 5/7] snappy-real-chroot
 
 The snappy-real-chroot.patch was changed in content because in this new
 version there is no reexec before chroot:
@@ -17,7 +17,7 @@ diff --git a/daemon/internal/mounttree/switchroot_linux.go b/daemon/internal/mou
 index 31a8e0ed7a..f17b347487 100644
 --- a/daemon/internal/mounttree/switchroot_linux.go
 +++ b/daemon/internal/mounttree/switchroot_linux.go
-@@ -17,6 +17,13 @@ import (
+@@ -17,6 +17,13 @@
  // the desired propagation mode of path's parent mount beforehand to prevent
  // unwanted propagation into different mount namespaces.
  func SwitchRoot(path string) error {
