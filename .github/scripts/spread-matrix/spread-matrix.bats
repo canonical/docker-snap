@@ -35,6 +35,11 @@ setup() {
     for t in build hello-world; do
       JOBS+="garden:${s}:spread/main/${t}"$'\n'
     done
+    if [[ "$s" == *.s390x ]]; then
+      for t in restart_always daemon_config; do
+        JOBS+="garden:${s}:spread/main/${t}"$'\n'
+      done
+    fi
   done
 }
 
@@ -51,6 +56,7 @@ systems() {
 @test "empty filter selects every system with every task" {
   [ "$(matrix '' | jq '.include | length')" -eq "$((${#SYSTEMS[@]} + 6))" ]
   [ "$(matrix '' | jq -r '.include[].jobs' | grep -c 'build.*hello-world')" -eq "${#SYSTEMS[@]}" ]
+  [ "$(matrix '' | jq -r '.include[] | select(.system | endswith(".s390x")) | .shard' | sort -u | tr '\n' ' ')" = "1 2 3 " ]
 }
 
 @test "systems are sorted newest release first" {
@@ -95,7 +101,7 @@ systems() {
 }
 
 @test "task term selects a task subset on every system" {
-  [ "$(matrix 'build' | jq '.include | length')" -eq "$((${#SYSTEMS[@]} + 6))" ]
+  [ "$(matrix 'build' | jq '.include | length')" -eq "${#SYSTEMS[@]}" ]
   [ "$(matrix 'build' | jq -r '.include[].jobs' | grep -c hello-world)" -eq 0 ]
 }
 
