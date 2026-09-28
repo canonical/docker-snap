@@ -7,17 +7,54 @@ execute: |
     # simply print out hello world and remove the container when it exits
     sudo docker run --rm -i alpine echo 'Hello world'
 
+    # Containers without no-new-privileges keep the existing replacement
+    # transition to docker-default.
+    profile=$(sudo docker run --rm alpine cat /proc/self/attr/current)
+    case "$profile" in
+        *//\&*) ERROR "container unexpectedly uses stacked AppArmor profiles: $profile" ;;
+        docker-default*) ;;
+        *) ERROR "container has unexpected AppArmor profile: $profile" ;;
+    esac
+
+    # With no-new-privileges, stack docker-default on the snap profile so the
+    # AppArmor transition remains a further restriction.
+    profile=$(sudo docker run --rm --security-opt no-new-privileges:true alpine sh -ec '
+        grep -q "^NoNewPrivs:[[:space:]]*1$" /proc/self/status
+        cat /proc/self/attr/current
+    ')
+    profile=${profile% (*}
+    case "$profile" in
+        docker-default//\&snap.docker.dockerd) ;;
+        *) ERROR "container AppArmor profiles are not stacked: $profile" ;;
+    esac
+
+    # docker exec constructs a separate OCI process and must request the same
+    # stacked transition.
+    nnp_id=$(sudo docker run -d --security-opt no-new-privileges:true alpine sleep 60)
+    trap 'sudo docker rm -f "$nnp_id" >/dev/null 2>&1 || true' EXIT
+    profile=$(sudo docker exec "$nnp_id" sh -ec '
+        grep -q "^NoNewPrivs:[[:space:]]*1$" /proc/self/status
+        cat /proc/self/attr/current
+    ')
+    sudo docker rm -f "$nnp_id"
+    trap - EXIT
+    profile=${profile% (*}
+    case "$profile" in
+        docker-default//\&snap.docker.dockerd) ;;
+        *) ERROR "docker exec AppArmor profiles are not stacked: $profile" ;;
+    esac
+
     # check if there is a container are running the alpine image?
-    [ `sudo docker ps -a | grep alpine | wc -l` = 0 ] || exit 1
+    [ "$(sudo docker ps -a --filter ancestor=alpine -q | wc -l)" = 0 ] || exit 1
     
     # run container in background 
     id=$(sudo docker run -dit alpine echo 'Hello world')
 
     # inspect several docker object's info
-    [ `sudo docker inspect -f '{{.Path}}' $id` = "echo" ] || exit 1
-    [ `sudo docker inspect -f '{{.Config.Image}}' $id` = "alpine" ] || exit 1
-    [ `sudo docker inspect -f '{{.State.Status}}' $id` = "exited" ] || exit 1
-    [ `sudo docker inspect -f '{{.State.ExitCode}}' $id` = 0 ] || exit 1
+    [ "$(sudo docker inspect -f '{{.Path}}' "$id")" = "echo" ] || exit 1
+    [ "$(sudo docker inspect -f '{{.Config.Image}}' "$id")" = "alpine" ] || exit 1
+    [ "$(sudo docker inspect -f '{{.State.Status}}' "$id")" = "exited" ] || exit 1
+    [ "$(sudo docker inspect -f '{{.State.ExitCode}}' "$id")" = 0 ] || exit 1
 
     # remove the container
-    sudo docker rm -f $id
+    sudo docker rm -f "$id"
