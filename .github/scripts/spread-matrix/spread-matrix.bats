@@ -49,14 +49,14 @@ systems() {
 }
 
 @test "empty filter selects every system with every task" {
-  [ "$(matrix '' | jq '.include | length')" -eq "${#SYSTEMS[@]}" ]
+  [ "$(matrix '' | jq '.include | length')" -eq "$((${#SYSTEMS[@]} + 6))" ]
   [ "$(matrix '' | jq -r '.include[].jobs' | grep -c 'build.*hello-world')" -eq "${#SYSTEMS[@]}" ]
 }
 
 @test "systems are sorted newest release first" {
   [ "$(systems '' | sed -n 1p)" = ubuntu-cloud-26.10.amd64 ]
-  [ "$(systems '' | sed -n 6p)" = ubuntu-cloud-26.04.amd64 ]
-  [ "$(systems '' | sed -n 11p)" = ubuntu-core-26.amd64 ]
+  [ "$(systems '' | sed -n 8p)" = ubuntu-cloud-26.04.amd64 ]
+  [ "$(systems '' | sed -n 15p)" = ubuntu-core-26.amd64 ]
   [ "$(systems '' | sed -n '$p')" = ubuntu-core-22.arm64 ]
 }
 
@@ -76,18 +76,18 @@ systems() {
 
 @test "LTS term selects its paired core release" {
   [ "$(systems '26.04' | grep -c 'core-26\.')" -eq 2 ]
-  [ "$(systems '26.04' | wc -l)" -eq 7 ]
+  [ "$(systems '26.04' | wc -l)" -eq 9 ]
 }
 
 @test "negated LTS term drops its paired core release" {
   [ "$(systems '!26.04' | grep -c 'core-26\.')" -eq 0 ]
-  [ "$(systems '!26.04' | wc -l)" -eq 16 ]
+  [ "$(systems '!26.04' | wc -l)" -eq 20 ]
 }
 
 @test "development series term leaves core alone" {
   [ "$(systems '26.10' | grep -c 'core')" -eq 0 ]
-  [ "$(systems '26.10' | grep -c 'cloud-26\.10')" -eq 5 ]
-  [ "$(systems '26.10' | wc -l)" -eq 5 ]
+  [ "$(systems '26.10' | grep -c 'cloud-26\.10')" -eq 7 ]
+  [ "$(systems '26.10' | wc -l)" -eq 7 ]
 }
 
 @test "literal core system name still matches" {
@@ -95,7 +95,7 @@ systems() {
 }
 
 @test "task term selects a task subset on every system" {
-  [ "$(matrix 'build' | jq '.include | length')" -eq "${#SYSTEMS[@]}" ]
+  [ "$(matrix 'build' | jq '.include | length')" -eq "$((${#SYSTEMS[@]} + 6))" ]
   [ "$(matrix 'build' | jq -r '.include[].jobs' | grep -c hello-world)" -eq 0 ]
 }
 
@@ -112,7 +112,7 @@ systems() {
 @test "terms are regexes, not globs against the cwd" {
   cd "$BATS_TEST_TMPDIR"
   touch .dotfile
-  [ "$(matrix '.*' | jq '.include | length')" -eq "${#SYSTEMS[@]}" ]
+  [ "$(matrix '.*' | jq '.include | length')" -eq "$((${#SYSTEMS[@]} + 6))" ]
 }
 
 @test "zero-match filter fails loudly" {
