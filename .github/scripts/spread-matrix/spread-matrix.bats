@@ -3,7 +3,7 @@
 
 setup() {
   SCRIPT="$BATS_TEST_DIRNAME/spread-matrix"
-  # Canned spread -list output: the full 23-system board, two tasks each.
+  # Canned spread -list output: the full 23-system board, three tasks each.
   SYSTEMS=(
     ubuntu-core-22.amd64
     ubuntu-core-22.arm64
@@ -32,14 +32,9 @@ setup() {
   JOBS=""
   local s t
   for s in "${SYSTEMS[@]}"; do
-    for t in build hello-world; do
+    for t in build daemon_config hello-world; do
       JOBS+="garden:${s}:spread/main/${t}"$'\n'
     done
-    if [[ "$s" == *.s390x ]]; then
-      for t in restart_always daemon_config; do
-        JOBS+="garden:${s}:spread/main/${t}"$'\n'
-      done
-    fi
   done
 }
 
@@ -54,15 +49,25 @@ systems() {
 }
 
 @test "empty filter selects every system with every task" {
-  [ "$(matrix '' | jq '.include | length')" -eq "$((${#SYSTEMS[@]} + 6))" ]
+  [ "$(matrix '' | jq '.include | length')" -eq "$((${#SYSTEMS[@]} + 3))" ]
   [ "$(matrix '' | jq -r '.include[].jobs' | grep -c 'build.*hello-world')" -eq "${#SYSTEMS[@]}" ]
-  [ "$(matrix '' | jq -r '.include[] | select(.system | endswith(".s390x")) | .shard' | sort -u | tr '\n' ' ')" = "1 2 3 " ]
+}
+
+@test "s390x runs daemon_config on a shard of its own" {
+  [ "$(matrix 's390x' | jq -c '[.include[] | [.shard, .shards, (.jobs | test("daemon_config")), (.jobs | test("build"))]] | unique')" = \
+    '[[1,2,false,true],[2,2,true,false]]' ]
+  [ "$(matrix '!s390x' | jq -c '[.include[] | [.shard, .shards]] | unique')" = '[[1,1]]' ]
+}
+
+@test "s390x with only one shard selected reads as 1/1" {
+  [ "$(matrix 's390x daemon_config' | jq -c '[.include[] | [.shard, .shards]] | unique')" = '[[1,1]]' ]
+  [ "$(matrix 's390x build' | jq -c '[.include[] | [.shard, .shards]] | unique')" = '[[1,1]]' ]
 }
 
 @test "systems are sorted newest release first" {
   [ "$(systems '' | sed -n 1p)" = ubuntu-cloud-26.10.amd64 ]
-  [ "$(systems '' | sed -n 8p)" = ubuntu-cloud-26.04.amd64 ]
-  [ "$(systems '' | sed -n 15p)" = ubuntu-core-26.amd64 ]
+  [ "$(systems '' | sed -n 7p)" = ubuntu-cloud-26.04.amd64 ]
+  [ "$(systems '' | sed -n 13p)" = ubuntu-core-26.amd64 ]
   [ "$(systems '' | sed -n '$p')" = ubuntu-core-22.arm64 ]
 }
 
@@ -82,18 +87,18 @@ systems() {
 
 @test "LTS term selects its paired core release" {
   [ "$(systems '26.04' | grep -c 'core-26\.')" -eq 2 ]
-  [ "$(systems '26.04' | wc -l)" -eq 9 ]
+  [ "$(systems '26.04' | wc -l)" -eq 8 ]
 }
 
 @test "negated LTS term drops its paired core release" {
   [ "$(systems '!26.04' | grep -c 'core-26\.')" -eq 0 ]
-  [ "$(systems '!26.04' | wc -l)" -eq 20 ]
+  [ "$(systems '!26.04' | wc -l)" -eq 18 ]
 }
 
 @test "development series term leaves core alone" {
   [ "$(systems '26.10' | grep -c 'core')" -eq 0 ]
-  [ "$(systems '26.10' | grep -c 'cloud-26\.10')" -eq 7 ]
-  [ "$(systems '26.10' | wc -l)" -eq 7 ]
+  [ "$(systems '26.10' | grep -c 'cloud-26\.10')" -eq 6 ]
+  [ "$(systems '26.10' | wc -l)" -eq 6 ]
 }
 
 @test "literal core system name still matches" {
@@ -112,13 +117,13 @@ systems() {
 
 @test "multiple tasks for one system stay on one matrix entry" {
   [ "$(matrix 'cloud-24.04.amd64' | jq -r '.include[0].jobs')" = \
-    "garden:ubuntu-cloud-24.04.amd64:spread/main/build garden:ubuntu-cloud-24.04.amd64:spread/main/hello-world" ]
+    "garden:ubuntu-cloud-24.04.amd64:spread/main/build garden:ubuntu-cloud-24.04.amd64:spread/main/daemon_config garden:ubuntu-cloud-24.04.amd64:spread/main/hello-world" ]
 }
 
 @test "terms are regexes, not globs against the cwd" {
   cd "$BATS_TEST_TMPDIR"
   touch .dotfile
-  [ "$(matrix '.*' | jq '.include | length')" -eq "$((${#SYSTEMS[@]} + 6))" ]
+  [ "$(matrix '.*' | jq '.include | length')" -eq "$((${#SYSTEMS[@]} + 3))" ]
 }
 
 @test "zero-match filter fails loudly" {

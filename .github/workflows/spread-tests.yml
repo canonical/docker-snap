@@ -94,7 +94,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.list-systems.outputs.matrix) }}
     # Pinned: the default would append the whole jobs list to the name.
-    name: spread-tests (${{ matrix.system }}, shard ${{ matrix.shard }}/${{ matrix.shards }})
+    name: spread-tests (${{ matrix.system }}${{ matrix.shards > 1 && format(', shard {0}/{1}', matrix.shard, matrix.shards) || '' }})
     runs-on: ubuntu-latest
     # One emulated system per runner; a cold system provisions then tests, a
     # warm one just tests. Bound the run step below the job timeout so a slow

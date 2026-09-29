@@ -4,7 +4,7 @@
 # job filter given as $1 and print the GitHub Actions include-matrix as
 # JSON on stdout -- one {system, jobs, shard, shards} entry per surviving
 # system shard, so a lane can run a subset of tasks. Diagnostics go to stderr;
-# exits 1 if the filter selects nothing or a s390x task has no manual shard.
+# exits 1 if the filter selects nothing.
 #
 # The filter is a chain of whitespace-separated EREs applied as successive
 # greps over the job lines: each term narrows the selection ('|' inside a
@@ -39,33 +39,17 @@ if [ -z "$selected" ]; then
 fi
 printf 'selected jobs:\n%s\n' "$selected" >&2
 
-# Group jobs by system. s390x uses manual shards because daemon_config restarts
-# dockerd repeatedly and dominates that system's run time.
+# Group jobs by system: one "system<TAB>shard<TAB>job job job..." line each.
+# daemon_config restarts dockerd repeatedly and takes ~45m on emulated s390x,
+# so it gets a shard of its own there.
 groups="$(awk -F: '
   {
-    sys = $2
-    job = $3
-    sub(/^.*\//, "", job)
-    shard = 1
-    if (sys ~ /\.s390x$/) {
-      if (job ~ /^(build|commit|copy|export_and_import|hello-world|installation|kill)$/) shard = 1
-      else if (job ~ /^(restart_always|restart_on_failure|save_and_load|simple_container|start_and_stop|update_policy|version)$/) shard = 2
-      else if (job == "daemon_config") shard = 3
-      else {
-        printf "error: no manual s390x shard for task %s\n", job > "/dev/stderr"
-        bad = 1
-        next
-      }
-    }
-    key = sys "\t" shard
+    shard = ($2 ~ /\.s390x$/ && $3 ~ /\/daemon_config$/) ? 2 : 1
+    key = $2 "\t" shard
     g[key] = g[key] " " $0
   }
   END {
-    if (bad) exit 1
-    for (key in g) {
-      split(key, fields, "\t")
-      print fields[1] "\t" fields[2] "\t" substr(g[key], 2)
-    }
+    for (key in g) print key "\t" substr(g[key], 2)
   }
 ' <<<"$selected")"
 
@@ -77,4 +61,12 @@ groups="$(awk -F: '
 sorted="$(awk -F'\t' '{key=$1; sub(/^[a-z-]+-/, "", key); sub(/\.[a-z0-9]+$/, "", key); print key "\t" $0}' <<<"$groups" \
   | sort -t"$(printf '\t')" -k1,1Vr -k2,2 -k3,3n | cut -f2-)"
 
-jq -Rsc '{include: [split("\n")[] | select(length>0) | split("\t") | {system: .[0], shard: (.[1] | tonumber), shards: (if (.[0] | endswith(".s390x")) then 3 else 1 end), jobs: .[2]}]}' <<<"$sorted"
+# Number each system's shards from 1 after filtering, so a lane whose other
+# shard was filtered out reads as 1/1.
+jq -Rsc '
+  [split("\n")[] | select(length > 0) | split("\t") | {system: .[0], jobs: .[2]}]
+  | (reduce .[].system as $s ({}; .[$s] += 1)) as $shards
+  | reduce .[] as $e ({n: {}, out: []};
+      .n[$e.system] += 1 | .out += [$e + {shard: .n[$e.system], shards: $shards[$e.system]}])
+  | {include: .out}
+' <<<"$sorted"
