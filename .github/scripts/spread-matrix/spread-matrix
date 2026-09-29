@@ -2,9 +2,9 @@
 # Build the spread-tests fan-out matrix: read a spread job list on stdin
 # (backend:system:suite/task lines, as printed by spread -list), apply the
 # job filter given as $1 and print the GitHub Actions include-matrix as
-# JSON on stdout -- one {system, jobs} entry per surviving system, so a
-# lane can run a subset of tasks. Diagnostics go to stderr; exits 1 if the
-# filter selects nothing.
+# JSON on stdout -- one {system, jobs, shard, shards} entry per surviving
+# system shard, so a lane can run a subset of tasks. Diagnostics go to stderr;
+# exits 1 if the filter selects nothing.
 #
 # The filter is a chain of whitespace-separated EREs applied as successive
 # greps over the job lines: each term narrows the selection ('|' inside a
@@ -39,8 +39,19 @@ if [ -z "$selected" ]; then
 fi
 printf 'selected jobs:\n%s\n' "$selected" >&2
 
-# Group jobs by system: one "system<TAB>job job job..." line each.
-groups="$(awk -F: '{g[$2]=g[$2]" "$0} END {for (s in g) print s "\t" substr(g[s],2)}' <<<"$selected")"
+# Group jobs by system: one "system<TAB>shard<TAB>job job job..." line each.
+# daemon_config restarts dockerd repeatedly and takes ~45m on emulated s390x,
+# so it gets a shard of its own there.
+groups="$(awk -F: '
+  {
+    shard = ($2 ~ /\.s390x$/ && $3 ~ /\/daemon_config$/) ? 2 : 1
+    key = $2 "\t" shard
+    g[key] = g[key] " " $0
+  }
+  END {
+    for (key in g) print key "\t" substr(g[key], 2)
+  }
+' <<<"$selected")"
 
 # The UI job list shows matrix order and awk's for-in order is arbitrary,
 # so sort: newest release first, architectures together within a release.
@@ -48,6 +59,14 @@ groups="$(awk -F: '{g[$2]=g[$2]" "$0} END {for (s in g) print s "\t" substr(g[s]
 # prefix and architecture suffix), version-sort descending on it, then
 # drop the key again.
 sorted="$(awk -F'\t' '{key=$1; sub(/^[a-z-]+-/, "", key); sub(/\.[a-z0-9]+$/, "", key); print key "\t" $0}' <<<"$groups" \
-  | sort -t"$(printf '\t')" -k1,1Vr -k2,2 | cut -f2-)"
+  | sort -t"$(printf '\t')" -k1,1Vr -k2,2 -k3,3n | cut -f2-)"
 
-jq -Rsc '{include: [split("\n")[] | select(length>0) | split("\t") | {system: .[0], jobs: .[1]}]}' <<<"$sorted"
+# Number each system's shards from 1 after filtering, so a lane whose other
+# shard was filtered out reads as 1/1.
+jq -Rsc '
+  [split("\n")[] | select(length > 0) | split("\t") | {system: .[0], jobs: .[2]}]
+  | (reduce .[].system as $s ({}; .[$s] += 1)) as $shards
+  | reduce .[] as $e ({n: {}, out: []};
+      .n[$e.system] += 1 | .out += [$e + {shard: .n[$e.system], shards: $shards[$e.system]}])
+  | {include: .out}
+' <<<"$sorted"
