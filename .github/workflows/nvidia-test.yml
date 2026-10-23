@@ -56,10 +56,16 @@ jobs:
         strategy:
           fail-fast: ${{ inputs.fail_fast }}
           matrix:
-            distro: 
+            distro:
               - noble
               - core22-latest
               - core24-latest
+            lib_layout:
+              - multiarch
+            include:
+              # Driver libs moved to a flat /usr/lib, the Arch layout
+              - distro: noble
+                lib_layout: flat
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger
           SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
@@ -74,10 +80,11 @@ jobs:
               env:
                 JOB_QUEUE: docker-nvidia
                 DISTRO: ${{ matrix.distro }}
+                LIB_LAYOUT: ${{ matrix.lib_layout }}
               run: |
 
                 # Prepare job
-                envsubst '$JOB_QUEUE $DISTRO $SNAP_CHANNEL' \
+                envsubst '$JOB_QUEUE $DISTRO $SNAP_CHANNEL $LIB_LAYOUT' \
                   < $TESTFLINGER_DIR/nvidia-job.yaml \
                   > $TESTFLINGER_DIR/nvidia-job.temp
                 mv $TESTFLINGER_DIR/nvidia-job.temp $TESTFLINGER_DIR/nvidia-job.yaml

@@ -17,7 +17,12 @@ smi_test() (
   set -x
 
   case "$ID-$VERSION_ID" in
-    ubuntu-24.04 | ubuntu-core-22)
+    ubuntu-24.04)
+      # Classic has to win over a connected content provider, whatever the
+      # host's lib layout.
+      sudo snap logs -n 100 docker.nvidia-container-toolkit | grep -q "Running on Classic system"
+      ;;
+    ubuntu-core-22)
       ;;
     ubuntu-core-24)
       # On the host first, from the kernel snap: the container path mounts the
