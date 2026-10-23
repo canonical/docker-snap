@@ -8,7 +8,8 @@ assert_driver() {
   echo "$1" | grep -q "Driver Version"
 }
 
-# Test nvidia-smi, in a container wherever the platform supports it.
+# Test nvidia-smi in a container. The CDI spec is generated with the driver
+# root stripped from container paths, so nvidia-smi is on the default PATH.
 smi_test() (
   # shellcheck disable=SC1091  # /etc/os-release is provided by the OS at runtime
   source /etc/os-release
@@ -16,13 +17,7 @@ smi_test() (
   set -x
 
   case "$ID-$VERSION_ID" in
-    ubuntu-24.04)
-      smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin" ubuntu nvidia-smi)
-      assert_driver "$smi_out"
-      ;;
-    ubuntu-core-22)
-      smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all ubuntu bash -c "/snap/docker/*/graphics/bin/nvidia-smi")
-      assert_driver "$smi_out"
+    ubuntu-24.04 | ubuntu-core-22)
       ;;
     ubuntu-core-24)
       # On the host first, from the kernel snap: the container path mounts the
@@ -30,16 +25,15 @@ smi_test() (
       # cause than it would inside a container.
       smi_out=$(LD_LIBRARY_PATH=/var/snap/pc-kernel/common/kernel-gpu-2404/usr/lib/x86_64-linux-gnu/ /var/snap/pc-kernel/common/kernel-gpu-2404/usr/bin/nvidia-smi)
       assert_driver "$smi_out"
-      # Then in a container, via the nvidia-smi the toolkit mounts from the
-      # docker snap's gpu-2404 component.
-      smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all ubuntu bash -c "/snap/docker/*/gpu-2404*/usr/bin/nvidia-smi")
-      assert_driver "$smi_out"
       ;;
     *)
       echo "Unsupported OS / version: $ID $VERSION_ID"
       exit 1
       ;;
   esac
+
+  smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi)
+  assert_driver "$smi_out"
 )
 
 # Test a vector addition sample workload
