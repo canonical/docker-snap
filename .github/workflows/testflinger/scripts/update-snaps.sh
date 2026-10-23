@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -e
 
+# TODO: drop once pc-kernel 24/stable ships matching nvidia-580 components again.
+# 24/stable 6.8.0-146.146 pairs nvidia-580-erd-user 580.178.04 with an older ko,
+# so NVML fails with "Driver/library version mismatch" before docker is involved.
+# 24/beta carries 6.8.0-147.147. The kernel refresh reboots the device; the
+# settle loop below rides that out like any other refresh.
+echo "Switch pc-kernel to 24/beta on Ubuntu Core 24"
+# shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP 'grep -q "^ID=ubuntu-core$" /etc/os-release && grep -q "^VERSION_ID=\"24\"$" /etc/os-release && sudo snap refresh pc-kernel --channel=24/beta --no-wait' || true
+
 # Trigger a refresh of all the snaps. This will likely cause the system to restart a few times.
 echo "Force refresh all snaps"
 # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
