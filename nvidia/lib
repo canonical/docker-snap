@@ -18,10 +18,10 @@ nvidia_support_core() {
 }
 
 nvidia_support_classic() {
-    # Classic support if the host has libcuda.so in a Debian, Fedora or Arch style lib dir #
+    # Classic support if the host has libcuda.so.1 in a Debian, Fedora or Arch style lib dir #
     local dir
     for dir in "usr/lib/${ARCH_TRIPLET}" usr/lib64 usr/lib; do
-        [ -L "${HOSTFS}/${dir}/libcuda.so" ] && return 0
+        [ -e "${HOSTFS}/${dir}/libcuda.so.1" ] && return 0
     done
     return 1
 }

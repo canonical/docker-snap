@@ -26,7 +26,8 @@ teardown() {
 
 _libcuda() {
   mkdir -p "$HOSTFS/$1"
-  ln -s libcuda.so.1 "$HOSTFS/$1/libcuda.so"
+  touch "$HOSTFS/$1/libcuda.so.580.0"
+  ln -s libcuda.so.580.0 "$HOSTFS/$1/libcuda.so.1"
 }
 
 _driver_root() {
@@ -48,7 +49,7 @@ _driver_root() {
   nvidia_support_classic
 }
 
-@test "no classic support without libcuda.so on the host" {
+@test "no classic support without libcuda.so.1 on the host" {
   mkdir -p "$HOSTFS/usr/lib"
   ! nvidia_support_classic
 }
