@@ -45,6 +45,7 @@ JOB_QUEUE=docker-nvidia DISTRO=noble SNAP_CHANNEL=latest/edge ./run.sh
 ```
 
 `LIB_LAYOUT=flat` is optional and only has an effect with `DISTRO=noble`.
+It skips the snap refresh test, whose `latest/stable` baseline does not support that layout.
 
 To create a copy of the template job with filled variables, without submitting it, set the `--dryrun` flag.
 This allows manual modifications of the job before submitting it, 

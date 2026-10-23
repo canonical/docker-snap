@@ -62,6 +62,14 @@ echo "Run tests"
 # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
 ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "bash -s" < $SCRIPTS/test.sh
 
+# The refresh test starts from latest/stable, which cannot set up NVIDIA on a
+# flat lib layout (that is the bug the layout exists to catch), so its baseline
+# workload would never come up there.
+if [[ "${LIB_LAYOUT:-multiarch}" == flat ]]; then
+  echo "Skip snap refresh test on the flat lib layout"
+  exit 0
+fi
+
 echo "Run snap refresh test"
 # shellcheck disable=SC2086,SC2029  # $SSH_OPTS is an intentional multi-arg split; remote vars expand client-side by design
 ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "bash -s -- $SNAP_CHANNEL" < $SCRIPTS/refresh-test.sh
