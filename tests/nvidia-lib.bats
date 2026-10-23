@@ -30,23 +30,36 @@ _libcuda() {
   ln -s libcuda.so.580.0 "$HOSTFS/$1/libcuda.so.1"
 }
 
+_arg() {
+  grep -A1 -x -- "$1" "$SNAP_DATA/nvidia-ctk.args" | tail -1
+}
+
 _driver_root() {
-  grep -A1 -x -- --driver-root "$SNAP_DATA/nvidia-ctk.args" | tail -1
+  _arg --driver-root
 }
 
 @test "detects classic with a Debian multiarch layout" {
   _libcuda "usr/lib/$ARCH_TRIPLET"
   nvidia_support_classic
+  [ "$(nvidia_host_lib_dir)" = "$HOSTFS/usr/lib/$ARCH_TRIPLET" ]
 }
 
 @test "detects classic with a Fedora lib64 layout" {
   _libcuda usr/lib64
   nvidia_support_classic
+  [ "$(nvidia_host_lib_dir)" = "$HOSTFS/usr/lib64" ]
 }
 
 @test "detects classic with an Arch flat lib layout" {
   _libcuda usr/lib
   nvidia_support_classic
+  [ "$(nvidia_host_lib_dir)" = "$HOSTFS/usr/lib" ]
+}
+
+@test "multiarch wins when a host has several lib dirs" {
+  _libcuda "usr/lib/$ARCH_TRIPLET"
+  _libcuda usr/lib
+  [ "$(nvidia_host_lib_dir)" = "$HOSTFS/usr/lib/$ARCH_TRIPLET" ]
 }
 
 @test "no classic support without libcuda.so.1 on the host" {
@@ -54,12 +67,12 @@ _driver_root() {
   ! nvidia_support_classic
 }
 
-@test "classic generates against the host fs as driver root" {
+@test "classic generates against the host fs as driver root and names the lib dir" {
   _libcuda usr/lib
   cdi_generate
   [ "$(_driver_root)" = "$HOSTFS" ]
-  grep -qx -- --dev-root "$SNAP_DATA/nvidia-ctk.args"
-  ! grep -qx -- --library-search-path "$SNAP_DATA/nvidia-ctk.args"
+  [ "$(_arg --dev-root)" = / ]
+  [ "$(_arg --library-search-path)" = "$HOSTFS/usr/lib" ]
 }
 
 @test "classic wins over a connected core content provider" {
@@ -68,9 +81,10 @@ _driver_root() {
   [ "$(_driver_root)" = "$HOSTFS" ]
 }
 
-@test "UC24 generates against NVIDIA_DRIVER_ROOT" {
+@test "UC24 generates against NVIDIA_DRIVER_ROOT with no lib search path" {
   NVIDIA_DRIVER_ROOT=/kernel-gpu cdi_generate
   [ "$(_driver_root)" = /kernel-gpu ]
+  ! grep -qx -- --library-search-path "$SNAP_DATA/nvidia-ctk.args"
 }
 
 @test "UC22 generates against the graphics content dir" {
