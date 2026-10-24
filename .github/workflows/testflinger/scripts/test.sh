@@ -8,6 +8,20 @@ assert_driver() {
   echo "$1" | grep -q "Driver Version"
 }
 
+# Kernel, component and module state on Core 24, so a driver that does not
+# come up can be read off the log instead of a reserved box.
+core24_diag() (
+  set -x
+  uname -r
+  snap list pc-kernel
+  snap components pc-kernel
+  cat /sys/module/nvidia/version || true
+  lsmod | grep -i nvidia || true
+  ls /var/snap/pc-kernel/*/modules/*/ /var/snap/pc-kernel/common/kernel-gpu-2404/usr/lib/x86_64-linux-gnu/libnvidia-ml.so.* || true
+  sudo dmesg | grep -iE 'nvidia|nvrm' | tail -n 20 || true
+  sudo snap changes | tail -n 6 || true
+)
+
 # Test nvidia-smi in a container. The CDI spec is generated with the driver
 # root stripped from container paths, so nvidia-smi is on the default PATH.
 smi_test() (
@@ -25,6 +39,7 @@ smi_test() (
     ubuntu-core-22)
       ;;
     ubuntu-core-24)
+      core24_diag
       # On the host first, from the kernel snap: the container path mounts the
       # same GPU stack, so a broken kernel component fails here with a clearer
       # cause than it would inside a container.
