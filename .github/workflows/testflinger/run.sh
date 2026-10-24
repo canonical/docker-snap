@@ -7,9 +7,10 @@ temp_setup=setup.sh.tmp
 echo "Job queue: $JOB_QUEUE"
 echo "Distro: $DISTRO"
 echo "Snap channel: $SNAP_CHANNEL"
+echo "Lib layout: ${LIB_LAYOUT:-multiarch}"
 
 # Replace env vars with inputs
-envsubst '$JOB_QUEUE $DISTRO $SNAP_CHANNEL' < nvidia-job.yaml > $temp_job
+envsubst '$JOB_QUEUE $DISTRO $SNAP_CHANNEL $LIB_LAYOUT' < nvidia-job.yaml > $temp_job
 
 if [[ $1 == "--dryrun" ]]; then
   echo "Dry-run complete"
