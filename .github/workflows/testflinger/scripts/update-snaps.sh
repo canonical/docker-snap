@@ -1,61 +1,68 @@
 #!/usr/bin/env bash
 set -e
 
-# TODO: drop once pc-kernel 24/stable ships matching nvidia-580 components again.
-# 24/stable 6.8.0-146.146 pairs nvidia-580-erd-user 580.178.04 with an older ko,
-# so NVML fails with "Driver/library version mismatch" before docker is involved.
-# 24/beta carries 6.8.0-147.147. The kernel refresh reboots the device; the
-# settle loop below rides that out like any other refresh.
-echo "Switch pc-kernel to 24/beta on Ubuntu Core 24"
-# shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
-ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP 'grep -q "^ID=ubuntu-core$" /etc/os-release && grep -q "^VERSION_ID=\"24\"$" /etc/os-release && sudo snap refresh pc-kernel --channel=24/beta --no-wait' || true
+# Wait until the device is reachable, no snap change is in progress and snapd
+# knows about components. A refresh may reboot the device a few times.
+wait_for_snaps() {
+  # interval kept short so a settle that finishes mid-wait is picked up quickly;
+  # max_iterations scaled to preserve the ~30min (1800s) overall ceiling.
+  local max_iterations=90
+  local interval=20 # seconds
+  local iteration=0
+  while true; do
+    # Check if server is online and there are no snapd changes in progress
+    # shellcheck disable=SC2086,SC2029  # $SSH_OPTS is an intentional multi-arg split; the script is expanded client-side by design
+    if ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "$(<$SCRIPTS/check-snap-changes.sh)"; then
+      echo "Checking snapd version"
+      # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+      ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "sudo snap list snapd" || true
+
+      echo "Checking snapd support for components"
+      # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+      if ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "snap components"; then
+        echo "Snapd has component support"
+        break
+      else
+        echo "Snapd does not support components"
+
+        # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+        if ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "[ -f /run/snapd/reboot-required ]"; then
+          echo "A restart is pending"
+          # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+          ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "(sleep 3 && sudo reboot) &"
+        else
+          echo "Trying to refresh snaps again"
+          # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+          ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
+        fi
+      fi
+    fi
+
+    # Timeout and fail if it takes too long
+    iteration=$((iteration + 1))
+    if ((iteration >= max_iterations)); then
+      echo "Timeout waiting for snaps to update"
+      exit 1
+    fi
+
+    # Server is either offline, or there are still snapd changes in progress, wait before checking again
+    sleep $interval
+  done
+}
 
 # Trigger a refresh of all the snaps. This will likely cause the system to restart a few times.
 echo "Force refresh all snaps"
 # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
 ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
+wait_for_snaps
 
-# interval kept short so a settle that finishes mid-wait is picked up quickly;
-# max_iterations scaled to preserve the ~30min (1800s) overall ceiling.
-max_iterations=90
-interval=20 # seconds
-iteration=0
-while true; do
-  # Check if server is online and there are no snapd changes in progress
-  # shellcheck disable=SC2086,SC2029  # $SSH_OPTS is an intentional multi-arg split; the script is expanded client-side by design
-  if ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "$(<$SCRIPTS/check-snap-changes.sh)"; then
-    echo "Checking snapd version"
-    # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
-    ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "sudo snap list snapd" || true
-
-    echo "Checking snapd support for components"
-    # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
-    if ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "snap components"; then
-      echo "Snapd has component support"
-      break
-    else
-      echo "Snapd does not support components"
-
-      # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
-      if ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "[ -f /run/snapd/reboot-required ]"; then
-        echo "A restart is pending"
-        # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
-        ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "(sleep 3 && sudo reboot) &"
-      else
-        echo "Trying to refresh snaps again"
-        # shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
-        ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP "sudo snap refresh --no-wait" || true
-      fi
-    fi
-  fi
-
-  # Timeout and fail if it takes too long
-  iteration=$((iteration + 1))
-  if ((iteration >= max_iterations)); then
-    echo "Timeout waiting for snaps to update"
-    exit 1
-  fi
-
-  # Server is either offline, or there are still snapd changes in progress, wait before checking again
-  sleep $interval
-done
+# TODO: drop once pc-kernel 24/stable ships matching nvidia-580 components again.
+# 24/stable 6.8.0-146.146 pairs nvidia-580-erd-user 580.178.04 with a ko built
+# from 580.173.02, so NVML fails with "Driver/library version mismatch" before
+# docker is involved. 24/beta 6.8.0-147.147 has both at 580.178.04.
+# This runs after the first settle: a fresh image boots with an auto-refresh
+# of pc-kernel in flight, and snapd rejects a channel switch until it is done.
+echo "Switch pc-kernel to 24/beta on Ubuntu Core 24"
+# shellcheck disable=SC2086  # $SSH_OPTS is an intentional multi-arg split
+ssh $SSH_OPTS $DEVICE_USER@$DEVICE_IP 'grep -q "^ID=ubuntu-core$" /etc/os-release && grep -q "^VERSION_ID=\"24\"$" /etc/os-release && sudo snap refresh pc-kernel --channel=24/beta --no-wait' || true
+wait_for_snaps
