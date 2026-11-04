@@ -264,6 +264,37 @@ jobs:
           sudo docker buildx version
           sudo docker compose version
 
+      - name: Docker Compose
+        run: |
+          compose_dir="$(mktemp -d "$HOME/compose-test.XXXXXX")"
+          project="docker-snap-compose-test"
+
+          cat > "$compose_dir/compose.yaml" <<'EOF'
+          services:
+            app:
+              image: alpine
+              command: sleep 300
+              depends_on:
+                helper:
+                  condition: service_started
+            helper:
+              image: alpine
+              command: sleep 300
+          EOF
+
+          cleanup() {
+            sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" down --volumes >/dev/null 2>&1 || true
+            rm -rf "$compose_dir"
+          }
+          trap cleanup EXIT
+
+          sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" up --wait
+          [ "$(sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" ps --status running -q | wc -l)" -eq 2 ]
+          sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" exec -T app true
+
+          sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" down --volumes
+          [ -z "$(sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" ps -aq)" ]
+
       - name: Save & Load
         run: |
           docker pull hello-world
