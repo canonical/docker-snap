@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # example usage:
 # $ gopartbootstrap github.com/edgexfoundry/edgex-go
 gopartbootstrap() 
@@ -23,5 +24,5 @@ gopartbootstrap()
 	cp -r ./* "$GOIMPORTPATH"
 
 	# finally go into the go import path to prepare for building
-	cd "$GOIMPORTPATH"
+	cd "$GOIMPORTPATH" || return
 }

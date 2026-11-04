@@ -1,2 +1,3 @@
 #!/bin/bash
+# shellcheck source=nvidia/nvidia-container-toolkit-connect-hook
 . "${SNAP}/bin/nvidia-container-toolkit-connect-hook"
