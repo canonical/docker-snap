@@ -21,6 +21,10 @@ on:
         description: 'Stop after first distro failure'
         default: false
         type: boolean
+      arm64_queue:
+        description: 'arm64 Testflinger queue (empty skips arm64)'
+        required: false
+        type: string
 
 # Least-privilege: publish downloads an artifact from another run (actions: read),
 # and both jobs check out this repo (contents: read).
@@ -34,6 +38,8 @@ jobs:
         timeout-minutes: 5
         outputs:
           channel: ${{ steps.channel.outputs.channel }}
+          arches: ${{ steps.matrix.outputs.arches }}
+          include: ${{ steps.matrix.outputs.include }}
         steps:
             # The channel ends up unquoted in shell on the test agent, so only
             # accept well-formed run ids and <track>/<risk>/<branch> channels.
@@ -63,11 +69,35 @@ jobs:
                 fi
                 echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
 
+            # The queue name ends up in the Testflinger job yaml, so only accept
+            # plain names.
+            - name: Resolve test matrix
+              id: matrix
+              env:
+                ARM64_QUEUE: ${{ inputs.arm64_queue }}
+              run: |
+                if [[ -n "$ARM64_QUEUE" && ! "$ARM64_QUEUE" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+                  echo "::error::Invalid arm64_queue: $ARM64_QUEUE"
+                  exit 1
+                fi
+                queues='{"amd64":"docker-nvidia"}'
+                if [[ -n "$ARM64_QUEUE" ]]; then
+                  queues=$(jq -c --arg q "$ARM64_QUEUE" '. + {arm64: $q}' <<<"$queues")
+                fi
+                distros='["noble","core22-latest","core24-latest"]'
+                echo "arches=$(jq -c 'keys' <<<"$queues")" >> "$GITHUB_OUTPUT"
+                echo "include=$(jq -c --argjson d "$distros" \
+                  '[to_entries[] as $e | $d[] | {arch: $e.key, queue: $e.value, distro: .}]' \
+                  <<<"$queues")" >> "$GITHUB_OUTPUT"
+
     publish:
         needs: resolve
         if: ${{ inputs.run_id != '' && inputs.publish }}
         runs-on: ubuntu-latest
         timeout-minutes: 15
+        strategy:
+          matrix:
+            arch: ${{ fromJSON(needs.resolve.outputs.arches) }}
         steps:
             # Download snap artifact from a previous smoke-test/build GitHub Workflow run
             - name: Download snap artifact
@@ -75,7 +105,7 @@ jobs:
               with:
                 run-id: ${{ inputs.run_id }}
                 github-token: ${{ github.token }} # required for downloading from another workflow run
-                name: docker_${{ inputs.run_id }}_amd64.snap
+                name: docker_${{ inputs.run_id }}_${{ matrix.arch }}.snap
             
             # Publish snap to Store so it can be installed on the test devices
             - name: Publish snap to Store
@@ -83,10 +113,11 @@ jobs:
               env:
                 SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
               with:
-                snap: docker_${{ inputs.run_id }}_amd64.snap
+                snap: docker_${{ inputs.run_id }}_${{ matrix.arch }}.snap
                 release: latest/edge/runid-${{ inputs.run_id }}
 
     test:
+        name: test (${{ matrix.arch }}, ${{ matrix.distro }})
         needs: [resolve, publish]
         # Run also when publish has been skipped (not required, or testing a channel)
         if: ${{ always() && !failure() && !cancelled() }}
@@ -96,10 +127,7 @@ jobs:
         strategy:
           fail-fast: ${{ inputs.fail_fast }}
           matrix:
-            distro: 
-              - noble
-              - core22-latest
-              - core24-latest
+            include: ${{ fromJSON(needs.resolve.outputs.include) }}
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger
           SNAP_CHANNEL: ${{ needs.resolve.outputs.channel }}
@@ -112,7 +140,7 @@ jobs:
 
             - name: Create Testflinger job
               env:
-                JOB_QUEUE: docker-nvidia
+                JOB_QUEUE: ${{ matrix.queue }}
                 DISTRO: ${{ matrix.distro }}
               run: |
 

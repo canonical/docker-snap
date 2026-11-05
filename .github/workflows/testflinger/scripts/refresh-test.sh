@@ -82,8 +82,11 @@ check_container() (
 )
 
 run_workload() (
+  # vectoradd-cuda10.2 is published for amd64 only
+  tag=vectoradd-cuda10.2
+  [ "$(uname -m)" = x86_64 ] || tag=vectoradd-cuda12.5.0
   set -x
-  sudo docker run --restart=always --detach -v "$(pwd)/run-vector.sh:/run-vector.sh:ro" --entrypoint=/run-vector.sh --runtime=nvidia --gpus all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda10.2
+  sudo docker run --restart=always --detach -v "$(pwd)/run-vector.sh:/run-vector.sh:ro" --entrypoint=/run-vector.sh --runtime=nvidia --gpus all "nvcr.io/nvidia/k8s/cuda-sample:$tag"
 )
 
 main() {

@@ -9,6 +9,8 @@ Tested distros:
 - `core22-latest`
 - `core24-latest`
 
+The tests run on amd64 devices, and on arm64 devices when an arm64 queue is given.
+
 ## Run on remote machine over SSH
 
 The entry point for the tests is the `scripts/agent.sh` script.
@@ -65,3 +67,5 @@ go to the [workflow page](https://github.com/canonical/docker-snap/actions/workf
 open the `Run workflow` menu, and provide the necessary inputs.
 The `Publish to Store` option applies to a run id only,
 and should only be set if the artifact hasn't been uploaded to the Store.
+The `arm64 Testflinger queue` option adds arm64 devices from that queue to the test matrix.
+Testflinger rejects a queue with no online agents, so a wrong name fails fast.

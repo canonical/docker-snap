@@ -28,7 +28,7 @@ smi_test() (
       # On the host first, from the kernel snap: the container path mounts the
       # same GPU stack, so a broken kernel component fails here with a clearer
       # cause than it would inside a container.
-      smi_out=$(LD_LIBRARY_PATH=/var/snap/pc-kernel/common/kernel-gpu-2404/usr/lib/x86_64-linux-gnu/ /var/snap/pc-kernel/common/kernel-gpu-2404/usr/bin/nvidia-smi)
+      smi_out=$(LD_LIBRARY_PATH=/var/snap/pc-kernel/common/kernel-gpu-2404/usr/lib/$(uname -m)-linux-gnu/ /var/snap/pc-kernel/common/kernel-gpu-2404/usr/bin/nvidia-smi)
       assert_driver "$smi_out"
       # Then in a container, via the nvidia-smi the toolkit mounts from the
       # docker snap's gpu-2404 component.
@@ -45,7 +45,10 @@ smi_test() (
 # Test a vector addition sample workload
 vector_add_test() (
   set -x
-  sudo docker run --rm --runtime=nvidia --gpus all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda10.2
+  # vectoradd-cuda10.2 is published for amd64 only
+  if [ "$(uname -m)" = x86_64 ]; then
+    sudo docker run --rm --runtime=nvidia --gpus all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda10.2
+  fi
   sudo docker run --rm --runtime=nvidia --gpus all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda11.7.1
   sudo docker run --rm --runtime=nvidia --gpus all nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0
 )
