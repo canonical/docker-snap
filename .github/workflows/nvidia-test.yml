@@ -96,6 +96,7 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 15
         strategy:
+          fail-fast: false
           matrix:
             arch: ${{ fromJSON(needs.resolve.outputs.arches) }}
         steps:
@@ -107,14 +108,26 @@ jobs:
                 github-token: ${{ github.token }} # required for downloading from another workflow run
                 name: docker_${{ inputs.run_id }}_${{ matrix.arch }}.snap
             
-            # Publish snap to Store so it can be installed on the test devices
+            # Publish snap to Store so it can be installed on the test devices.
+            # Re-testing a run id uploads a snap the store already holds, which
+            # it rejects on sha3 uniqueness. The first upload of that artifact
+            # went to this same run id branch, so treat it as published.
             - name: Publish snap to Store
-              uses: snapcore/action-publish@v1
               env:
                 SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
-              with:
-                snap: docker_${{ inputs.run_id }}_${{ matrix.arch }}.snap
-                release: latest/edge/runid-${{ inputs.run_id }}
+                SNAP_FILE: docker_${{ inputs.run_id }}_${{ matrix.arch }}.snap
+                RELEASE: latest/edge/runid-${{ inputs.run_id }}
+              run: |
+                sudo snap install --classic snapcraft
+                rc=0
+                snapcraft upload "$SNAP_FILE" --release "$RELEASE" 2>&1 | tee upload.log || rc=$?
+                if [[ $rc -ne 0 ]]; then
+                  if grep -q 'Error checking upload uniqueness' upload.log; then
+                    echo "::notice::$SNAP_FILE is already in the store, assuming it is on $RELEASE"
+                  else
+                    exit "$rc"
+                  fi
+                fi
 
     test:
         name: test (${{ matrix.arch }}, ${{ matrix.distro }})
