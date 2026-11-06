@@ -20,6 +20,16 @@ else
     # lifetime of this ephemeral guest.
     echo "Ubuntu Core detected; holding snap refreshes"
     sudo snap wait system seed.loaded
+    # DEBUG ONLY: does a client exit 0 when another request reboots the system?
+    section "REPRO: snap install vs snap reboot"
+    sudo snap refresh --hold || true
+    snap version
+    ( sleep 5; echo "REPRO: rebooting"; sudo snap reboot ) &
+    sudo snap install gnome-46-2404
+    echo "REPRO: snap install exit: $?"
+    [ -e /snap/gnome-46-2404/current ] && echo "REPRO: installed" || echo "REPRO: not installed"
+    sudo snap changes 2>&1 || true
+    sleep 300
     [ "$SPREAD_REBOOT" != 0 ] || debug_force_race
     sudo snap refresh --hold || true
     # The hold can land after snapd has started the auto-refresh. Abort only
