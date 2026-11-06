@@ -1,15 +1,20 @@
 name: Nvidia Graphics Tests
+run-name: Nvidia Graphics Tests (${{ inputs.channel || format('run {0}', inputs.run_id) }})
 
 on:
   # Manual trigger
   workflow_dispatch:
     inputs:
       run_id:
-        description: 'Run id number'
-        required: true
-        type: number
+        description: 'Run id number (set this or channel)'
+        required: false
+        type: string
+      channel:
+        description: 'Snap channel to test, e.g. latest/candidate (set this or run id)'
+        required: false
+        type: string
       publish:
-        description: 'Publish to Store'
+        description: 'Publish run id artifact to Store'
         default: true
         type: boolean
       fail_fast:
@@ -24,8 +29,43 @@ permissions:
   actions: read
 
 jobs:
+    resolve:
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        outputs:
+          channel: ${{ steps.channel.outputs.channel }}
+        steps:
+            # The channel ends up unquoted in shell on the test agent, so only
+            # accept well-formed run ids and <track>/<risk>/<branch> channels.
+            - name: Resolve snap channel
+              id: channel
+              env:
+                RUN_ID: ${{ inputs.run_id }}
+                CHANNEL: ${{ inputs.channel }}
+              run: |
+                if [[ -n "$RUN_ID" && -n "$CHANNEL" ]]; then
+                  echo "::error::Set either run_id or channel, not both"
+                  exit 1
+                elif [[ -n "$RUN_ID" ]]; then
+                  if [[ ! "$RUN_ID" =~ ^[0-9]+$ ]]; then
+                    echo "::error::Invalid run_id: $RUN_ID"
+                    exit 1
+                  fi
+                  CHANNEL="latest/edge/runid-$RUN_ID"
+                elif [[ -n "$CHANNEL" ]]; then
+                  if [[ ! "$CHANNEL" =~ ^([A-Za-z0-9][A-Za-z0-9._-]*/)?(stable|candidate|beta|edge)(/[A-Za-z0-9][A-Za-z0-9._-]*)?$ ]]; then
+                    echo "::error::Invalid channel: $CHANNEL"
+                    exit 1
+                  fi
+                else
+                  echo "::error::Set either run_id or channel"
+                  exit 1
+                fi
+                echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+
     publish:
-        if: ${{ inputs.publish == true }}
+        needs: resolve
+        if: ${{ inputs.run_id != '' && inputs.publish }}
         runs-on: ubuntu-latest
         timeout-minutes: 15
         steps:
@@ -47,8 +87,8 @@ jobs:
                 release: latest/edge/runid-${{ inputs.run_id }}
 
     test:
-        needs: publish
-        # Run also when previous job has been skipped (publish not required)
+        needs: [resolve, publish]
+        # Run also when publish has been skipped (not required, or testing a channel)
         if: ${{ always() && !failure() && !cancelled() }}
         runs-on: self-hosted-linux-amd64-noble-private-endpoint-small
         # Testflinger's own global_timeout is 3600s; allow headroom for queue wait.
@@ -62,7 +102,7 @@ jobs:
               - core24-latest
         env:
           TESTFLINGER_DIR: .github/workflows/testflinger
-          SNAP_CHANNEL: latest/edge/runid-${{ inputs.run_id }}
+          SNAP_CHANNEL: ${{ needs.resolve.outputs.channel }}
         steps:
             - name: Event data
               run: "echo ::notice::Snap channel: $SNAP_CHANNEL"
