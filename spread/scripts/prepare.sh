@@ -25,13 +25,16 @@ else
     # The hold can land after snapd has started the auto-refresh. Abort only
     # requests the undo, so wait for it, or the next change trips over its
     # tasks ("kernel command line already being updated").
-    sudo snap abort --last=auto-refresh 2>/dev/null || true
-    section "RACE: fix, watching the aborted auto-refresh (reboot $SPREAD_REBOOT)"
-    sudo snap watch '--last=auto-refresh?' || true
-    debug_snapd_state "core, after watch"
+    if sudo snap abort --last=auto-refresh 2>/dev/null; then
+        section "RACE: abort succeeded, an auto-refresh was in flight"
+    fi
+    # DEBUG ONLY: 1 runs the fix, 0 the old prepare.
+    RACE_FIX=1
+    section "RACE: arm RACE_FIX=$RACE_FIX (reboot $SPREAD_REBOOT)"
+    [ "$RACE_FIX" = 0 ] || sudo snap watch '--last=auto-refresh?' || true
     # Unwinding a boot snap refresh can leave snapd wanting a reboot, which
     # snap only reports as a warning.
-    if sudo snap changes 2>&1 >/dev/null | grep -q "about to reboot"; then
+    if [ "$RACE_FIX" = 1 ] && sudo snap changes 2>&1 >/dev/null | grep -q "about to reboot"; then
         if [ "$SPREAD_REBOOT" -ge 2 ]; then
             ERROR "snapd still wants a reboot after $SPREAD_REBOOT reboots"
         fi
@@ -41,7 +44,8 @@ else
     # The seeded snapd predates fchmodat2 in its seccomp template, which
     # breaks `docker cp`. A named refresh goes through the hold, and snapd
     # alone does not reboot the machine.
-    debug_snapd_state "core, before snapd refresh"
+    # Dumping in the old arm would give the undo time to finish.
+    [ "$RACE_FIX" = 0 ] || debug_snapd_state "core, before snapd refresh"
     if ! sudo snap refresh snapd; then
         debug_snapd_state "core, snapd refresh failed"
         exit 1

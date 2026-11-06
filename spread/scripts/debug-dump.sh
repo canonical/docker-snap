@@ -60,21 +60,19 @@ debug_snapctl_stress() {
     ' || true
 }
 
-# Hold off the hold until the first-boot auto-refresh is inside its gadget
-# tasks, so the hold + abort that follow always race an in-flight change.
+# Hold off the hold until the first-boot auto-refresh has started, so the
+# hold + abort that follow always race an in-flight change.
 debug_force_race() {
-    local at='Update (assets from|kernel command line from gadget)'
     local start=$SECONDS deadline=$((SECONDS + 600)) id
-    section "RACE: waiting for an auto-refresh to reach /$at/"
+    section "RACE: waiting for an auto-refresh to start"
     while [ "$SECONDS" -lt "$deadline" ]; do
         id="$(snap changes 2>/dev/null | awk '$2 ~ /^(Do|Doing)$/ && /Auto-refresh/ {print $1; exit}')"
-        if [ -n "$id" ] && snap tasks "$id" 2>/dev/null | grep -E '^[0-9]+ +(Doing|Done) ' | grep -q -E "$at"; then
-            section "RACE: forced, auto-refresh change $id is in its gadget tasks after $((SECONDS - start))s"
-            snap tasks "$id" || true
+        if [ -n "$id" ]; then
+            section "RACE: forced, auto-refresh change $id started after $((SECONDS - start))s"
             return 0
         fi
         sleep 0.5
     done
-    section "RACE: inconclusive, no auto-refresh reached /$at/ in 600s"
+    section "RACE: inconclusive, no auto-refresh in 600s"
     snap changes || true
 }
