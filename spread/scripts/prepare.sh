@@ -23,7 +23,8 @@ else
     # requests the undo, so wait for it, or the next change trips over its
     # tasks ("kernel command line already being updated").
     sudo snap abort --last=auto-refresh 2>/dev/null || true
-    sudo snap watch '--last=auto-refresh?' || true
+    # An aborted change ends Undone, which watch reports as an error.
+    sudo snap watch '--last=auto-refresh?' 2>/dev/null || true
     # Unwinding a boot snap refresh can leave snapd wanting a reboot, which
     # snap only reports as a warning.
     if sudo snap changes 2>&1 >/dev/null | grep -q "about to reboot"; then
