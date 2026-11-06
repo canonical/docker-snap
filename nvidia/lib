@@ -31,13 +31,12 @@ device_wait() {
 
     while [ ${COUNT} -le ${TRIES} ] ; do
         echo "Checking device: ${COUNT}/${TRIES}"
-        test -c "${1}"
-        if [ $? -eq 0 ] ; then
+        if test -c "${1}"; then
             echo "Device found"
             return 0
         fi
         sleep $SLEEP
-        COUNT=$(($COUNT + 1))
+        COUNT=$((COUNT + 1))
     done
 
     echo "Device not found"
