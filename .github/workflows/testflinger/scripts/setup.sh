@@ -71,6 +71,9 @@ install_docker() (
 
   install_snap docker "$DOCKER_SNAP_CHANNEL"
 
+  # a channel can move mid-run, so record the revision actually under test
+  snap list docker
+
   # check the auto-connections
   sudo snap connections docker
 )
