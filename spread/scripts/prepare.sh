@@ -20,9 +20,24 @@ else
     # lifetime of this ephemeral guest.
     echo "Ubuntu Core detected; holding snap refreshes"
     sudo snap wait system seed.loaded
-    debug_force_race
+    [ "$SPREAD_REBOOT" != 0 ] || debug_force_race
     sudo snap refresh --hold || true
+    # The hold can land after snapd has started the auto-refresh. Abort only
+    # requests the undo, so wait for it, or the next change trips over its
+    # tasks ("kernel command line already being updated").
     sudo snap abort --last=auto-refresh 2>/dev/null || true
+    section "RACE: fix, watching the aborted auto-refresh (reboot $SPREAD_REBOOT)"
+    sudo snap watch '--last=auto-refresh?' || true
+    debug_snapd_state "core, after watch"
+    # Unwinding a boot snap refresh can leave snapd wanting a reboot, which
+    # snap only reports as a warning.
+    if sudo snap changes 2>&1 >/dev/null | grep -q "about to reboot"; then
+        if [ "$SPREAD_REBOOT" -ge 2 ]; then
+            ERROR "snapd still wants a reboot after $SPREAD_REBOOT reboots"
+        fi
+        section "RACE: fix, snapd wants a reboot, REBOOT"
+        REBOOT
+    fi
     # The seeded snapd predates fchmodat2 in its seccomp template, which
     # breaks `docker cp`. A named refresh goes through the hold, and snapd
     # alone does not reboot the machine.
