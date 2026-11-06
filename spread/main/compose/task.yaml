@@ -2,23 +2,12 @@ summary: Test compose service lifecycle
 
 environment:
   PROJECT: docker-snap-compose-test
-  # Not under spread's /tmp path: the snap gets a private /tmp and cannot see it.
+  # The snap gets a private /tmp, so it cannot read the task dir under spread's /tmp path.
   COMPOSE_DIR: $HOME/compose-test
 
 prepare: |
   mkdir -p "$COMPOSE_DIR"
-  cat > "$COMPOSE_DIR/compose.yaml" <<'EOF'
-  services:
-    app:
-      image: alpine
-      command: sleep 300
-      depends_on:
-        helper:
-          condition: service_started
-    helper:
-      image: alpine
-      command: sleep 300
-  EOF
+  cp compose.yaml "$COMPOSE_DIR/"
 
 execute: |
   compose() {

@@ -269,18 +269,7 @@ jobs:
           compose_dir="$(mktemp -d "$HOME/compose-test.XXXXXX")"
           project="docker-snap-compose-test"
 
-          cat > "$compose_dir/compose.yaml" <<'EOF'
-          services:
-            app:
-              image: alpine
-              command: sleep 300
-              depends_on:
-                helper:
-                  condition: service_started
-            helper:
-              image: alpine
-              command: sleep 300
-          EOF
+          cp spread/main/compose/compose.yaml "$compose_dir/"
 
           compose() {
             sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" "$@"
