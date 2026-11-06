@@ -85,7 +85,7 @@ jobs:
       - name: List jobs
         id: list
         env:
-          FILTER: ${{ github.event_name == 'push' && 'core main/version' || inputs.spread_test_filter }}
+          FILTER: ${{ github.event_name == 'push' && 'core-24.arm64|core-26.amd64 main/version' || inputs.spread_test_filter }}
         run: |
           # Filter semantics and matrix shape: see the script.
           matrix=$(image-garden.spread -list | .github/scripts/spread-matrix/spread-matrix "$FILTER")
