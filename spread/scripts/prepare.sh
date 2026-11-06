@@ -29,7 +29,7 @@ else
         section "RACE: abort succeeded, an auto-refresh was in flight"
     fi
     # DEBUG ONLY: 1 runs the fix, 0 the old prepare.
-    RACE_FIX=0
+    RACE_FIX=1
     section "RACE: arm RACE_FIX=$RACE_FIX (reboot $SPREAD_REBOOT)"
     [ "$RACE_FIX" = 0 ] || sudo snap watch '--last=auto-refresh?' || true
     # Unwinding a boot snap refresh can leave snapd wanting a reboot, which
