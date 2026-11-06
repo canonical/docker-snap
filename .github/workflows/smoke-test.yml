@@ -6,8 +6,6 @@ on:
     paths-ignore:
       - '**/*.md'
       - 'spread/**'
-      # The Docker Compose step below reads this fixture.
-      - '!spread/main/compose/compose.yaml'
       - 'spread.yaml'
       - '.github/scripts/**'
       - '.github/workflows/spread-tests.yml'
@@ -18,7 +16,6 @@ on:
     paths-ignore:
       - '**/*.md'
       - 'spread/**'
-      - '!spread/main/compose/compose.yaml'
       - 'spread.yaml'
       - '.github/scripts/**'
       - '.github/workflows/spread-tests.yml'
@@ -272,7 +269,7 @@ jobs:
           compose_dir="$(mktemp -d "$HOME/compose-test.XXXXXX")"
           project="docker-snap-compose-test"
 
-          cp spread/main/compose/compose.yaml "$compose_dir/"
+          cp .github/workflows/smoke-test/compose.yaml "$compose_dir/"
 
           compose() {
             sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" "$@"

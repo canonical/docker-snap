@@ -1,0 +1,10 @@
+services:
+  app:
+    image: alpine
+    command: sleep 300
+    depends_on:
+      helper:
+        condition: service_started
+  helper:
+    image: alpine
+    command: sleep 300
