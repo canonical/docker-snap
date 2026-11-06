@@ -1,6 +1,9 @@
 name: Spread Tests
 
 on:
+  # DEBUG ONLY: run the failing lanes on every push to the debug branch.
+  push:
+    branches: [debug/spread-prepare-failures]
   # Manual trigger
   workflow_dispatch:
     inputs:
@@ -73,7 +76,7 @@ jobs:
       - name: Prep
         id: prep
         run: |
-          sudo snap install image-garden --channel="${{ inputs.image_garden_channel }}"
+          sudo snap install image-garden --channel="${{ inputs.image_garden_channel || 'latest/stable' }}"
           # Provisioned images are a function of the image-garden version, so
           # its snap revision keys the caches (a channel switch changes the
           # revision and therefore starts from cold caches automatically).
@@ -82,7 +85,7 @@ jobs:
       - name: List jobs
         id: list
         env:
-          FILTER: ${{ inputs.spread_test_filter }}
+          FILTER: ${{ github.event_name == 'push' && 'ppc64el|core-24.arm64|core-26.amd64|cloud-26.10.amd64 main/version' || inputs.spread_test_filter }}
         run: |
           # Filter semantics and matrix shape: see the script.
           matrix=$(image-garden.spread -list | .github/scripts/spread-matrix/spread-matrix "$FILTER")
@@ -108,7 +111,7 @@ jobs:
 
       - name: Prep
         run: |
-          sudo snap install image-garden --channel="${{ inputs.image_garden_channel }}"
+          sudo snap install image-garden --channel="${{ inputs.image_garden_channel || 'latest/stable' }}"
 
           # The base snap carries the x86_64 emulator; other arches live in
           # optional components (they follow the snap's channel). Install only
@@ -151,7 +154,7 @@ jobs:
         run: |
           # $JOBS is this system's selected spread job names, word-split into
           # one argument each.
-          SNAP_CHANNEL="${{ inputs.snap_channel }}" image-garden.spread -v ${{ inputs.debug && '-vv' || '' }} $JOBS
+          SNAP_CHANNEL="${{ inputs.snap_channel || 'latest/edge' }}" image-garden.spread -v ${{ inputs.debug && '-vv' || '' }} $JOBS
 
       - name: Log image garden content
         if: ${{ failure() || inputs.publish_boot_logs }}

@@ -5,6 +5,8 @@
 
 # shellcheck source=spread/scripts/common.sh
 source "$SCRIPTS_PATH/common.sh"
+# shellcheck source=spread/scripts/debug-dump.sh
+source "$SCRIPTS_PATH/debug-dump.sh"
 
 if command -v apt-get >/dev/null; then
     echo "Installing snapd"
@@ -23,8 +25,16 @@ else
     # The seeded snapd predates fchmodat2 in its seccomp template, which
     # breaks `docker cp`. A named refresh goes through the hold, and snapd
     # alone does not reboot the machine.
-    sudo snap refresh snapd
+    debug_snapd_state "core, before snapd refresh"
+    if ! sudo snap refresh snapd; then
+        debug_snapd_state "core, snapd refresh failed"
+        exit 1
+    fi
+    debug_snapd_state "core, after snapd refresh"
 fi
+
+debug_snapctl_builds
+debug_snapctl_stress
 
 echo "Removing docker (if already installed)"
 sudo snap remove docker --purge || true
@@ -32,7 +42,21 @@ sudo snap remove docker --purge || true
 if [ -n "$SNAP_CHANNEL" ] ; then
     # If $SNAP_CHANNEL was provided, install docker from the store
     echo "Installing docker from channel: $SNAP_CHANNEL"
-    sudo snap install docker --channel="$SNAP_CHANNEL"
+    if ! sudo snap install docker --channel="$SNAP_CHANNEL"; then
+        debug_install_failure
+        debug_snapctl_stress
+        # A failed refresh keeps $SNAP_COMMON, so the full hook log survives.
+        section "retry: stable first, then refresh to $SNAP_CHANNEL"
+        if sudo snap install docker --channel=latest/stable; then
+            echo "latest/stable installed fine: $(snap list docker | tail -n 1)"
+            sudo snap refresh docker --channel="$SNAP_CHANNEL" || true
+            debug_install_failure
+        else
+            echo "latest/stable failed too"
+            debug_install_failure
+        fi
+        exit 1
+    fi
 elif [ -n "$SNAP_FILE" ] ; then
     echo "Installing local snap: $SNAP_FILE"
     sudo snap install "$SNAP_FILE" --dangerous
@@ -61,3 +85,7 @@ fi
 wait_for_docker # from common.sh
 
 echo "Preparation completed"
+
+# DEBUG ONLY: spread prints script output only on failure, so fail on purpose.
+section "prepare reached the end, failing on purpose to surface the output"
+exit 1
