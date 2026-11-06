@@ -20,6 +20,7 @@ else
     # lifetime of this ephemeral guest.
     echo "Ubuntu Core detected; holding snap refreshes"
     sudo snap wait system seed.loaded
+    debug_force_race
     sudo snap refresh --hold || true
     sudo snap abort --last=auto-refresh 2>/dev/null || true
     # The seeded snapd predates fchmodat2 in its seccomp template, which
