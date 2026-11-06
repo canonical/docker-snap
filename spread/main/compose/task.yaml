@@ -1,10 +1,13 @@
-summary: Test compose service lifecycle and dependencies
+summary: Test compose service lifecycle
 
-execute: |
-  compose_dir="$(mktemp -d "$HOME/compose-test.XXXXXX")"
-  project="docker-snap-compose-test"
+environment:
+  PROJECT: docker-snap-compose-test
+  # Not under spread's /tmp path: the snap gets a private /tmp and cannot see it.
+  COMPOSE_DIR: $HOME/compose-test
 
-  cat > "$compose_dir/compose.yaml" <<'EOF'
+prepare: |
+  mkdir -p "$COMPOSE_DIR"
+  cat > "$COMPOSE_DIR/compose.yaml" <<'EOF'
   services:
     app:
       image: alpine
@@ -17,15 +20,19 @@ execute: |
       command: sleep 300
   EOF
 
-  cleanup() {
-    sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" down --volumes >/dev/null 2>&1 || true
-    rm -rf "$compose_dir"
+execute: |
+  compose() {
+    sudo docker compose -p "$PROJECT" -f "$COMPOSE_DIR/compose.yaml" "$@"
   }
-  trap cleanup EXIT
 
-  sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" up --wait
-  [ "$(sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" ps --status running -q | wc -l)" -eq 2 ]
-  sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" exec -T app true
+  compose up --wait
+  [ "$(compose ps --status running -q | wc -l)" -eq 2 ] || ERROR "expected both services to be running"
+  [ "$(compose exec -T app echo exec-ok)" = exec-ok ] || ERROR "exec in the app service did not return its output"
 
-  sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" down --volumes
-  [ -z "$(sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" ps -aq)" ]
+  compose down --volumes
+  [ -z "$(compose ps -aq)" ] || ERROR "containers were left behind after down"
+
+restore: |
+  # Runs in a fresh shell, also after a kill-timeout, so it relies only on fixed names.
+  sudo docker compose -p "$PROJECT" down --volumes >/dev/null 2>&1 || true
+  rm -rf "$COMPOSE_DIR"

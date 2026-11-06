@@ -282,18 +282,25 @@ jobs:
               command: sleep 300
           EOF
 
+          compose() {
+            sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" "$@"
+          }
+          fail() {
+            echo "::error::$*"
+            exit 1
+          }
           cleanup() {
-            sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" down --volumes >/dev/null 2>&1 || true
+            compose down --volumes >/dev/null 2>&1 || true
             rm -rf "$compose_dir"
           }
           trap cleanup EXIT
 
-          sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" up --wait
-          [ "$(sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" ps --status running -q | wc -l)" -eq 2 ]
-          sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" exec -T app true
+          compose up --wait
+          [ "$(compose ps --status running -q | wc -l)" -eq 2 ] || fail "expected both services to be running"
+          [ "$(compose exec -T app echo exec-ok)" = exec-ok ] || fail "exec in the app service did not return its output"
 
-          sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" down --volumes
-          [ -z "$(sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" ps -aq)" ]
+          compose down --volumes
+          [ -z "$(compose ps -aq)" ] || fail "containers were left behind after down"
 
       - name: Save & Load
         run: |
