@@ -18,4 +18,5 @@ test_data:
     set -e
     
     export SNAP_CHANNEL=$SNAP_CHANNEL
+    export LIB_LAYOUT=$LIB_LAYOUT
     ./attachments/test/scripts/agent.sh
