@@ -1,0 +1,154 @@
+From 10837bd4d5e03bc79e0d21ca1b6960e338629490 Mon Sep 17 00:00:00 2001
+From: Oliver Calder <oliver.calder@canonical.com>
+Date: Mon, 28 Sep 2026 12:00:00 +0000
+Subject: [PATCH 7/7] stack AppArmor profiles with no new privileges
+
+AppArmor rejects replacing the dockerd snap profile with a container
+profile after no_new_privs is set. Request profile stacking in that case
+so the container profile further restricts the existing snap confinement.
+
+Keep replacement transitions for processes without no_new_privs to avoid
+changing their existing confinement semantics.
+---
+ daemon/apparmor_linux.go      |  9 +++++++++
+ daemon/apparmor_linux_test.go | 31 +++++++++++++++++++++++++++++++
+ daemon/exec_linux.go          |  2 +-
+ daemon/exec_linux_test.go     | 15 ++++++++++++++-
+ daemon/oci_linux.go           |  2 +-
+ 5 files changed, 56 insertions(+), 3 deletions(-)
+ create mode 100644 daemon/apparmor_linux_test.go
+
+diff --git a/daemon/apparmor_linux.go b/daemon/apparmor_linux.go
+index efc553cd3e..9022fc653e 100644
+--- a/daemon/apparmor_linux.go
++++ b/daemon/apparmor_linux.go
+@@ -5,6 +5,15 @@
+ 	"github.com/moby/moby/v2/daemon/internal/rootless"
+ )
+ 
++// appArmorProfileWithNoNewPrivileges returns a stacking profile when
++// no_new_privs prevents replacing the current AppArmor confinement.
++func appArmorProfileWithNoNewPrivileges(profile string, noNewPrivileges bool) string {
++	if !noNewPrivileges || profile == "" || profile[0] == '&' {
++		return profile
++	}
++	return "&" + profile
++}
++
+ // appArmorSupported returns true if AppArmor is supported and accessible on the host.
+ func appArmorSupported() bool {
+ 	if detachedNetNS, _ := rootless.DetachedNetNS(); detachedNetNS != "" {
+diff --git a/daemon/apparmor_linux_test.go b/daemon/apparmor_linux_test.go
+new file mode 100644
+index 0000000000..af812f7131
+--- /dev/null
++++ b/daemon/apparmor_linux_test.go
+@@ -0,0 +1,31 @@
++//go:build linux
++
++package daemon
++
++import (
++	"testing"
++
++	"gotest.tools/v3/assert"
++)
++
++func TestAppArmorProfileWithNoNewPrivileges(t *testing.T) {
++	tests := []struct {
++		name            string
++		profile         string
++		noNewPrivileges bool
++		expectedProfile string
++	}{
++		{name: "empty profile", noNewPrivileges: true},
++		{name: "without no new privileges", profile: defaultAppArmorProfile, expectedProfile: defaultAppArmorProfile},
++		{name: "default profile", profile: defaultAppArmorProfile, noNewPrivileges: true, expectedProfile: "&" + defaultAppArmorProfile},
++		{name: "custom profile", profile: "custom-profile", noNewPrivileges: true, expectedProfile: "&custom-profile"},
++		{name: "unconfined profile", profile: unconfinedAppArmorProfile, noNewPrivileges: true, expectedProfile: "&" + unconfinedAppArmorProfile},
++		{name: "already stacked", profile: "&custom-profile", noNewPrivileges: true, expectedProfile: "&custom-profile"},
++	}
++
++	for _, tc := range tests {
++		t.Run(tc.name, func(t *testing.T) {
++			assert.Equal(t, appArmorProfileWithNoNewPrivileges(tc.profile, tc.noNewPrivileges), tc.expectedProfile)
++		})
++	}
++}
+diff --git a/daemon/exec_linux.go b/daemon/exec_linux.go
+index 2d2f3d82f0..16460e9ada 100644
+--- a/daemon/exec_linux.go
++++ b/daemon/exec_linux.go
+@@ -89,7 +89,7 @@ func (daemon *Daemon) execSetPlatformOpt(ctx context.Context, daemonCfg *config.
+ 				return err
+ 			}
+ 		}
+-		p.ApparmorProfile = appArmorProfile
++		p.ApparmorProfile = appArmorProfileWithNoNewPrivileges(appArmorProfile, p.NoNewPrivileges)
+ 	}
+ 	s := &specs.Spec{Process: p}
+ 	return withRlimits(daemon, daemonCfg, ec.Container)(ctx, nil, nil, s)
+diff --git a/daemon/exec_linux_test.go b/daemon/exec_linux_test.go
+index 51ace6ca45..47d6486c63 100644
+--- a/daemon/exec_linux_test.go
++++ b/daemon/exec_linux_test.go
+@@ -47,17 +47,29 @@ func TestExecSetPlatformOptAppArmor(t *testing.T) {
+ 		doc             string
+ 		privileged      bool
+ 		appArmorProfile string
++		noNewPrivileges bool
+ 		expectedProfile string
+ 	}{
+ 		{
+ 			doc:             "default options",
+ 			expectedProfile: defaultAppArmorProfile,
+ 		},
++		{
++			doc:             "default options with no new privileges",
++			noNewPrivileges: true,
++			expectedProfile: "&" + defaultAppArmorProfile,
++		},
+ 		{
+ 			doc:             "custom profile",
+ 			appArmorProfile: "my-custom-profile",
+ 			expectedProfile: "my-custom-profile",
+ 		},
++		{
++			doc:             "custom profile with no new privileges",
++			appArmorProfile: "my-custom-profile",
++			noNewPrivileges: true,
++			expectedProfile: "&my-custom-profile",
++		},
+ 		{
+ 			doc:             "privileged container",
+ 			privileged:      true,
+@@ -106,11 +118,12 @@ func TestExecSetPlatformOptAppArmor(t *testing.T) {
+ 					},
+ 				}
+ 				ec := &container.ExecConfig{Container: c, Privileged: execPrivileged}
+-				p := &specs.Process{}
++				p := &specs.Process{NoNewPrivileges: tc.noNewPrivileges}
+ 
+ 				err := d.execSetPlatformOpt(context.Background(), &cfg.Config, ec, p)
+ 				assert.NilError(t, err)
+ 				assert.Equal(t, p.ApparmorProfile, tc.expectedProfile)
++				assert.Equal(t, p.NoNewPrivileges, tc.noNewPrivileges)
+ 			})
+ 		}
+ 	}
+diff --git a/daemon/oci_linux.go b/daemon/oci_linux.go
+index bfb6f6db6a..36390852bd 100644
+--- a/daemon/oci_linux.go
++++ b/daemon/oci_linux.go
+@@ -148,7 +148,7 @@ func WithApparmor(daemon *Daemon, c *container.Container) coci.SpecOpts {
+ 			if s.Process == nil {
+ 				s.Process = &specs.Process{}
+ 			}
+-			s.Process.ApparmorProfile = appArmorProfile
++			s.Process.ApparmorProfile = appArmorProfileWithNoNewPrivileges(appArmorProfile, c.NoNewPrivileges)
+ 		}
+ 		return nil
+ 	}
+-- 
+2.43.0
+
