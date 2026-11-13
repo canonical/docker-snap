@@ -52,15 +52,4 @@ restore: |
   wait_for_docker
 
 debug: |
-  sudo journalctl -u snap.docker.dockerd --no-pager -n 300 || true
-  # The snap's iptables wrapper picks nft or legacy per call, from these.
-  sudo snap run --shell docker.dockerd -c '
-    nft list ruleset >/dev/null 2>&1; echo "snap nft list ruleset exit: $?"
-    echo "host iptables resolves to: $(readlink -f /var/lib/snapd/hostfs/sbin/iptables)"
-    echo "--- nft backend"; xtables-nft-multi iptables-save 2>&1
-    echo "--- legacy backend"; xtables-legacy-multi iptables-save 2>&1
-  ' || true
-  sudo nft list ruleset || true
-  lsmod | grep -E '^(xt_|nft_compat|ip_tables|iptable_|nf_tables)' || true
-  command -v getenforce >/dev/null && getenforce || true
-  sudo ausearch -m avc -ts recent 2>/dev/null | tail -50 || true
+  bash "$SCRIPTS_PATH/debug.sh"
