@@ -1,0 +1,27 @@
+summary: Test compose service lifecycle
+
+environment:
+  PROJECT: docker-snap-compose-test
+  # The snap gets a private /tmp, so it cannot read the task dir under spread's /tmp path.
+  COMPOSE_DIR: $HOME/compose-test
+
+prepare: |
+  mkdir -p "$COMPOSE_DIR"
+  cp compose.yaml "$COMPOSE_DIR/"
+
+execute: |
+  compose() {
+    sudo docker compose -p "$PROJECT" -f "$COMPOSE_DIR/compose.yaml" "$@"
+  }
+
+  compose up --wait
+  [ "$(compose ps --status running -q | wc -l)" -eq 2 ] || ERROR "expected both services to be running"
+  [ "$(compose exec -T app echo exec-ok)" = exec-ok ] || ERROR "exec in the app service did not return its output"
+
+  compose down --volumes
+  [ -z "$(compose ps -aq)" ] || ERROR "containers were left behind after down"
+
+restore: |
+  # Runs in a fresh shell, also after a kill-timeout, so it relies only on fixed names.
+  sudo docker compose -p "$PROJECT" down --volumes >/dev/null 2>&1 || true
+  rm -rf "$COMPOSE_DIR"
