@@ -180,3 +180,10 @@ prepare: |
   # Learn more about preparing and restoring: https://github.com/canonical/spread?tab=readme-ov-file#preparing
 
   . "$SCRIPTS_PATH/prepare.sh"
+
+# debug runs when the project prepare or restore fails, debug-each after any
+# failed task.
+debug: |
+  bash "$SCRIPTS_PATH/debug.sh"
+debug-each: |
+  bash "$SCRIPTS_PATH/debug.sh"
