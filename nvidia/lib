@@ -7,6 +7,7 @@ U_KERNEL="${U_OS##*/}"
 U_USERLAND="${U_OS%%/*}"
 
 ARCH_TRIPLET="${U_MACHINE}-${U_KERNEL,,}-${U_USERLAND,,}"
+HOSTFS="/var/lib/snapd/hostfs"
 
 nvidia_support_disabled() {
     [ "$(snapctl get nvidia-support.disabled)" == "true" ]
@@ -16,9 +17,22 @@ nvidia_support_core() {
     snapctl is-connected gpu-2404 || snapctl is-connected graphics-core22
 }
 
+# Host dir holding the driver libs: Debian multiarch, Fedora lib64 or Arch flat lib #
+# These are the dirs the opengl interface lets a snap read nvidia libs from #
+# lib64 goes before lib: on Fedora lib holds the 32-bit libs, on Arch lib64 is a symlink to lib #
+nvidia_host_lib_dir() {
+    local dir
+    for dir in "usr/lib/${ARCH_TRIPLET}" usr/lib64 usr/lib; do
+        if [ -e "${HOSTFS}/${dir}/libcuda.so.1" ]; then
+            echo "${HOSTFS}/${dir}"
+            return 0
+        fi
+    done
+    return 1
+}
+
 nvidia_support_classic() {
-    # If the directory exists, we assume classic support is enabled then this returns true #
-    [ -L "/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}/libcuda.so" ]
+    nvidia_host_lib_dir >/dev/null
 }
 
 device_wait() {
@@ -63,41 +77,30 @@ cdi_generate () {
     CDI_DEVICE_NAME_STRATEGY="$(snapctl get nvidia-support.cdi.device-name-strategy)"
     CDI_DEVICE_NAME_STRATEGY="${CDI_DEVICE_NAME_STRATEGY:-index}"
 
-    # Default CDI libs search path and shell path for install on core systems #
-    CONTENT_PATH="/usr"
-    
-    if [ -n "${NVIDIA_DRIVER_ROOT:-}" ]; then # UC24
-        # NVIDIA_DRIVER_ROOT comes from the pc-kernel snap, through mesa-2404
-        CONTENT_PATH="${NVIDIA_DRIVER_ROOT}/usr"
-    elif [ -d "${SNAP}/graphics/lib/${ARCH_TRIPLET}" ]; then # UC22
-        CONTENT_PATH="${SNAP}/graphics"
-    fi
-    echo "CONTENT_PATH=${CONTENT_PATH}"
-
-    # FIXME: if UC24, can we just rely on the wrapper env instead of these vars ?
-    CDI_LIB_SEARCH_PATH="${CONTENT_PATH}/lib/${ARCH_TRIPLET}"
-    CDI_CONFIG_SEARCH_PATH="${CONTENT_PATH}/share"
-    CDI_PATH="${PATH}:${CONTENT_PATH}/bin"
-
-    # Otherwise, if on classic and nvidia driver is installed, set hostfs for the CDI libs search path and shell path #
+    # Root of the driver userspace (libs, bins, configs), nvidia-ctk strips it from container paths #
+    DRIVER_ROOT="/"
+    LIB_SEARCH_PATH=()
     if nvidia_support_classic; then
-        CDI_LIB_SEARCH_PATH="/var/lib/snapd/hostfs/usr/lib/${ARCH_TRIPLET}"
-        CDI_CONFIG_SEARCH_PATH="/var/lib/snapd/hostfs/usr/share"
-        CDI_PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin"
+        DRIVER_ROOT="${HOSTFS}"
+        # Confinement hides the host's ld.so.cache, so name the lib dir instead of leaving nvidia-ctk to guess it #
+        LIB_SEARCH_PATH=(--library-search-path "$(nvidia_host_lib_dir)")
+    elif [ -n "${NVIDIA_DRIVER_ROOT:-}" ]; then # UC24
+        # NVIDIA_DRIVER_ROOT comes from the pc-kernel snap, through mesa-2404
+        DRIVER_ROOT="${NVIDIA_DRIVER_ROOT}"
+    elif [ -d "${SNAP}/graphics/lib/${ARCH_TRIPLET}" ]; then # UC22
+        DRIVER_ROOT="${SNAP}/graphics"
     fi
+    echo "DRIVER_ROOT=${DRIVER_ROOT}"
 
-    # Generate the CDI spec
-    XDG_DATA_DIRS="${XDG_DATA_DIRS:-}:${CDI_CONFIG_SEARCH_PATH}" LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${CDI_LIB_SEARCH_PATH}" PATH="${CDI_PATH}" \
+    # Config search dirs are taken relative to the driver root, /share covers the UC22 content layout #
+    XDG_DATA_DIRS="/usr/local/share:/usr/share:/share" \
      "${SNAP}/usr/bin/nvidia-ctk" cdi generate \
      --nvidia-ctk-path "${SNAP}/usr/bin/nvidia-ctk" \
-     --library-search-path "${CDI_LIB_SEARCH_PATH}" \
+     --driver-root "${DRIVER_ROOT}" \
+     --dev-root / \
+     "${LIB_SEARCH_PATH[@]}" \
      --device-name-strategy "${CDI_DEVICE_NAME_STRATEGY}" \
      --output "${SNAP_DATA}/etc/cdi/nvidia.yaml"
-
-    if nvidia_support_classic; then
-        # Replace container path for binaries such as nvidia-smi to make them discoverable from the default PATH
-        sed -i "s|containerPath: /var/lib/snapd/hostfs/usr/bin|containerPath: /usr/bin|g" "${SNAP_DATA}/etc/cdi/nvidia.yaml"
-    fi
 }
 
 # Create the nvidia runtime config, either snap default or custom #
