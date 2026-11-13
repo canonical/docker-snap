@@ -264,6 +264,33 @@ jobs:
           sudo docker buildx version
           sudo docker compose version
 
+      - name: Docker Compose
+        run: |
+          compose_dir="$(mktemp -d "$HOME/compose-test.XXXXXX")"
+          project="docker-snap-compose-test"
+
+          cp .github/workflows/smoke-test/compose.yaml "$compose_dir/"
+
+          compose() {
+            sudo docker compose -p "$project" -f "$compose_dir/compose.yaml" "$@"
+          }
+          fail() {
+            echo "::error::$*"
+            exit 1
+          }
+          cleanup() {
+            compose down --volumes >/dev/null 2>&1 || true
+            rm -rf "$compose_dir"
+          }
+          trap cleanup EXIT
+
+          compose up --wait
+          [ "$(compose ps --status running -q | wc -l)" -eq 2 ] || fail "expected both services to be running"
+          [ "$(compose exec -T app echo exec-ok)" = exec-ok ] || fail "exec in the app service did not return its output"
+
+          compose down --volumes
+          [ -z "$(compose ps -aq)" ] || fail "containers were left behind after down"
+
       - name: Save & Load
         run: |
           docker pull hello-world
