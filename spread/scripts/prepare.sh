@@ -68,6 +68,15 @@ else
     ERROR "No SNAP_CHANNEL nor SNAP_FILE provided"
 fi
 
+# RHEL 10 family kernels ship nft_compat and the xt_* matches dockerd's
+# iptables rules need only in kernel-modules-extra, which cloud images omit.
+# Apply the documented fix after the install, the order a user meets it in.
+if command -v dnf >/dev/null && ! modinfo nft_compat >/dev/null 2>&1; then
+    echo "nft_compat missing; installing kernel-modules-extra for $(uname -r)"
+    sudo dnf install -y "kernel-modules-extra-$(uname -r)"
+    restart_docker # from common.sh
+fi
+
 # Wait for docker to become online, with a 1 minute timeout
 wait_for_docker # from common.sh
 

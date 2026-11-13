@@ -1,0 +1,82 @@
+summary: Check what the nftables firewall backend needs from the host
+
+details: |
+  Temporary: verifies the claims made about firewall-backend=nftables before
+  they go into docs or an issue reply.
+
+systems: [centos-cloud-10.amd64]
+
+environment:
+  CONFIG: /var/snap/docker/current/config/daemon.json
+  BACKUP: /tmp/firewall_backend.json.bak
+
+prepare: |
+  sudo rm -f "$BACKUP"
+  sudo cp "$CONFIG" "$BACKUP"
+
+execute: |
+  source "$SCRIPTS_PATH/common.sh"
+
+  snap_iptables() {
+    sudo snap run --shell docker.dockerd -c "xtables-nft-multi iptables $*"
+  }
+  egress() {
+    if sudo docker run --rm alpine wget -q -T 10 -O /dev/null http://dl-cdn.alpinelinux.org/alpine/; then
+      echo "container egress ($1): ok"
+    else
+      echo "container egress ($1): FAILED"
+    fi
+  }
+
+  echo "--- iptables backend, before the switch"
+  snap_iptables -S FORWARD | head -n 3
+  egress "iptables backend"
+
+  sudo snap run --shell docker.docker -c "jq '. + {\"firewall-backend\": \"nftables\"}' \"\$SNAP_DATA/config/daemon.json\" > \"\$SNAP_DATA/config/daemon.json.new\" && mv \"\$SNAP_DATA/config/daemon.json.new\" \"\$SNAP_DATA/config/daemon.json\""
+
+  echo "--- nftables backend with forwarding off"
+  sudo sysctl -w net.ipv4.ip_forward=0
+  since="$(date '+%Y-%m-%d %H:%M:%S')"
+  sudo snap restart docker
+  found=no
+  for _ in $(seq 30); do
+    if sudo journalctl -u snap.docker.dockerd --since "$since" --no-pager | grep -q 'IPv4 forwarding is disabled'; then
+      found=yes
+      break
+    fi
+    sleep 2
+  done
+  echo "dockerd refused to start without forwarding: $found"
+
+  echo "--- nftables backend with forwarding on"
+  sudo sysctl -w net.ipv4.ip_forward=1
+  restart_docker
+  wait_for_docker
+  backend="$(sudo docker info -f '{{.FirewallBackend.Driver}}')"
+  echo "firewall backend: $backend"
+  [ "$backend" = nftables ] || ERROR "daemon did not switch to nftables"
+  sudo docker run -d --name fw-web -p 18080:80 alpine sleep 300
+  sudo docker port fw-web 80 | MATCH ':18080$' || ERROR "published port is missing under nftables"
+  sudo docker rm -f fw-web
+  sudo nft list tables
+  echo "--- leftover iptables FORWARD after the switch"
+  snap_iptables -S FORWARD | head -n 3
+  echo "DOCKER-USER chain present: $(snap_iptables -S DOCKER-USER >/dev/null 2>&1 && echo yes || echo no)"
+  egress "nftables backend, iptables FORWARD as left"
+  snap_iptables -P FORWARD ACCEPT
+  egress "nftables backend, iptables FORWARD ACCEPT"
+
+  [ "$found" = yes ] || ERROR "dockerd started with forwarding off under nftables"
+
+restore: |
+  source "$SCRIPTS_PATH/common.sh"
+
+  sudo docker rm -f fw-web >/dev/null 2>&1 || true
+  sudo sysctl -w net.ipv4.ip_forward=1
+  sudo cp "$BACKUP" "$CONFIG"
+  sudo rm -f "$BACKUP"
+  restart_docker
+  wait_for_docker
+
+debug: |
+  bash "$SCRIPTS_PATH/debug.sh"
