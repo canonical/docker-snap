@@ -34,8 +34,20 @@ snap run --shell docker.dockerd -c '
 '
 lsmod | grep -E '^(nf_tables|nft_compat|ip_tables|x_tables|xt_|br_netfilter|overlay) '
 
-section "kernel and LSM denials"
-journalctl -k --no-pager -n 300 | grep -E 'apparmor="DENIED"|avc: +denied|Out of memory|segfault' | tail -n 30
-command -v ausearch >/dev/null && ausearch -m avc -ts recent 2>/dev/null | grep -E '^type=AVC' | tail -n 30
+section "kernel log"
+journalctl -k --no-pager -n 300 | grep -E 'Out of memory|segfault' | tail -n 20
+
+# Ubuntu: AppArmor denials land in the kernel log.
+if [ -d /sys/kernel/security/apparmor ]; then
+  section "AppArmor denials"
+  journalctl -k --no-pager -n 300 | grep 'apparmor="DENIED"' | tail -n 30
+fi
+
+# CentOS: no AppArmor, and auditd keeps the SELinux AVCs out of the kernel log.
+if command -v getenforce >/dev/null; then
+  section "SELinux"
+  getenforce
+  ausearch -m avc -ts recent 2>/dev/null | grep '^type=AVC' | tail -n 30
+fi
 
 exit 0
