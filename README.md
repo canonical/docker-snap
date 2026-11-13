@@ -36,6 +36,23 @@ sudo snap connect docker:home
 The `docker-compose` [alias](https://snapcraft.io/docs/commands-and-aliases) was set automatically for Compose V1 and remains for backwards-compatiblity.
 The recommended command-line syntax since Compose V2 is `docker compose` as described [here](https://docs.docker.com/compose/releases/migrate/).
 
+### CentOS Stream 10 and other RHEL 10 based systems
+
+On these systems the kernel modules that Docker's firewall rules rely on (`nft_compat` and the `xt_*` matches) are shipped in the `kernel-modules-extra` package, which cloud images and minimal installs leave out. Without it the daemon fails to start with:
+
+```
+failed to add jump rules to ipv4 NAT table: failed to append jump rules to nat-PREROUTING: (iptables failed: iptables --wait -t nat -A PREROUTING -m addrtype --dst-type LOCAL -j DOCKER: Warning: Extension addrtype revision 0 not supported, missing kernel module?
+```
+
+Install the package for the running kernel and restart Docker:
+
+```shell
+sudo dnf install kernel-modules-extra-$(uname -r)
+sudo snap restart docker
+```
+
+If that exact version is no longer available, install `kernel-modules-extra` without a version and reboot into the kernel it matches.
+
 ### Changing the data root directory
 
 In the `docker` snap, the default location for the [data-root](https://docs.docker.com/engine/daemon/#daemon-data-directory) directory is `$SNAP_COMMON/var-lib-docker`, which maps to `/var/snap/docker/common/var-lib-docker` based on the [snap data locations](https://snapcraft.io/docs/data-locations#heading--system).
