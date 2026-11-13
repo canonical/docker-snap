@@ -3,8 +3,8 @@ summary: The daemon comes back after a restart, with and without a config change
 details: |
   The first start after install sets up the bridge driver's NAT chains from an
   empty ruleset. Every later start finds docker's own chains already in place,
-  which is the path a restart takes. Publishing a port after each restart
-  checks that the bridge driver came up with working NAT rules.
+  which is the path a restart takes. Fetching a page through a published port
+  after each restart checks that port publishing works end to end.
 
 environment:
   CONFIG: /var/snap/docker/current/config/daemon.json
@@ -17,13 +17,22 @@ prepare: |
 execute: |
   source "$SCRIPTS_PATH/common.sh"
 
+  # The host's own address rather than loopback, as a client on the network would use.
+  host_ip="$(ip -4 route get 1.1.1.1 | sed -n 's/.* src \([0-9.]*\).*/\1/p')"
+  [ -n "$host_ip" ] || ERROR "could not find the host's address"
+
   publish_port() {
     sudo docker rm -f restart-web >/dev/null 2>&1 || true
-    sudo docker run -d --name restart-web -p 18080:80 alpine sleep 300 \
+    sudo docker run -d --name restart-web -p 18080:80 nginx:alpine \
       || ERROR "could not start a container with a published port ($1)"
-    sudo docker port restart-web 80 | MATCH ':18080$' \
-      || ERROR "published port is missing ($1)"
-    sudo docker rm -f restart-web
+    for _ in $(seq 10); do
+      if sudo docker run --rm --network host alpine wget -q -T 5 -O- "http://$host_ip:18080/" | grep -q nginx; then
+        sudo docker rm -f restart-web
+        return 0
+      fi
+      sleep 2
+    done
+    ERROR "published port does not answer ($1)"
   }
 
   wait_for_docker
