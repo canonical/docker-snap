@@ -1,6 +1,7 @@
 #!/bin/bash -u
 # Detect if nvidia support enabled, and available, for a system type #
 
+# shellcheck source=nvidia/lib
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
 # Just exit if NVIDIA support is disabled #
