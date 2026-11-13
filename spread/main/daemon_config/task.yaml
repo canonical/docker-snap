@@ -1,5 +1,8 @@
 summary: Set daemon.json options via snap configuration
 
+# Each accepted snap set / unset restarts dockerd, ~5m apiece on emulated s390x.
+kill-timeout: 60m
+
 environment:
   CONFIG: /var/snap/docker/current/config/daemon.json
   SIDECAR: /var/snap/docker/current/daemon-config-keys
@@ -76,11 +79,9 @@ execute: |
   # default, not the hand-set value.
   snapcfg set docker daemon.log-level=info
   wait_for_docker
-  snapcfg unset docker daemon.log-level
+  snapcfg unset docker daemon.log-level daemon.mtu
   wait_for_docker
   sudo cat "$CONFIG" | MATCH '"log-level"[[:space:]]*:[[:space:]]*"error"' || ERROR "managed log-level did not restore the shipped default on unset"
-  snapcfg unset docker daemon.mtu
-  wait_for_docker
   sudo cat "$CONFIG" | NOMATCH '"mtu"' || ERROR "mtu was not removed on unset"
   [ "$(sudo docker network inspect bridge -f '{{index .Options "com.docker.network.driver.mtu"}}')" = 1500 ] || ERROR "running daemon kept mtu after unset"
   sudo cat "$CONFIG" | MATCH '"snap\.test"' || ERROR "hand-set option was dropped on unset"
@@ -91,11 +92,9 @@ execute: |
   snapcfg set docker daemon.mtu=1450
   wait_for_docker
   sudo cat "$CONFIG" | MATCH '"max-concurrent-downloads"' || ERROR "corrupt sidecar dropped an unmanaged key"
-  snapcfg unset docker daemon.mtu
-  wait_for_docker
 
   # Unsetting removes the option again.
-  snapcfg unset docker daemon.default-address-pools
+  snapcfg unset docker daemon.mtu daemon.default-address-pools
   wait_for_docker
   sudo cat "$CONFIG" | NOMATCH '10\.211\.0\.0/16' || ERROR "option was not removed on unset"
 
