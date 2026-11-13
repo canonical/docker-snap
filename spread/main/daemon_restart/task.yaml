@@ -1,0 +1,61 @@
+summary: The daemon comes back after a restart, with and without a config change
+
+details: |
+  The first start after install sets up the bridge driver's NAT chains from an
+  empty ruleset. Every later start finds docker's own chains already in place,
+  which is the path a restart takes. Fetching a page through a published port
+  after each restart checks that port publishing works end to end.
+
+environment:
+  CONFIG: /var/snap/docker/current/config/daemon.json
+  BACKUP: /tmp/daemon_restart.json.bak
+
+prepare: |
+  sudo rm -f "$BACKUP"
+  sudo cp "$CONFIG" "$BACKUP"
+
+execute: |
+  source "$SCRIPTS_PATH/common.sh"
+
+  # The host's own address rather than loopback, as a client on the network would use.
+  host_ip="$(ip -4 route get 1.1.1.1 | sed -n 's/.* src \([0-9.]*\).*/\1/p')"
+  [ -n "$host_ip" ] || ERROR "could not find the host's address"
+
+  publish_port() {
+    sudo docker rm -f restart-web >/dev/null 2>&1 || true
+    sudo docker run -d --name restart-web -p 18080:80 nginx:alpine \
+      || ERROR "could not start a container with a published port ($1)"
+    for _ in $(seq 10); do
+      if sudo docker run --rm --network host alpine wget -q -T 5 -O- "http://$host_ip:18080/" | grep -q nginx; then
+        sudo docker rm -f restart-web
+        return 0
+      fi
+      sleep 2
+    done
+    ERROR "published port does not answer ($1)"
+  }
+
+  wait_for_docker
+  publish_port "first start"
+
+  restart_docker
+  wait_for_docker
+  publish_port "plain restart"
+
+  # A config change that has nothing to do with networking, then a restart.
+  # Ubuntu Core has no jq, so edit the file with the snap's copy.
+  sudo snap run --shell docker.docker -c "jq '. + {\"registry-mirrors\": [\"http://localhost:3142\"]}' \"\$SNAP_DATA/config/daemon.json\" > \"\$SNAP_DATA/config/daemon.json.new\" && mv \"\$SNAP_DATA/config/daemon.json.new\" \"\$SNAP_DATA/config/daemon.json\""
+  restart_docker
+  wait_for_docker
+  sudo docker info -f '{{.RegistryConfig.Mirrors}}' | MATCH 'localhost:3142' \
+    || ERROR "daemon did not load the edited daemon.json"
+  publish_port "restart after a config change"
+
+restore: |
+  source "$SCRIPTS_PATH/common.sh"
+
+  sudo docker rm -f restart-web >/dev/null 2>&1 || true
+  sudo cp "$BACKUP" "$CONFIG"
+  sudo rm -f "$BACKUP"
+  restart_docker
+  wait_for_docker
