@@ -1,0 +1,66 @@
+summary: The daemon comes back after a restart, with and without a config change
+
+details: |
+  The first start after install sets up the bridge driver's NAT chains from an
+  empty ruleset. Every later start finds docker's own chains already in place,
+  which is the path a restart takes. Publishing a port after each restart
+  checks that the bridge driver came up with working NAT rules.
+
+environment:
+  CONFIG: /var/snap/docker/current/config/daemon.json
+  BACKUP: /tmp/daemon_restart.json.bak
+
+prepare: |
+  sudo rm -f "$BACKUP"
+  sudo cp "$CONFIG" "$BACKUP"
+
+execute: |
+  source "$SCRIPTS_PATH/common.sh"
+
+  publish_port() {
+    sudo docker rm -f restart-web >/dev/null 2>&1 || true
+    sudo docker run -d --name restart-web -p 18080:80 alpine sleep 300 \
+      || ERROR "could not start a container with a published port ($1)"
+    sudo docker port restart-web 80 | MATCH ':18080$' \
+      || ERROR "published port is missing ($1)"
+    sudo docker rm -f restart-web
+  }
+
+  wait_for_docker
+  publish_port "first start"
+
+  restart_docker
+  wait_for_docker
+  publish_port "plain restart"
+
+  # A config change that has nothing to do with networking, then a restart.
+  # Ubuntu Core has no jq, so edit the file with the snap's copy.
+  sudo snap run --shell docker.docker -c "jq '. + {\"registry-mirrors\": [\"http://localhost:3142\"]}' \"\$SNAP_DATA/config/daemon.json\" > \"\$SNAP_DATA/config/daemon.json.new\" && mv \"\$SNAP_DATA/config/daemon.json.new\" \"\$SNAP_DATA/config/daemon.json\""
+  restart_docker
+  wait_for_docker
+  sudo docker info -f '{{.RegistryConfig.Mirrors}}' | MATCH 'localhost:3142' \
+    || ERROR "daemon did not load the edited daemon.json"
+  publish_port "restart after a config change"
+
+restore: |
+  source "$SCRIPTS_PATH/common.sh"
+
+  sudo docker rm -f restart-web >/dev/null 2>&1 || true
+  sudo cp "$BACKUP" "$CONFIG"
+  sudo rm -f "$BACKUP"
+  restart_docker
+  wait_for_docker
+
+debug: |
+  sudo journalctl -u snap.docker.dockerd --no-pager -n 300 || true
+  # The snap's iptables wrapper picks nft or legacy per call, from these.
+  sudo snap run --shell docker.dockerd -c '
+    nft list ruleset >/dev/null 2>&1; echo "snap nft list ruleset exit: $?"
+    echo "host iptables resolves to: $(readlink -f /var/lib/snapd/hostfs/sbin/iptables)"
+    echo "--- nft backend"; xtables-nft-multi iptables-save 2>&1
+    echo "--- legacy backend"; xtables-legacy-multi iptables-save 2>&1
+  ' || true
+  sudo nft list ruleset || true
+  lsmod | grep -E '^(xt_|nft_compat|ip_tables|iptable_|nf_tables)' || true
+  command -v getenforce >/dev/null && getenforce || true
+  sudo ausearch -m avc -ts recent 2>/dev/null | tail -50 || true

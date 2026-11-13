@@ -9,6 +9,17 @@ source "$SCRIPTS_PATH/common.sh"
 if command -v apt-get >/dev/null; then
     echo "Installing snapd"
     sudo apt-get update && sudo apt-get install snapd -y
+elif command -v dnf >/dev/null; then
+    echo "Installing snapd from EPEL"
+    sudo dnf install -y epel-release
+    sudo dnf install -y snapd
+    sudo systemctl enable --now snapd.socket
+    [ -e /snap ] || sudo ln -s /var/lib/snapd/snap /snap
+    # Every task runs `sudo docker`, and the EL secure_path has no /snap/bin.
+    echo 'Defaults secure_path = /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin' \
+        | sudo tee /etc/sudoers.d/90-snap-bin >/dev/null
+    sudo chmod 0440 /etc/sudoers.d/90-snap-bin
+    sudo snap wait system seed.loaded
 else
     # Ubuntu Core: snapd is the OS, nothing to install. The image seeds from an
     # old recovery system, so the first boot wants to auto-refresh the boot

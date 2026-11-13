@@ -156,6 +156,21 @@ backends:
           environment:
             SNAP_FILE: $(HOST:echo $SNAP_FILE_PPC64EL)
 
+      # Non-Ubuntu hosts: snapd from EPEL, SELinux enforcing and no AppArmor,
+      # so the snap runs without its AppArmor confinement. amd64 only, since
+      # kvm makes those lanes cheap. image-garden names the login user after
+      # the distribution.
+      - centos-cloud-9.amd64:
+          username: centos
+          password: centos
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+      - centos-cloud-10.amd64:
+          username: centos
+          password: centos
+          environment:
+            SNAP_FILE: $(HOST:echo $SNAP_FILE_AMD64)
+
 path: /tmp/docker
 exclude:
   - .git
