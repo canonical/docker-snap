@@ -6,19 +6,18 @@
 # shellcheck source=spread/scripts/common.sh
 source "$SCRIPTS_PATH/common.sh"
 
+OS_ID="$(. /etc/os-release && echo "$ID")"
+
 if command -v apt-get >/dev/null; then
     echo "Installing snapd"
     sudo apt-get update && sudo apt-get install snapd -y
-elif command -v dnf >/dev/null; then
+elif [ "$OS_ID" = centos ]; then
+    # CentOS: snapd comes from EPEL and mounts snaps under /var/lib/snapd/snap.
     echo "Installing snapd from EPEL"
     sudo dnf install -y epel-release
     sudo dnf install -y snapd
     sudo systemctl enable --now snapd.socket
     [ -e /snap ] || sudo ln -s /var/lib/snapd/snap /snap
-    # Every task runs `sudo docker`, and the EL secure_path has no /snap/bin.
-    echo 'Defaults secure_path = /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin' \
-        | sudo tee /etc/sudoers.d/90-snap-bin >/dev/null
-    sudo chmod 0440 /etc/sudoers.d/90-snap-bin
     sudo snap wait system seed.loaded
 else
     # Ubuntu Core: snapd is the OS, nothing to install. The image seeds from an
@@ -35,6 +34,14 @@ else
     # breaks `docker cp`. A named refresh goes through the hold, and snapd
     # alone does not reboot the machine.
     sudo snap refresh snapd
+fi
+
+if [ "$OS_ID" = centos ]; then
+    # CentOS: sudo's secure_path has no /snap/bin, and every task runs
+    # `sudo docker`.
+    echo 'Defaults secure_path = /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin' \
+        | sudo tee /etc/sudoers.d/90-snap-bin >/dev/null
+    sudo chmod 0440 /etc/sudoers.d/90-snap-bin
 fi
 
 echo "Removing docker (if already installed)"
@@ -68,10 +75,10 @@ else
     ERROR "No SNAP_CHANNEL nor SNAP_FILE provided"
 fi
 
-# RHEL 10 family kernels ship nft_compat and the xt_* matches dockerd's
-# iptables rules need only in kernel-modules-extra, which cloud images omit.
-# Apply the documented fix after the install, the order a user meets it in.
-if command -v dnf >/dev/null && ! modinfo nft_compat >/dev/null 2>&1; then
+if [ "$OS_ID" = centos ] && ! modinfo nft_compat >/dev/null 2>&1; then
+    # CentOS 10: nft_compat and the xt_* matches dockerd's iptables rules
+    # need ship only in kernel-modules-extra, which the cloud image omits.
+    # Applied after the install, the order a user meets it in.
     echo "nft_compat missing; installing kernel-modules-extra for $(uname -r)"
     sudo dnf install -y "kernel-modules-extra-$(uname -r)"
     restart_docker # from common.sh
