@@ -195,6 +195,3 @@ prepare: |
   # Learn more about preparing and restoring: https://github.com/canonical/spread?tab=readme-ov-file#preparing
 
   . "$SCRIPTS_PATH/prepare.sh"
-
-debug: |
-  bash "$SCRIPTS_PATH/debug.sh"

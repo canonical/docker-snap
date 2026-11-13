@@ -50,6 +50,3 @@ restore: |
   sudo rm -f "$BACKUP"
   restart_docker
   wait_for_docker
-
-debug: |
-  bash "$SCRIPTS_PATH/debug.sh"
