@@ -5,8 +5,10 @@ on:
     paths:
       - ".github/workflows/**"
       - ".github/scripts/**"
+      - "bin/**"
       - "spread/scripts/**"
       - "lib/**"
+      - "nvidia/**"
       - "snap/hooks/**"
       - "tests/**"
 
@@ -54,4 +56,7 @@ jobs:
             .github/workflows/testflinger/scripts/*.sh \
             spread/scripts/*.sh \
             tests/*.bash \
-            lib/daemon-config snap/hooks/configure
+            bin/* \
+            lib/daemon-config \
+            nvidia/* \
+            snap/hooks/*

@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # example usage:
 # $ gopartbootstrap github.com/edgexfoundry/edgex-go
 gopartbootstrap() 
@@ -11,7 +12,8 @@ gopartbootstrap()
 	export PATH="$CRAFT_STAGE/bin:$GOPATH/bin:$PATH"
 
 	# set GOROOT to be whatever the go tool from CRAFT_STAGE/bin is
-	export GOROOT=$(go env GOROOT)
+	GOROOT=$(go env GOROOT)
+	export GOROOT
 
 	# now setup the GOPATH for this part using the import path
 	export GOIMPORTPATH="$GOPATH/src/$1"
@@ -23,5 +25,5 @@ gopartbootstrap()
 	cp -r ./* "$GOIMPORTPATH"
 
 	# finally go into the go import path to prepare for building
-	cd "$GOIMPORTPATH"
+	cd "$GOIMPORTPATH" || return
 }
