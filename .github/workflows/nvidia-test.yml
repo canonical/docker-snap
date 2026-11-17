@@ -30,7 +30,7 @@ permissions:
 
 jobs:
     resolve:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-slim
         timeout-minutes: 5
         outputs:
           channel: ${{ steps.channel.outputs.channel }}
