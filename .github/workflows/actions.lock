@@ -8,7 +8,7 @@ workflows:
     '.github/workflows/nvidia-test.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/download-artifact@v8.0.2'
-        - 'canonical/testflinger@submit/v1.4.8'
+        - 'canonical/testflinger@submit/v1.6.0'
         - 'snapcore/action-publish@v1.2.0'
     '.github/workflows/scripts-tests.yml':
         - 'actions/checkout@v7.0.1'
@@ -42,9 +42,9 @@ dependencies:
         commit: 'sha1-cf430e030ddbb5b0abf93d22962f4752f3646cd9'
         owner_id: 44036562
         repo_id: 192625955
-    'canonical/testflinger@submit/v1.4.8':
-        ref: 'submit/v1.4.8'
-        commit: 'sha1-545ed69f17a5e639a2299e325f5fb199ca9f98af'
+    'canonical/testflinger@submit/v1.6.0':
+        ref: 'submit/v1.6.0'
+        commit: 'sha1-257ef71c8042a41925d7185d46fc3171ea2112f5'
         owner_id: 53057619
         repo_id: 484205178
     'snapcore/action-build@v1.3.0':
