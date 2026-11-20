@@ -2,6 +2,7 @@
 
 set -eu
 
+# shellcheck source=nvidia/lib
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
 # Connection hooks are run early - copy the config file from $SNAP into $SNAP_DATA if it doesn't exist
@@ -21,4 +22,5 @@ echo "NVIDIA ready"
 ensure_nvidia_data_dirs
 
 # Setup nvidia support, but do not exit on failure #
+# shellcheck disable=SC2015
 cdi_generate && nvidia_runtime_config && docker_runtime_configure && setup_info || setup_fail

@@ -5,8 +5,10 @@ on:
     paths:
       - ".github/workflows/**"
       - ".github/scripts/**"
+      - "bin/**"
       - "spread/scripts/**"
       - "lib/**"
+      - "nvidia/**"
       - "snap/hooks/**"
       - "tests/**"
 
@@ -22,7 +24,7 @@ defaults:
 
 jobs:
   bats:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -40,7 +42,7 @@ jobs:
                tests/
 
   shellcheck:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -54,4 +56,7 @@ jobs:
             .github/workflows/testflinger/scripts/*.sh \
             spread/scripts/*.sh \
             tests/*.bash \
-            lib/daemon-config snap/hooks/configure
+            bin/* \
+            lib/daemon-config \
+            nvidia/* \
+            snap/hooks/*

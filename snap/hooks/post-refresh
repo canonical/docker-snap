@@ -2,6 +2,7 @@
 
 set -eu
 
+# shellcheck source=nvidia/lib
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
 # ensure the layouts dir for /etc/{stuff} exists

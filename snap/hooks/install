@@ -2,6 +2,7 @@
 
 set -eu
 
+# shellcheck source=nvidia/lib
 . "${SNAP}/usr/share/nvidia-container-toolkit/lib"
 
 # Since the install hook is also the post-refresh hook, we need to check if the data-root is set

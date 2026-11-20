@@ -40,7 +40,7 @@ work="$(mktemp -d)"
 
 # inside our snap, we can't "modprobe" for whatever reason (probably no access to the .ko files)
 # so this forces the kernel itself to "modprobe" for these filesystems so that the modules we need are available to Docker
-trap "force_umount --no-mtab '$dir'; rm -rf '$dir'" EXIT
+trap 'force_umount --no-mtab "$dir"; rm -rf "$dir"' EXIT
 # try mounting a few FS types to force the kernel to try loading modules
 yolo mount --no-mtab -t overlay /dev/null -olowerdir="$lower",upperdir="$upper",workdir="$work" "$dir" 
 force_umount --no-mtab "$dir"

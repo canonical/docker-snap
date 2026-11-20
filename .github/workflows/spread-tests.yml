@@ -1,4 +1,5 @@
 name: Spread Tests
+run-name: Spread Tests (${{ inputs.snap_channel }})
 
 on:
   # Manual trigger
