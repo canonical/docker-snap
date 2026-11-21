@@ -108,6 +108,13 @@ Docker should function normally, with the following caveats:
 
 * Specifying the option `--security-opt="no-new-privileges=true"` with the `docker run` command (or the equivalent in docker-compose) will result in a failure of the container to start. This is due to an an underlying external constraint on AppArmor; see [LP#1908448](https://bugs.launchpad.net/snappy/+bug/1908448) for details.
 
+* On CentOS Stream 10 and other RHEL 10 based systems, the daemon fails to start with `Extension addrtype revision 0 not supported, missing kernel module?`. The kernel modules it needs ship in `kernel-modules-extra`, which minimal installs leave out:
+
+  ```shell
+  sudo dnf install kernel-modules-extra-$(uname -r)
+  sudo snap restart docker
+  ```
+
 ### Configuring daemon options
 
 A subset of `daemon.json` options can be set through snap configuration, without editing the file:
