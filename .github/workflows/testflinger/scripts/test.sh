@@ -19,7 +19,7 @@ smi_test() (
     ubuntu-24.04)
       # Classic has to win over a connected content provider, whatever the
       # host's lib layout.
-      sudo snap logs -n 100 docker.nvidia-container-toolkit | grep -q "Running on Classic system"
+      sudo snap logs -n all docker.nvidia-container-toolkit | grep -q "Running on Classic system"
       smi_out=$(sudo docker run --rm --runtime=nvidia --gpus all --env PATH="${PATH}:/var/lib/snapd/hostfs/usr/bin" ubuntu nvidia-smi)
       assert_driver "$smi_out"
       ;;
