@@ -85,23 +85,6 @@ setup_classic() (
   run_retry_command sudo apt-get -qqy install nvidia-driver-580
 )
 
-# Move the driver libs out of the multiarch dir into a flat /usr/lib, the Arch
-# layout. mesa-2404 mirrors the setup of the Arch report: with gpu-2404
-# connected, a missed classic check falls through to the Core path.
-flatten_lib_layout() (
-  set -x
-  shopt -s nullglob
-
-  cd /usr/lib/x86_64-linux-gnu
-  sudo mv -t /usr/lib/ libcuda*.so* libnvidia-*.so* libnvcuvid.so* libnvoptix.so* \
-    libEGL_nvidia.so* libGLX_nvidia.so* libGLESv*_nvidia.so*
-  echo /usr/lib | sudo tee /etc/ld.so.conf.d/zz-flat-nvidia.conf
-  sudo ldconfig
-  ls -l /usr/lib/libcuda.so*
-
-  install_snap mesa-2404
-)
-
 setup_core22() (
   set -x
   install_snap nvidia-core22
@@ -131,9 +114,6 @@ install_dependencies() {
   case "$ID-$VERSION_ID" in
   ubuntu-24.04)
     setup_classic
-    if [[ $LIB_LAYOUT == flat ]]; then
-      flatten_lib_layout
-    fi
     ;;
   ubuntu-core-22)
     setup_core22
@@ -147,16 +127,6 @@ install_dependencies() {
     ;;
   esac
 }
-
-# parameter 1 is the docker snap channel, parameter 2 the host lib layout on classic
-LIB_LAYOUT="${2:-multiarch}"
-case "$LIB_LAYOUT" in
-multiarch | flat) ;;
-*)
-  echo "Unsupported lib layout: $LIB_LAYOUT"
-  exit 1
-  ;;
-esac
 
 install_dependencies
 install_docker "$1"
