@@ -6,6 +6,7 @@ The tests run on devices within Canonical's test farm.
 Tested distros:
 
 - `noble`
+- `noble` with the driver libs moved to a flat `/usr/lib` (`LIB_LAYOUT=flat`), the Arch layout
 - `core22-latest`
 - `core24-latest`
 
@@ -27,6 +28,7 @@ DEVICE_IP=192.168.86.86 DEVICE_USER=ubuntu SNAP_CHANNEL=latest/edge ./scripts/ag
 * `DEVICE_IP` - Network address of the device under test. Testflinger exports this variable in the agent's environment.
 * `DEVICE_USER` - Username used to SSH to the device under test. This defaults to the value `ubuntu`.
 * `SNAP_CHANNEL` - Snap Store channel from where the docker snap will be installed to perform the tests on.
+* `LIB_LAYOUT` - Where the host keeps the driver libs on classic: `multiarch` (the default) or `flat`.
 * `SCRIPTS` - Directory where all the test scripts are located.
 
 ## Run on Testflinger
@@ -41,6 +43,9 @@ Export the required variables and then run the script, e.g:
 ```bash
 JOB_QUEUE=docker-nvidia DISTRO=noble SNAP_CHANNEL=latest/edge ./run.sh
 ```
+
+`LIB_LAYOUT=flat` is optional and only has an effect with `DISTRO=noble`.
+It skips the snap refresh test, whose `latest/stable` baseline does not support that layout.
 
 To create a copy of the template job with filled variables, without submitting it, set the `--dryrun` flag.
 This allows manual modifications of the job before submitting it, 
