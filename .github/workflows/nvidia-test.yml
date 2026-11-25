@@ -96,7 +96,7 @@ jobs:
         strategy:
           fail-fast: ${{ inputs.fail_fast }}
           matrix:
-            distro: 
+            distro:
               - noble
               - core22-latest
               - core24-latest
