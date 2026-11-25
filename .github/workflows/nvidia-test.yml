@@ -71,7 +71,7 @@ jobs:
         steps:
             # Download snap artifact from a previous smoke-test/build GitHub Workflow run
             - name: Download snap artifact
-              uses: actions/download-artifact@v8
+              uses: actions/download-artifact@v8.0.2
               with:
                 run-id: ${{ inputs.run_id }}
                 github-token: ${{ github.token }} # required for downloading from another workflow run
@@ -79,7 +79,7 @@ jobs:
             
             # Publish snap to Store so it can be installed on the test devices
             - name: Publish snap to Store
-              uses: snapcore/action-publish@v1
+              uses: snapcore/action-publish@v1.2.0
               env:
                 SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_LOGIN }}
               with:
@@ -108,7 +108,7 @@ jobs:
               run: "echo ::notice::Snap channel: $SNAP_CHANNEL"
 
             - name: Checkout code
-              uses: actions/checkout@v7
+              uses: actions/checkout@v7.0.1
 
             - name: Create Testflinger job
               env:
@@ -123,7 +123,7 @@ jobs:
                 mv $TESTFLINGER_DIR/nvidia-job.temp $TESTFLINGER_DIR/nvidia-job.yaml
 
             - name: Run tests
-              uses: canonical/testflinger/.github/actions/submit@545ed69f17a5e639a2299e325f5fb199ca9f98af  # submit/v1.4.8
+              uses: canonical/testflinger/.github/actions/submit@submit/v1.6.0
               with:
                 poll: true
                 job-path: ${{ env.TESTFLINGER_DIR }}/nvidia-job.yaml
