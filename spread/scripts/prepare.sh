@@ -6,9 +6,19 @@
 # shellcheck source=spread/scripts/common.sh
 source "$SCRIPTS_PATH/common.sh"
 
+OS_ID="$(. /etc/os-release && echo "$ID")"
+
 if command -v apt-get >/dev/null; then
     echo "Installing snapd"
     sudo apt-get update && sudo apt-get install snapd -y
+elif [ "$OS_ID" = centos ]; then
+    # CentOS: snapd comes from EPEL and mounts snaps under /var/lib/snapd/snap.
+    echo "Installing snapd from EPEL"
+    sudo dnf install -y epel-release
+    sudo dnf install -y snapd
+    sudo systemctl enable --now snapd.socket
+    [ -e /snap ] || sudo ln -s /var/lib/snapd/snap /snap
+    sudo snap wait system seed.loaded
 else
     # Ubuntu Core: snapd is the OS, nothing to install. The image seeds from an
     # old recovery system, so the first boot wants to auto-refresh the boot
@@ -37,6 +47,14 @@ else
     # breaks `docker cp`. A named refresh goes through the hold, and snapd
     # alone does not reboot the machine.
     sudo snap refresh snapd
+fi
+
+if [ "$OS_ID" = centos ]; then
+    # CentOS: sudo's secure_path has no /snap/bin, and every task runs
+    # `sudo docker`.
+    echo 'Defaults secure_path = /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin' \
+        | sudo tee /etc/sudoers.d/90-snap-bin >/dev/null
+    sudo chmod 0440 /etc/sudoers.d/90-snap-bin
 fi
 
 echo "Removing docker (if already installed)"
@@ -68,6 +86,15 @@ elif [ -n "$SNAP_FILE" ] ; then
     restart_docker # from common.sh
 else
     ERROR "No SNAP_CHANNEL nor SNAP_FILE provided"
+fi
+
+if [ "$OS_ID" = centos ] && ! modinfo nft_compat >/dev/null 2>&1; then
+    # CentOS 10: nft_compat and the xt_* matches dockerd's iptables rules
+    # need ship only in kernel-modules-extra, which the cloud image omits.
+    # Applied after the install, the order a user meets it in.
+    echo "nft_compat missing; installing kernel-modules-extra for $(uname -r)"
+    sudo dnf install -y "kernel-modules-extra-$(uname -r)"
+    restart_docker # from common.sh
 fi
 
 # Wait for docker to become online, with a 1 minute timeout
